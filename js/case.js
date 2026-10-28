@@ -35,7 +35,7 @@ const Case = (() => {
     const nearDecoy = pool[0], foodDecoy = pool[1];
     const witnessPool = U.shuffle(r, HUMANS.filter((id) => id !== culprit && id !== nearDecoy && id !== foodDecoy));
     const pref = L.preferredWitness;
-    const witness = pref && witnessPool.includes(pref) ? pref : witnessPool[0];
+    const witness = pref && witnessPool.includes(pref) ? pref : witnessPool[0] || nearDecoy;
     const rest = U.shuffle(r, present.filter((id) => ![culprit, nearDecoy, foodDecoy, witness].includes(id)));
     const positionalWitness = rest[0], mealWitness = rest[1], culpritPosWitness = rest[2];
 
@@ -49,27 +49,32 @@ const Case = (() => {
       else meals[id] = U.pick(r, others).id;
       claims[id] = meals[id];
     }
-    if (!isDog) claims[culprit] = U.pick(r, others.filter((f) => f.id !== meals[culprit])).id;
+    if (!isDog && RULES.lies) claims[culprit] = U.pick(r, others.filter((f) => f.id !== meals[culprit])).id;
     meals[sg.id] = isDog ? sg.food : null;
 
     // where everyone stands when it happens
     const spots = {}, taken = [];
+    const gap = L.ranges.spacing, fix = L.fixSpot ? (p) => L.fixSpot(p) : (p) => p;
     function place(z, near = null) {
       for (let tries = 0; tries < 80; tries++) {
         let p;
         if (near) {
-          const a = r() * Math.PI * 2, d = 50 + r() * 26;
+          const a = r() * Math.PI * 2, d = gap * (1.05 + r() * 0.5);
           p = { x: near.x + Math.cos(a) * d, y: near.y + Math.sin(a) * d * 0.6 };
-          p.x = U.clamp(p.x, z.x + 30, z.x + z.w - 30); p.y = U.clamp(p.y, z.y + 50, z.y + z.h - 12);
-        } else {
-          p = { x: z.x + 40 + r() * (z.w - 80), y: z.y + 60 + r() * (z.h - 75) };
-        }
-        if (taken.every((q) => Math.hypot(q.x - p.x, q.y - p.y) > 46) || tries === 79) { taken.push(p); return p; }
+          p.x = U.clamp(p.x, z.x + z.w * 0.1, z.x + z.w * 0.9); p.y = U.clamp(p.y, z.y + z.h * 0.3, z.y + z.h * 0.92);
+        } else p = spotIn(z, r);
+        p = fix(p);
+        if (taken.every((q) => Math.hypot(q.x - p.x, q.y - p.y) > gap) || tries === 79) { taken.push(p); return p; }
       }
     }
     spots[culprit] = place(origin);
     if (companion) spots[companion.id] = place(origin, spots[culprit]);
     spots[nearDecoy] = place(origin, spots[culprit]);
+    const emptiest = (zs) => {
+      const count = (z) => taken.filter((q) => zoneAt(q).id === z.id).length;
+      const min = Math.min(...zs.map(count));
+      return U.pick(r, zs.filter((z) => count(z) === min));
+    };
     const oc = zoneCenter(origin);
     const elsewhere = ZONES.filter((z) => z.id !== origin.id);
     const far = elsewhere.slice().sort((a, b) => U.dist(zoneCenter(b), oc) - U.dist(zoneCenter(a), oc))[0];
@@ -77,11 +82,27 @@ const Case = (() => {
     for (const c of CAST) {
       if (spots[c.id] || late.has(c.id)) continue;
       if (c.stayNear && spots[c.stayNear]) continue; // placed after their partner
-      spots[c.id] = place(U.pick(r, elsewhere));
+      spots[c.id] = place(emptiest(elsewhere));
     }
     for (const c of CAST) if (!spots[c.id] && c.stayNear && spots[c.stayNear]) spots[c.id] = place(zoneAt(spots[c.stayNear]), spots[c.stayNear]);
-    for (const c of CAST) if (!spots[c.id] && c.stayNear === undefined && !late.has(c.id)) spots[c.id] = place(U.pick(r, elsewhere));
-    for (const c of CAST) if (!spots[c.id] && CAST.some((k) => k.stayNear === c.id) && !late.has(c.id)) spots[c.id] = place(U.pick(r, elsewhere));
+    for (const c of CAST) if (!spots[c.id] && c.stayNear === undefined && !late.has(c.id)) spots[c.id] = place(emptiest(elsewhere));
+    for (const c of CAST) if (!spots[c.id] && CAST.some((k) => k.stayNear === c.id) && !late.has(c.id)) spots[c.id] = place(emptiest(elsewhere));
+    // shuffle apart anyone standing on top of someone else, without leaving their zone
+    const home = Object.fromEntries(Object.entries(spots).map(([id, p]) => [id, zoneAt(p)]));
+    const ids = Object.keys(spots);
+    for (let it = 0; it < 40; it++) {
+      for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+        const a = spots[ids[i]], b = spots[ids[j]], dx = b.x - a.x, dy = (b.y - a.y) * 1.6, d = Math.hypot(dx, dy) || 0.01;
+        if (d >= gap) continue;
+        const push = (gap - d) / 2, ux = dx / d, uy = dy / d / 1.6;
+        a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push;
+      }
+      for (const id of ids) {
+        const z = home[id], p = spots[id];
+        p.x = U.clamp(p.x, z.x + 6, z.x + z.w - 6); p.y = U.clamp(p.y, z.y + z.h * 0.25, z.y + z.h - 2);
+        spots[id] = fix(p);
+      }
+    }
     const fartZone = {};
     for (const id in spots) fartZone[id] = zoneAt(spots[id]).id;
 

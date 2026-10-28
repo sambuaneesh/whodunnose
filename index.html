@@ -341,12 +341,126 @@ button { cursor: pointer; }
 .ep-skip { margin-top: 2.5em; font-size: .8em; color: #8d83a3; }
 @keyframes epin { from { transform: scale(1.6) rotate(4deg); opacity: 0 } }
 
+/* ---------- v3: HUD left column, case file ---------- */
+#hud .hud-left { display: flex; flex-direction: column; gap: .5em; max-width: 21em; }
+#caseFile { padding: .55em .8em .6em; }
+.cf-tag { font-family: var(--f-display); font-size: .95em; margin-bottom: .25em; }
+#objList, .oblist { list-style: none; margin: 0; padding: 0; display: grid; gap: .2em; font-size: .85em; }
+#objList li, .oblist li { display: flex; gap: .45em; align-items: flex-start; line-height: 1.25; }
+.ob-box { flex: none; width: 1.1em; height: 1.1em; border: 2px solid var(--ink); display: grid; place-items: center; font-weight: 700; font-size: .85em; background: #fff; }
+.ob-done .ob-box { background: var(--fart); }
+.ob-done { color: #4d5a3a; text-decoration: line-through; text-decoration-color: rgba(0,0,0,.3); }
+.ob-fail .ob-box { background: var(--stamp); color: #fff; }
+.oblist li { background: #fff; border: 2px solid var(--ink); padding: .45em .6em; font-size: 1.05em; }
+.oblist li div { display: grid; gap: .15em; }
+.oblist li span:not(.ob-box) { font-family: var(--f-hand); font-size: 1.15em; color: #4a4452; }
+.cf { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 1.4em; }
+.know { margin: 0; padding-left: 1.1em; display: grid; gap: .5em; line-height: 1.4; }
+#meters { padding: .45em .8em .55em; }
+#meters .meter { grid-template-columns: 4.2em 8em 2em; }
+.hud-right { flex-direction: row !important; align-items: flex-start !important; }
+.chipbtn kbd, .act kbd, .opt kbd, .big kbd, #tipOk kbd { font-family: var(--f-display); background: var(--ink); color: var(--paper); border-radius: 3px; padding: .05em .4em; font-size: .85em; }
+.badge { background: var(--stamp); color: #fff; border-radius: 1em; padding: 0 .45em; font-size: .8em; margin-left: .2em; }
+.act[hidden] { display: none !important; }
+
+/* the moment it happens */
+#beat { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; opacity: 0; }
+#beat.on { animation: beat 2.6s ease-out forwards; }
+#beatBig { font-family: var(--f-display); font-size: 4.5em; color: #fff; text-shadow: .06em .06em 0 var(--ink), 0 0 .5em rgba(155,197,61,.8); }
+#beatSmall { font-size: 1.3em; color: #fff; background: rgba(28,26,31,.85); padding: .3em .9em; border-radius: 4px; margin-top: .3em; display: inline-block; }
+@keyframes beat { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6) } 12% { opacity: 1; transform: translate(-50%, -50%) scale(1) } 75% { opacity: 1 } 100% { opacity: 0 } }
+
+/* tips */
+#tip { position: absolute; right: 1em; top: 50%; transform: translateY(-50%); z-index: 7; width: min(23em, 40%); }
+.tip-card { width: 100%; padding: 1em 1.3em 1.1em; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); animation: slidein .25s ease-out; }
+.tip-k { font-size: .75em; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--aura); }
+.tip-card h3 { font-family: var(--f-display); font-size: 1.4em; margin: .1em 0 .3em; }
+.tip-card p { margin: 0 0 .8em; line-height: 1.45; font-size: 1.05em; }
+#tipOk, .menu button, .brief .acc-row button, .free-row button, .seg button { border: 2px solid var(--ink); background: var(--aura); color: #fff; font-weight: 700; padding: .5em 1.1em; border-radius: 3px; box-shadow: 0 3px 0 var(--ink); }
+
+/* briefing */
+#briefing { background: rgba(20,16,30,.78); z-index: 7; }
+.brief { width: min(56em, 94%); padding: 1.6em 2em 1.6em; max-height: 94%; overflow-y: auto; }
+.brief-k { font-weight: 700; text-transform: uppercase; letter-spacing: .1em; font-size: .8em; color: var(--aura); }
+.brief h2 { font-family: var(--f-display); font-size: 2.8em; margin: .05em 0 .2em; line-height: 1; }
+.brief-goal { font-size: 1.15em; line-height: 1.45; margin: 0 0 1em; max-width: 46em; }
+.brief-cols { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1.6em; }
+.brief h3 { font-family: var(--f-display); font-size: 1em; margin: 0 0 .5em; }
+#briefLearn ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .5em; }
+#briefLearn li { display: grid; grid-template-columns: 5em 1fr; gap: .7em; align-items: center; background: #fff; border: 2px solid var(--ink); padding: .45em .6em; }
+#briefLearn kbd { font-family: var(--f-display); background: var(--ink); color: var(--paper); text-align: center; padding: .25em .3em; border-radius: 3px; font-size: .9em; }
+#briefLearn li div { display: grid; }
+#briefLearn li span { font-size: .88em; color: #4a4452; }
+#briefObj ul { margin: 0; padding-left: 1.2em; display: grid; gap: .35em; font-family: var(--f-hand); font-size: 1.25em; }
+.seg { display: flex; gap: .4em; margin-top: 1em; }
+.seg button { background: #fff; color: var(--ink); }
+.seg button.on { background: var(--gold); }
+.brief .acc-row .big { background: var(--stamp); font-family: var(--f-display); font-size: 1.3em; }
+
+/* menus */
+#pause, #settings { z-index: 8; }
+.menu { width: min(26em, 92%); padding: 1.4em 1.6em; display: grid; gap: .6em; }
+.menu h2 { font-family: var(--f-display); margin: 0 0 .3em; font-size: 1.8em; }
+.menu button { background: #fff; color: var(--ink); text-align: left; }
+.menu button.big, #settingsClose { background: var(--aura); color: #fff; text-align: center; font-family: var(--f-body); font-size: 1.05em; box-shadow: 0 3px 0 var(--ink); }
+.set { display: grid; grid-template-columns: 6em 1fr; gap: .8em; align-items: center; font-weight: 600; }
+.set input[type=range] { accent-color: var(--aura); }
+.set select { border: 2px solid var(--ink); padding: .2em .4em; background: #fff; }
+#howto { z-index: 8; }
+.howto { background: var(--paper); }
+.ht-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8em; }
+.ht { background: #fff; border: 2px solid var(--ink); padding: .7em .9em; }
+.ht h4 { font-family: var(--f-display); margin: 0 0 .3em; }
+.ht p { margin: 0; line-height: 1.45; font-size: .92em; }
+
+/* title: campaign map */
+#caseMap { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45em; }
+.case { display: grid; grid-template-columns: 2.2em 1fr auto; gap: .5em; align-items: center; text-align: left; border: 2px solid var(--ink); background: #fff; padding: .45em .55em; border-radius: 3px; box-shadow: 0 3px 0 var(--ink); }
+.case:hover:not(:disabled) { background: #fff3b0; }
+.case.next { outline: 3px solid var(--stamp); }
+.case.locked { opacity: .5; box-shadow: none; cursor: not-allowed; }
+.case-n { font-family: var(--f-display); font-size: 1.4em; text-align: center; background: var(--ink); color: var(--paper); border-radius: 3px; }
+.case-t { display: grid; line-height: 1.15; }
+.case-t small { color: var(--muted); font-size: .78em; }
+.case-r { font-family: var(--f-display); border: 2px solid var(--ink); padding: 0 .35em; background: var(--gold); }
+.case-r.r-S { background: var(--fart); } .case-r.r-F { background: var(--stamp); color: #fff; }
+.free { grid-column: 1 / -1; display: grid; gap: .3em; border: 2px dashed var(--ink); padding: .55em .7em; }
+.free small { color: var(--muted); }
+.free.locked { opacity: .55; }
+.free-row { display: flex; gap: .4em; }
+.free-row button { padding: .3em .8em; }
+.free-row button:disabled { opacity: .5; }
+.title-links { display: flex; gap: 1.2em; flex-wrap: wrap; justify-content: center; }
+#btnPlay { width: 100%; }
+
+/* accusation & results extras */
+.evbtn.rel { border-left: .5em solid var(--aura); }
+.evbtn.none { grid-template-columns: 1fr; font-style: italic; color: var(--muted); }
+.topic { display: inline-block; font-size: .7em; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; background: var(--paper-2); border: 1.5px solid var(--ink); padding: 0 .4em; margin-right: .4em; }
+.nudge { color: var(--aura) !important; }
+.crit { font-size: .8em; color: var(--muted); margin: .3em 0 0; }
+.missed { margin: 0; padding-left: 1.2em; display: grid; gap: .35em; line-height: 1.35; }
+.unlock { margin-top: 1em; background: #e7f6cf; border: 2px solid var(--ink); padding: .6em .8em; display: grid; gap: .2em; }
+.unlock span { font-size: .9em; }
+#accuse .sheet { width: 62%; }
+#dialogue { width: min(60em, 90%); grid-template-columns: 7.5em 1fr; padding: .9em 1.1em 1em; }
+#dlgPortrait { width: 7.5em; height: 7.5em; }
+#dlgText { font-size: 1.05em; min-height: 2.6em; }
+
+#prompt { position: absolute; left: 50%; bottom: 4.1em; transform: translateX(-50%); display: grid; gap: .3em; justify-items: center; pointer-events: none; }
+.pr { display: flex; align-items: center; gap: .5em; background: #fffdf6; border: 2px solid var(--ink); padding: .25em .7em .25em .35em; border-radius: 3px; box-shadow: 0 3px 0 rgba(0,0,0,.3); font-weight: 600; font-size: .92em; }
+.pr kbd { font-family: var(--f-display); background: var(--ink); color: var(--paper); border-radius: 3px; padding: .05em .4em; font-size: .85em; }
+.pr em { font-style: normal; font-size: .85em; padding: .05em .45em; border-radius: 2px; }
+.pr em.risk { background: #ffd9d4; color: #9b1c25; }
+.pr em.safe { background: #e1f3c8; color: #3b6118; }
+#clueToasts { bottom: 4.1em; }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 @container (max-width: 700px) {
   .sgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .agrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .title-wrap, .res-cols, .ps-grid, .guide { grid-template-columns: 1fr; }
+  .title-wrap, .res-cols, .ps-grid, .guide, .brief-cols, .cf, .ht-grid { grid-template-columns: 1fr; }
+  #caseMap { grid-template-columns: 1fr; }
   #accuse .sheet { width: 100%; }
   #toasts { display: none; }
 }
@@ -356,42 +470,49 @@ button { cursor: pointer; }
 </head>
 <body>
 <div id="stage">
-  <canvas id="cv" aria-label="The chapel"></canvas>
+  <canvas id="cv" aria-label="The scene"></canvas>
 
   <div id="hud" hidden>
-    <div class="hud-card paper">
-      <div class="meter" id="auraMeter"><span class="lbl">Aura</span><div class="bar"><i id="auraFill"></i></div><span id="auraVal">100</span></div>
-      <div class="meter" id="tummyMeter"><span class="lbl">Tummy</span><div class="bar"><i id="tummyFill"></i></div><span></span></div>
+    <div class="hud-left">
+      <div class="hud-card paper" id="caseFile"><div id="caseTag" class="cf-tag"></div><ul id="objList"></ul></div>
+      <div class="hud-card paper" id="meters">
+        <div class="meter" id="auraMeter" title="Your reputation. It drops when people see you do something odd, and recovers while you act normal."><span class="lbl">Aura</span><div class="bar"><i id="auraFill"></i></div><span id="auraVal">100</span></div>
+        <div class="meter" id="tummyMeter" title="You need to go too. Let it go (F) only during something loud."><span class="lbl">Tummy</span><div class="bar"><i id="tummyFill"></i></div><span></span></div>
+      </div>
     </div>
     <div class="hud-card hud-mid paper">
-      <div id="phase">Mingling</div>
-      <div class="sub"><span id="clock">10:58</span><span id="caseTag">Case #0000</span></div>
+      <div id="phase"></div>
+      <div class="sub"><span id="clock"></span></div>
       <div id="loud" hidden></div>
       <div id="roomSus" hidden></div>
     </div>
     <div class="hud-right">
-      <div class="row"><button class="chipbtn" id="btnTour">Pitch tour <span id="tourCount">0/23</span></button></div>
-      <div class="row"><button class="chipbtn" id="btnCones">Cones: on</button><button class="chipbtn" id="btnMute">Sound: on</button></div>
+      <button class="chipbtn" id="btnHint" title="Hint (H)">Hint <kbd>H</kbd></button>
+      <button class="chipbtn" id="btnPause" title="Pause (Esc)" aria-label="Pause">II</button>
+      <button class="chipbtn" id="btnTour" hidden>Tour <span id="tourCount"></span></button>
     </div>
   </div>
 
   <div id="actionbar" hidden>
-    <button class="act" data-act="interact"><kbd>E</kbd>Talk / snoop</button>
+    <button class="act" data-act="talk"><kbd>E</kbd>Talk</button>
+    <button class="act" data-act="search"><kbd>Hold E</kbd>Search</button>
     <button class="act" data-act="sniff"><kbd>Q</kbd>Sniff</button>
-    <button class="act" data-act="smellVision" id="svBtn"><kbd>V</kbd>Smell vision <span id="svCharges">●●●</span></button>
+    <button class="act" data-act="smellVision" id="svBtn"><kbd>V</kbd>Smell vision <span id="svCharges"></span></button>
     <button class="act" data-act="release"><kbd>F</kbd>Let it go</button>
     <button class="act" data-act="clench" id="clenchBtn"><kbd>C</kbd>Clench</button>
-    <button class="act" data-act="notebook" id="btnNotebook"><kbd>N</kbd>Notebook</button>
-    <button class="act" data-act="object" id="objectBtn"><kbd>O</kbd><span id="objectLabel">OBJECT!</span></button>
+    <button class="act" data-act="notebook" id="btnNotebook"><kbd>N</kbd>Notebook<span id="nbBadge" class="badge" hidden></span></button>
+    <button class="act" data-act="object" id="objectBtn"><kbd>O</kbd><span id="objectLabel">Call it</span></button>
   </div>
 
+  <div id="prompt"></div>
   <div id="caption" role="status" aria-live="polite"></div>
   <div id="stamp" class="stamp"></div>
+  <div id="beat" aria-live="polite"><div id="beatBig"></div><div id="beatSmall"></div></div>
   <div id="toasts" aria-live="polite"></div>
-  <div id="clueToasts"></div>
+  <div id="clueToasts" aria-live="polite"></div>
 
   <aside id="tour" hidden>
-    <div class="top"><div><h2>Pitch tour</h2><div id="tourPct">0 of 23 shown</div></div><button class="chipbtn" id="btnTourClose">Close (P)</button></div>
+    <div class="top"><div><h2>Pitch tour</h2><div id="tourPct"></div></div><button class="chipbtn" id="btnTourClose">Close (P)</button></div>
     <ul id="tourList"></ul>
   </aside>
 
@@ -406,9 +527,72 @@ button { cursor: pointer; }
     </div>
   </div>
 
+  <div id="tip" hidden><div class="tip-card paper" role="dialog" aria-labelledby="tipTitle"><div class="tip-k">How it works</div><h3 id="tipTitle"></h3><p id="tipText"></p><button id="tipOk">Got it <kbd>Space</kbd></button></div></div>
+
   <div id="notebook" class="overlay" hidden><div class="sheet"><div id="nbTabs"></div><div id="nbBody"></div></div></div>
   <div id="accuse" class="overlay" hidden><div class="sheet" id="accuseBody"></div></div>
   <div id="results" class="overlay" hidden><div class="sheet" id="resultsBody"></div></div>
+
+  <div id="briefing" class="overlay" hidden>
+    <div class="brief paper">
+      <div id="briefKicker" class="brief-k"></div>
+      <h2 id="briefTitle"></h2>
+      <p id="briefGoal" class="brief-goal"></p>
+      <div class="brief-cols"><div id="briefLearn"></div><div id="briefObj"></div></div>
+      <div id="briefDiff" class="seg" hidden></div>
+      <div class="acc-row"><button class="ghost" id="briefBack">Back</button><button id="briefStart" class="big">Start <kbd>Enter</kbd></button></div>
+    </div>
+  </div>
+
+  <div id="pause" class="overlay" hidden>
+    <div class="menu paper">
+      <h2>Paused</h2>
+      <button data-pause="resume" class="big">Resume</button>
+      <button data-pause="howto">How to play</button>
+      <button data-pause="settings">Settings</button>
+      <button data-pause="restart">Restart case</button>
+      <button data-pause="quit">Quit to case select</button>
+    </div>
+  </div>
+
+  <div id="settings" class="overlay" hidden>
+    <div class="menu paper">
+      <h2>Settings</h2>
+      <label class="set"><span>Volume</span><input type="range" id="setMaster" min="0" max="100"></label>
+      <label class="set"><span>Music</span><input type="range" id="setMusic" min="0" max="100"></label>
+      <label class="set"><span>Text speed</span><select id="setText"><option value="slow">Slow</option><option value="normal">Normal</option><option value="fast">Fast</option><option value="instant">Instant</option></select></label>
+      <label class="check"><input type="checkbox" id="setShake"><span>Screen shake</span></label>
+      <label class="check"><input type="checkbox" id="setCones"><span>Show where people are looking</span></label>
+      <label class="check"><input type="checkbox" id="setPresenter"><span>Presenter mode: unlock every case, show the pitch tour, enable the ] skip key</span></label>
+      <button id="setReset" class="ghost">Reset campaign progress</button>
+      <button id="settingsClose" class="big">Done</button>
+    </div>
+  </div>
+
+  <div id="howto" class="overlay" hidden>
+    <div class="sheet howto">
+      <button class="chipbtn ps-close" id="howtoClose">Close</button>
+      <h2>How to play</h2>
+      <div class="ht-grid">
+        <div class="ht"><h4>1. Notice</h4><p>Something happens. Smell spreads out from where it started, so the people closest react first. Sniff (Q) to work out what it is. The smell tells you what they ate.</p></div>
+        <div class="ht"><h4>2. Investigate</h4><p>Talk to people (E). Ask what they ate and where they were standing. Hold E next to a bag to search it. Stand close to whisperers to overhear them. One person is lying.</p></div>
+        <div class="ht"><h4>3. Stay unseen</h4><p>Odd behaviour costs Aura, but only if someone sees it. The eye over your head shows how many people are watching. Walking and polite questions are always free.</p></div>
+        <div class="ht"><h4>4. Call it</h4><p>Before time runs out, press O. Early cases just need a name. Later ones need proof, and the final cases are a full cross-examination.</p></div>
+      </div>
+      <h3>Controls</h3>
+      <div class="tablewrap"><table class="cmp">
+        <tr><th>Key</th><th>Action</th><th>Key</th><th>Action</th></tr>
+        <tr><td><kbd>WASD</kbd> / click</td><td>Walk</td><td><kbd>N</kbd></td><td>Notebook</td></tr>
+        <tr><td><kbd>E</kbd></td><td>Talk</td><td><kbd>O</kbd></td><td>Call it</td></tr>
+        <tr><td>Hold <kbd>E</kbd></td><td>Search a bag</td><td><kbd>H</kbd></td><td>Hint</td></tr>
+        <tr><td><kbd>Q</kbd></td><td>Sniff</td><td><kbd>Esc</kbd></td><td>Pause</td></tr>
+        <tr><td><kbd>V</kbd></td><td>Smell Vision</td><td><kbd>M</kbd></td><td>Mute</td></tr>
+        <tr><td><kbd>F</kbd> / hold <kbd>C</kbd></td><td>Let it go / clench</td><td><kbd>1</kbd>–<kbd>5</kbd></td><td>Pick a dialogue option</td></tr>
+      </table></div>
+      <h3>What costs Aura (only if seen)</h3>
+      <p class="muted">Sniffing −6 · Searching a bag −18 (more if it is theirs) · Squeezing past someone −3 · Talking during silent vows −4 · An audible fart −30. Mentioning the smell first makes that person suspect you. Suspicion fades while you act normal.</p>
+    </div>
+  </div>
 
   <div id="title" class="overlay">
     <div class="title-wrap">
@@ -417,34 +601,13 @@ button { cursor: pointer; }
           <span class="w"><span style="background:#f2c14e;--r2:-4deg">W</span><span style="background:#f4a9c4">H</span><span style="background:#9bc53d;--r2:-3deg">O</span></span><span class="w"><span style="background:#8fc3e8">F</span><span style="background:#f6efdf;--r2:-5deg">A</span><span style="background:#f08a24">R</span><span style="background:#c7a6f0;--r2:-2deg">T</span><span style="background:#f2c14e">E</span><span style="background:#9bc53d;--r2:-4deg">D</span><span style="background:#d9434f;color:#fff">?</span></span>
         </div>
         <p class="tagline">A whodunnit for the nose.</p>
-        <p class="title-pitch">Someone farted at the worst possible moment. Work out who, then call it out in front of everyone, without anyone deciding it was you. Every case number is a different culprit, a different lie and a different cover-up.</p>
+        <p class="title-pitch">Somebody did something unforgivable in a small, crowded space. Work out who, then call them out in front of everyone, without anyone deciding it was you.</p>
       </div>
       <div class="start-card paper">
-        <h2>Pick an episode</h2>
-        <div id="episodes"></div>
-        <dl class="keys">
-          <dt>WASD</dt><dd>Walk (or click the floor)</dd>
-          <dt>E</dt><dd>Talk, snoop in a bag, check the camera</dd>
-          <dt>Q · V</dt><dd>Sniff · Smell Vision (3 per case)</dd>
-          <dt>F · C</dt><dd>Let your own one go under a loud moment · hold to clench</dd>
-          <dt>N · O</dt><dd>Notebook, Smell Board, Field Guide · call it out</dd>
-          <dt>P · ]</dt><dd>Pitch tour · presenter skip +15s</dd>
-        </dl>
-        <div class="case-row"><label for="caseNum">Case #</label><input id="caseNum" inputmode="numeric" maxlength="6"><button class="chipbtn" id="btnDice">New number</button></div>
-        <label class="check"><input type="checkbox" id="pitchToggle" checked><span>Pitch mode: introduce each game system the first time it appears.</span></label>
-        <button class="big" id="btnStart">Start the episode</button>
-        <button class="linkish" id="btnPitchSheet">Read the one-page pitch</button>
+        <button class="big" id="btnPlay">Play</button>
+        <div id="caseMap"></div>
+        <div class="title-links"><button class="linkish" id="btnHowto">How to play</button><button class="linkish" id="btnSettings">Settings</button><button class="linkish" id="btnPitchSheet">The pitch</button></div>
       </div>
-    </div>
-  </div>
-
-  <div id="episode" class="overlay" hidden>
-    <div class="card-ep">
-      <div class="ep-logo">WHO FARTED?</div>
-      <div id="epKicker" class="ep-kick">Season 1 · Episode 1</div>
-      <div id="epTitle" class="ep-title">Going Down</div>
-      <div id="epCase" class="ep-case">Case #0000</div>
-      <div class="ep-skip">Click or press Enter</div>
     </div>
   </div>
 
@@ -474,8 +637,8 @@ button { cursor: pointer; }
       </table></div>
       <h3>From this demo to the full game</h3>
       <div class="ps-grid">
-        <div class="ps-card"><h4>Settings</h4><ul><li>Elevator (playable)</li><li>The wedding (playable)</li><li>Job interview</li><li>Funeral</li><li>Yoga class</li><li>Zoom call, mic on</li><li>Exam hall</li><li>Submarine</li></ul></div>
-        <div class="ps-card"><h4>Modes</h4><ul><li>Story cases with authored twists</li><li>"You dealt it": you farted, now frame someone</li><li>Daily case number everyone plays</li><li>Later: local party mode</li></ul></div>
+        <div class="ps-card"><h4>Settings</h4><ul><li>Elevator (playable)</li><li>Chapel wedding (playable)</li><li>Job interview</li><li>Funeral</li><li>Yoga class</li><li>Zoom call, mic on</li><li>Exam hall</li><li>Submarine</li></ul></div>
+        <div class="ps-card"><h4>Modes</h4><ul><li>A six-case campaign that teaches one mechanic at a time</li><li>Free Play with difficulty settings</li><li>"You dealt it": you farted, now frame someone</li><li>Daily case number everyone plays</li><li>Later: local party mode</li></ul></div>
         <div class="ps-card"><h4>Built to be cheap to make</h4><ul><li>Cut-paper 2D art: flat shapes, stop-motion timing</li><li>Systems generate the mysteries; writers write the voices</li><li>This demo has no image or audio files at all</li></ul></div>
       </div>
     </div>
@@ -485,6 +648,7 @@ button { cursor: pointer; }
 
 <script src="js/util.js"></script>
 <script src="js/data.js"></script>
+<script src="js/save.js"></script>
 <script src="js/art.js"></script>
 <script src="js/levels/elevator.js"></script>
 <script src="js/levels/wedding.js"></script>

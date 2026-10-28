@@ -2,17 +2,21 @@
 // Every sound is synthesized: farts (stereo-panned to where they happened), the organ,
 // crowd murmur, sneezes and Animal Crossing-style talk blips. No audio files.
 const Sfx = (() => {
-  let ac = null, master = null, muted = false, murmur = null, organNodes = [];
+  let ac = null, master = null, musicBus = null, muted = false, murmur = null, organNodes = [], vol = 0.8, musicVol = 0.5;
 
   function init() {
     if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
     try {
       ac = new (window.AudioContext || window.webkitAudioContext)();
-      master = ac.createGain(); master.gain.value = 0.7; master.connect(ac.destination);
+      master = ac.createGain(); master.gain.value = vol; master.connect(ac.destination);
+      musicBus = ac.createGain(); musicBus.gain.value = musicVol; musicBus.connect(master);
     } catch (e) { ac = null; }
   }
-  function setMuted(m) { muted = m; if (master) master.gain.value = m ? 0 : 0.7; }
-  const ok = () => ac && !muted;
+  function setMuted(m) { muted = m; if (master) master.gain.value = m ? 0 : vol; }
+  function setVolumes(m, mu) { vol = m; musicVol = mu; if (master) master.gain.value = muted ? 0 : vol; if (musicBus) musicBus.gain.value = musicVol; }
+  // pausing the game suspends all sound
+  function setPaused(p) { if (!ac) return; if (p) ac.suspend(); else ac.resume(); }
+  const ok = () => ac && !muted && vol > 0;
 
   let noiseBuf = null;
   function noise() {
@@ -133,7 +137,7 @@ const Sfx = (() => {
     if (!ok()) return;
     stopOrgan();
     const t0 = ac.currentTime + 0.1, out = ac.createGain();
-    out.gain.value = 0.9; out.connect(master); organNodes.push(out);
+    out.gain.value = 0.9; out.connect(musicBus || master); organNodes.push(out);
     const N = { G4: 392, C5: 523.3, D5: 587.3, B4: 493.9, E5: 659.3, F5: 698.5, A4: 440, G5: 784 };
     const tune = [['G4', 1], ['C5', 0.75], ['C5', 0.25], ['C5', 2], ['G4', 1], ['D5', 0.75], ['B4', 0.25], ['C5', 2],
       ['G4', 1], ['C5', 0.75], ['F5', 0.25], ['F5', 1.5], ['E5', 0.5], ['D5', 0.75], ['C5', 0.25], ['B4', 0.75], ['C5', 0.25], ['D5', 2]];
@@ -225,7 +229,7 @@ const Sfx = (() => {
     music = { id, timer: null, step: 0, next: ac.currentTime + 0.1, out: null };
     if (!id) return;
     const tr = TRACKS[id], out = ac.createGain();
-    out.gain.value = 1; out.connect(master); music.out = out;
+    out.gain.value = 1; out.connect(musicBus || master); music.out = out;
     const stepDur = 60 / tr.bpm / 4;
     music.timer = setInterval(() => {
       while (music.next < ac.currentTime + 0.25) {
@@ -239,5 +243,5 @@ const Sfx = (() => {
     }, 60);
   }
 
-  return { init, setMuted, get muted() { return muted; }, fart, blip, ui, stamp, whoosh, sniff, loudEvent, organ, stopOrgan, startMurmur, stopMurmur, gurgle, ding, ringtone, sting, setMusic };
+  return { init, setMuted, setVolumes, setPaused, get muted() { return muted; }, fart, blip, ui, stamp, whoosh, sniff, loudEvent, organ, stopOrgan, startMurmur, stopMurmur, gurgle, ding, ringtone, sting, setMusic };
 })();

@@ -18,6 +18,23 @@
       { id: 'back', name: 'Back Door', x: 30, y: 575, w: 1220, h: 140 },
     ],
     bounds: { x0: 22, x1: W - 22, y0: 114, y1: H - 8 },
+    view: { x: 0, y: 0, w: W, h: H },
+    ranges: { notice: 72, overhear: 210, gossip: 150, talk: 88, search: 50, personal: 17, spacing: 46, itemOffset: null },
+    // pews are solid: their backrests block walking; people go round through the aisles
+    obstacles: PEW_BLOCKS.flatMap((b) => PEW_ROWS.map((y) => ({ x: b.x0 - 8, y: y + 2, w: b.x1 - b.x0 + 16, h: 20 }))),
+    route(a, b) {
+      const crosses = PEW_ROWS.some((y) => Math.min(a.y, b.y) < y + 12 && Math.max(a.y, b.y) > y + 12);
+      const inBlock = (x) => PEW_BLOCKS.some((k) => x > k.x0 - 10 && x < k.x1 + 10);
+      if (!crosses || (!inBlock(a.x) && !inBlock(b.x) && Math.abs(a.x - b.x) < 60)) return [b];
+      const mid = (a.x + b.x) / 2;
+      const aisle = [50, 640, 1228].sort((p, q) => Math.abs(p - mid) - Math.abs(q - mid))[0];
+      return [{ x: aisle, y: a.y }, { x: aisle, y: b.y }, b];
+    },
+    // never leave someone standing inside a pew's backrest
+    fixSpot(p) {
+      for (const y of PEW_ROWS) if (p.y > y - 6 && p.y < y + 26 && PEW_BLOCKS.some((k) => p.x > k.x0 - 10 && p.x < k.x1 + 10)) return { x: p.x, y: y - 3 };
+      return p;
+    },
     player: { start: { x: 640, y: 668 }, seat: { x: 360, y: 468, face: -Math.PI / 2 }, look: { body: '#f08a24', skin: '#f3cfae', hair: '#2d1d10', hairStyle: 'messy', acc: 'none', scale: 1.0, voice: 300 } },
     // nose: how strongly they pick up gas. tol: exposure before reacting. shame: stakes for accusing.
     // perception: vision range multiplier ("enforcers" notice more). gossip: how fast they spread opinions.
@@ -61,6 +78,7 @@
     ],
     foods: ['eggs', 'chili', 'broccoli', 'garlic', 'tuna'],
     favoriteFood: { gary: 'chili' },
+    nervous: ['brad'],
     scapegoat: {
       id: 'biscuit', food: 'cheese', cover: DOG_COVER, speaker: 'timmy',
       petLabel: 'Pet Biscuit. Smell his breath.', open: 'Biscuit looks up at you. Biscuit always looks a little guilty.',
@@ -77,14 +95,13 @@
     photo: { source: 'item', owner: 'kevin', label: "Kevin's camera", caption: 'Photo from Kevin\'s camera, the moment it happened' },
 
     gas: {
-      amount: 340, diffusion: 8,
+      rect: { x: 0, y: 0, w: W, h: H }, amount: 340, diffusion: 3200, swirl: 3,
       pushers: [{ x: 30, y: 420, strength: 13, falloff: 420, bias: { x: 0.6, y: 0 } }],
       vents: [{ x: 1215, y: 112, pull: 14, falloff: 300, drain: 0.08, r: 70 }],
       doors: { main: { x: 640, y: 715, push: 45, falloff: 260, drain: 0.5, r: 70 } },
       wall: (px, py) => py < 100,
     },
     pressureRate: 0.43,
-    moveCost: 5, talkCost: 6,
     objectLabel: 'OBJECT!',
     objectSplash: { big: 'I OBJECT!', sub: "The organ stops. Every head in St. Swithin's turns to you." },
     peaceText: 'You held your peace. So did the farter. They will get away with it forever.',

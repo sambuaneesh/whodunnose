@@ -2,7 +2,8 @@
 // Episode 1: thirty floors down in an office elevator. Everyone faces the doors and nobody talks,
 // so the back of the car is a blind spot. Someone gets on halfway. Call it before the lobby doors open.
 (() => {
-  const CAR = { x0: 250, x1: 1030, y0: 140, y1: 660 };
+  // Real proportions: people are ~40 units wide (about half a metre), so this car is ~2.0 x 1.4 m.
+  const CAR = { x0: 530, x1: 750, y0: 300, y1: 455 };
   const BABY_COVER = { id: 'face', label: 'making the poop face', anim: 'face', bubble: null };
   const floorAt = (t) => Math.max(0, 30 - Math.floor(t / 4.2));
 
@@ -11,15 +12,19 @@
     blurb: 'Thirty floors. Seven strangers. Everyone faces the doors. Nobody says a word. Then someone does.',
     mode: 'elevator',
     zones: [
-      { id: 'backleft', name: 'Back Left Corner', x: 270, y: 160, w: 290, h: 160 },
-      { id: 'backright', name: 'Back Right Corner', x: 720, y: 160, w: 290, h: 160 },
-      { id: 'middle', name: 'Center', x: 420, y: 320, w: 440, h: 150 },
-      { id: 'frontleft', name: 'Front Left Corner', x: 270, y: 470, w: 290, h: 170 },
-      { id: 'buttons', name: 'Button Panel', x: 720, y: 470, w: 290, h: 170 },
+      { id: 'backleft', name: 'Back Left Corner', x: 530, y: 300, w: 110, h: 55 },
+      { id: 'backright', name: 'Back Right Corner', x: 640, y: 300, w: 110, h: 55 },
+      { id: 'middle', name: 'Center', x: 572, y: 355, w: 136, h: 50 },
+      { id: 'frontleft', name: 'Front Left Corner', x: 530, y: 405, w: 110, h: 50 },
+      { id: 'buttons', name: 'Button Panel', x: 640, y: 405, w: 110, h: 50 },
     ],
-    bounds: { x0: CAR.x0 + 26, x1: CAR.x1 - 26, y0: CAR.y0 + 70, y1: CAR.y1 - 14 },
-    player: { start: { x: 640, y: 600 }, seat: { x: 640, y: 600, face: Math.PI / 2 }, look: { body: '#f08a24', skin: '#f3cfae', hair: '#2d1d10', hairStyle: 'messy', acc: 'none', scale: 1.0, voice: 300 } },
+    // the camera frames the car tightly: it should feel cramped
+    view: { x: 344, y: 172, w: 592, h: 333 },
+    ranges: { notice: 34, overhear: 80, gossip: 75, talk: 62, search: 30, personal: 14, spacing: 28, itemOffset: { x: 15, y: 3 } },
+    bounds: { x0: CAR.x0 + 10, x1: CAR.x1 - 10, y0: CAR.y0 + 14, y1: CAR.y1 - 4 },
+    player: { start: { x: 612, y: 446 }, seat: { x: 612, y: 446, face: Math.PI / 2 }, look: { body: '#f08a24', skin: '#f3cfae', hair: '#2d1d10', hairStyle: 'messy', acc: 'none', scale: 1.0, voice: 300 } },
     itemsAtFeet: true,
+    nervous: ['josh'],
     cast: [
       { id: 'thornbury', name: 'Mr. Thornbury', role: 'CEO. Owns the building.', shame: 10, nose: 0.9, tol: 1.3, perception: 1.0, gossip: 0.4, trait: 'Nobody contradicts him',
         look: { body: '#3d4250', skin: '#f0c8a8', hair: '#d9d9d9', hairStyle: 'combed', acc: 'tie', scale: 1.06, voice: 180 },
@@ -66,17 +71,16 @@
     },
     subjectChange: 'So! How about those QUARTERLY NUMBERS, everyone?!',
     lateArrivals: ['sal'],
-    photo: { source: 'prop', x: 980, y: 222, label: 'Security camera', caption: 'Security camera still, the moment it happened', crop: { x: CAR.x0, y: CAR.y0 - 40, w: CAR.x1 - CAR.x0, h: CAR.y1 - CAR.y0 + 40 } },
+    photo: { source: 'prop', x: 728, y: 318, label: 'Security camera', caption: 'Security camera still, the moment it happened', crop: { x: 508, y: 212, w: 264, h: 258 } },
 
     gas: {
-      amount: 175, diffusion: 7,
-      pushers: [{ x: 640, y: 150, strength: 6, falloff: 300, bias: { x: 0, y: 0.3 } }],
-      vents: [{ x: 300, y: 165, pull: 9, falloff: 220, drain: 0.07, r: 50 }],
-      doors: { main: { x: 640, y: 655, push: 34, falloff: 220, drain: 0.6, r: 90 } },
+      rect: { x: 344, y: 172, w: 592, h: 333 }, amount: 120, diffusion: 700, swirl: 0.6,
+      pushers: [{ x: 640, y: 300, strength: 2.5, falloff: 120, bias: { x: 0, y: 0.3 } }],
+      vents: [{ x: 557, y: 304, pull: 3, falloff: 70, drain: 0.05, r: 22 }],
+      doors: { main: { x: 640, y: 458, push: 10, falloff: 70, drain: 0.6, r: 30 } },
       wall: (px, py) => px < CAR.x0 || px > CAR.x1 || py < CAR.y0 || py > CAR.y1,
     },
     pressureRate: 0.58,
-    moveCost: 2, talkCost: 3,
     objectLabel: 'CALL IT!',
     objectSplash: { big: 'IT WAS YOU!', sub: 'The muzak keeps playing. Six faces turn very slowly toward you.' },
     peaceText: 'The doors opened. Everyone walked out. Nobody will ever know. Except the farter.',
@@ -92,9 +96,9 @@
     ],
     mention: { who: 'sal', line: 'Oh WOW. What died in here?', caption: 'Sal said it first, but he only just got on. Playground law does not apply to people who were not there. Now everyone can talk about it.', exempt: true },
     speakNow: { who: 'speaker', line: 'Lobby. Doors opening shortly.', caption: 'Last floor. Press O and CALL IT before the doors open and everyone scatters.' },
-    intro: 'Floor 30. Seven strangers, one small box, thirty floors down. Everyone faces the doors.',
+    intro: 'Floor 30. Thirty floors down in a very small box. Everyone faces the doors.',
 
-    quiet: () => true,
+    quiet: () => false,
     phaseLabel(t) {
       const f = floorAt(t);
       if (t >= this.timeline.speakNow) return 'Lobby. Call it now.';
@@ -105,12 +109,17 @@
 
     script(t, api) {
       const T = this.timeline;
-      if (t >= 0) api.once('speakerActor', () => api.actor('speaker', { look: null, x: 640, y: 228 }));
+      if (t >= 0) api.once('speakerActor', () => api.actor('speaker', { look: null, x: 640, y: 300 }));
       if (t >= 36) api.once('stop1', () => {
         api.door('main', true);
-        api.caption(`DING. Floor ${floorAt(t)}. The doors open...`, 3);
-        api.log(`The doors open on floor ${floorAt(t)}. Sal gets on with a pizza.`);
-        api.arrive('sal', { x: 640, y: 680 });
+        if (api.has('sal')) {
+          api.caption(`DING. Floor ${floorAt(t)}. The doors open and a pizza guy squeezes in.`, 3);
+          api.log(`The doors open on floor ${floorAt(t)}. Sal gets on with a pizza.`);
+          api.arrive('sal', { x: 640, y: 470 });
+        } else {
+          api.caption(`DING. Floor ${floorAt(t)}. Nobody gets on. Fresh air for a second.`, 3);
+          api.log(`The doors open on floor ${floorAt(t)}. Nobody gets on.`);
+        }
       });
       if (t >= 44) api.once('stop1close', () => api.door('main', false));
       if (t >= 92) api.once('stop2', () => {
@@ -125,20 +134,17 @@
     buildBackground: (ctx) => buildCar(ctx),
     props(api) {
       const open = api.doorOpen('main');
-      return [{ y: CAR.y1 + 30, draw: (ctx) => drawDoors(ctx, open) }];
+      return [{ y: CAR.y1 + 40, draw: (ctx) => drawDoors(ctx, open) }];
     },
     overlay(ctx, t, api) {
-      // the floor indicator, on the shaft wall beside the car
-      const gt = api.time();
-      const label = this.clockLabel(gt);
-      Art.paperRect(ctx, 70, 98, 130, 44, '#1b1b1f', 901, { amp: 0.8, stroke: '#555', lw: 1.5 });
-      ctx.save(); ctx.font = '400 26px "Bowlby One SC", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#ff4b3a'; ctx.shadowColor = '#ff4b3a'; ctx.shadowBlur = 8; ctx.fillText(label, 135, 121); ctx.restore();
-      // the lit floor button
+      // the floor indicator on the shaft wall, and the lit button
+      const gt = api.time(), label = this.clockLabel(gt);
+      Art.paperRect(ctx, 781, 280, 84, 30, '#1b1b1f', 901, { amp: 0.4, stroke: '#555', lw: 1 });
+      ctx.save(); ctx.font = '400 17px "Bowlby One SC", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ff4b3a'; ctx.shadowColor = '#ff4b3a'; ctx.shadowBlur = 6; ctx.fillText(label, 823, 296); ctx.restore();
       const f = floorAt(gt);
-      ctx.save(); ctx.fillStyle = 'rgba(255,214,90,0.9)'; ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 10;
-      ctx.beginPath(); ctx.arc(1046, 488 + (f % 6) * 18, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-      // fluorescent flicker
+      ctx.save(); ctx.fillStyle = 'rgba(255,214,90,0.95)'; ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 5;
+      ctx.beginPath(); ctx.arc(CAR.x1 + 7.5, 398 + (f % 6) * 7, 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
       const fl = Math.sin(t * 37) * Math.sin(t * 3.1);
       if (fl > 0.92) { ctx.fillStyle = 'rgba(20,20,40,0.12)'; ctx.fillRect(CAR.x0, CAR.y0, CAR.x1 - CAR.x0, CAR.y1 - CAR.y0); }
     },
@@ -238,56 +244,59 @@
   function buildCar(ctx) {
     const { paper, paperRect, paperEllipse, INK } = Art;
     // the shaft around the car
-    ctx.fillStyle = '#25232d'; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(160,160,190,0.18)'; ctx.lineWidth = 3;
-    for (const x of [120, 160, 1120, 1160]) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    for (let y = 40; y < H; y += 120) { paperRect(ctx, 20, y, 200, 14, '#3a3846', 700 + y, { amp: 1, shadow: false }); paperRect(ctx, 1060, y + 60, 200, 14, '#3a3846', 800 + y, { amp: 1, shadow: false }); }
-    // back wall (top): wood panels and a mirror
-    paperRect(ctx, CAR.x0 - 20, 70, CAR.x1 - CAR.x0 + 40, 80, '#7a5638', 600, { amp: 2, stroke: INK, lw: 2 });
-    paperRect(ctx, 380, 80, 520, 58, '#b9d4e6', 601, { amp: 1.2, stroke: '#7d8a99', lw: 2 });
-    ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#fff'; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.moveTo(420, 132); ctx.lineTo(470, 86); ctx.moveTo(450, 132); ctx.lineTo(490, 92); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = '#25232d'; ctx.fillRect(330, 160, 620, 360);
+    ctx.strokeStyle = 'rgba(160,160,190,0.18)'; ctx.lineWidth = 1.5;
+    for (const x of [400, 418, 862, 880]) { ctx.beginPath(); ctx.moveTo(x, 160); ctx.lineTo(x, 520); ctx.stroke(); }
+    for (let y = 185; y < 510; y += 60) { paperRect(ctx, 350, y, 150, 6, '#3a3846', 700 + y, { amp: 0.5, shadow: false }); paperRect(ctx, 776, y + 30, 150, 6, '#3a3846', 800 + y, { amp: 0.5, shadow: false }); }
+    // the car's ceiling frame
+    paperRect(ctx, CAR.x0 - 15, 196, CAR.x1 - CAR.x0 + 30, 20, '#4a4a55', 599, { amp: 0.6, stroke: INK, lw: 1 });
+    // back wall: wood panelling and a mirror rail
+    paperRect(ctx, CAR.x0 - 15, 214, CAR.x1 - CAR.x0 + 30, 90, '#7a5638', 600, { amp: 1, stroke: INK, lw: 1 });
+    paperRect(ctx, 572, 236, 136, 50, '#b9d4e6', 601, { amp: 0.6, stroke: '#7d8a99', lw: 1 });
+    ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(584, 282); ctx.lineTo(606, 242); ctx.moveTo(596, 282); ctx.lineTo(614, 248); ctx.stroke(); ctx.restore();
+    ctx.strokeStyle = '#d9a441'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(CAR.x0 + 4, 292); ctx.lineTo(CAR.x1 - 4, 292); ctx.stroke();
     // floor: carpet with a diamond pattern
-    paperRect(ctx, CAR.x0, CAR.y0, CAR.x1 - CAR.x0, CAR.y1 - CAR.y0, '#3f5c63', 602, { amp: 2 });
+    paperRect(ctx, CAR.x0, CAR.y0, CAR.x1 - CAR.x0, CAR.y1 - CAR.y0, '#3f5c63', 602, { amp: 0.8 });
     ctx.save(); ctx.beginPath(); ctx.rect(CAR.x0, CAR.y0, CAR.x1 - CAR.x0, CAR.y1 - CAR.y0); ctx.clip();
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 2;
-    for (let k = -800; k < 1600; k += 46) { ctx.beginPath(); ctx.moveTo(k, CAR.y0); ctx.lineTo(k + 520, CAR.y1); ctx.stroke(); ctx.beginPath(); ctx.moveTo(k + 520, CAR.y0); ctx.lineTo(k, CAR.y1); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 1;
+    for (let k = 300; k < 1000; k += 16) { ctx.beginPath(); ctx.moveTo(k, CAR.y0); ctx.lineTo(k + 160, CAR.y1); ctx.stroke(); ctx.beginPath(); ctx.moveTo(k + 160, CAR.y0); ctx.lineTo(k, CAR.y1); ctx.stroke(); }
     ctx.restore();
     // side walls: brushed steel with handrails
-    paperRect(ctx, CAR.x0 - 22, CAR.y0 - 6, 24, CAR.y1 - CAR.y0 + 12, '#a6abb5', 603, { amp: 1, stroke: INK, lw: 1.5 });
-    paperRect(ctx, CAR.x1 - 2, CAR.y0 - 6, 24, CAR.y1 - CAR.y0 + 12, '#a6abb5', 604, { amp: 1, stroke: INK, lw: 1.5 });
-    ctx.strokeStyle = '#d9a441'; ctx.lineWidth = 5; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(CAR.x0 + 6, CAR.y0 + 30); ctx.lineTo(CAR.x0 + 6, CAR.y1 - 40); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(CAR.x1 - 6, CAR.y0 + 30); ctx.lineTo(CAR.x1 - 6, CAR.y1 - 200); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(CAR.x0 + 30, CAR.y0 + 6); ctx.lineTo(CAR.x1 - 30, CAR.y0 + 6); ctx.stroke();
+    paperRect(ctx, CAR.x0 - 15, CAR.y0 - 4, 15, CAR.y1 - CAR.y0 + 8, '#a6abb5', 603, { amp: 0.5, stroke: INK, lw: 1 });
+    paperRect(ctx, CAR.x1, CAR.y0 - 4, 15, CAR.y1 - CAR.y0 + 8, '#a6abb5', 604, { amp: 0.5, stroke: INK, lw: 1 });
+    ctx.strokeStyle = '#d9a441'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(CAR.x0 - 6, CAR.y0 + 8); ctx.lineTo(CAR.x0 - 6, CAR.y1 - 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(CAR.x1 + 6, CAR.y0 + 8); ctx.lineTo(CAR.x1 + 6, CAR.y1 - 70); ctx.stroke();
     // button panel on the right wall near the doors
-    paperRect(ctx, 1033, 470, 26, 130, '#c9ccd4', 605, { amp: 0.8, stroke: INK, lw: 1.5 });
-    for (let i = 0; i < 6; i++) { ctx.fillStyle = '#5d6270'; ctx.beginPath(); ctx.arc(1046, 488 + i * 18, 4.5, 0, Math.PI * 2); ctx.fill(); }
-    paperRect(ctx, 1038, 590, 16, 8, '#d0393b', 606, { amp: 0.4, shadow: false });
-    // ceiling vent (top left) and security camera (top right corner)
-    paperRect(ctx, 270, 150, 64, 26, '#555b68', 607, { amp: 0.8 });
-    ctx.strokeStyle = '#8f97a8'; ctx.lineWidth = 2;
-    for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(276 + i * 10, 154); ctx.lineTo(276 + i * 10, 172); ctx.stroke(); }
-    paperEllipse(ctx, 990, 160, 22, 16, '#2b2d36', 608, { stroke: INK, lw: 1.5 });
-    paperEllipse(ctx, 990, 164, 9, 8, '#111', 609, { shadow: false });
-    ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(1002, 152, 2.5, 0, Math.PI * 2); ctx.fill();
+    paperRect(ctx, CAR.x1 + 2, 392, 11, 52, '#c9ccd4', 605, { amp: 0.3, stroke: INK, lw: 0.8 });
+    for (let i = 0; i < 6; i++) { ctx.fillStyle = '#5d6270'; ctx.beginPath(); ctx.arc(CAR.x1 + 7.5, 398 + i * 7, 2, 0, Math.PI * 2); ctx.fill(); }
+    paperRect(ctx, CAR.x1 + 4, 439, 7, 3.5, '#d0393b', 606, { amp: 0.2, shadow: false });
+    // ceiling vent and security camera on the back wall
+    paperRect(ctx, 542, 220, 30, 10, '#555b68', 607, { amp: 0.3 });
+    ctx.strokeStyle = '#8f97a8'; ctx.lineWidth = 1;
+    for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(545 + i * 4.5, 221.5); ctx.lineTo(545 + i * 4.5, 228.5); ctx.stroke(); }
+    paperEllipse(ctx, 728, 226, 9, 7, '#2b2d36', 608, { stroke: INK, lw: 0.8, amp: 0.4 });
+    paperEllipse(ctx, 728, 228, 4, 3.5, '#111', 609, { shadow: false, amp: 0.2 });
+    ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(733, 222, 1.2, 0, Math.PI * 2); ctx.fill();
     // muzak speaker
-    paperEllipse(ctx, 640, 158, 26, 9, '#2f3240', 610, { amp: 0.6 });
-    ctx.strokeStyle = '#6a7080'; ctx.lineWidth = 1.5;
-    for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(622, 158 + i * 3); ctx.lineTo(658, 158 + i * 3); ctx.stroke(); }
-    // capacity sign
-    paperRect(ctx, 1062, 380, 110, 50, '#f6efdf', 611, { stroke: INK, lw: 1.5 });
-    ctx.fillStyle = INK; ctx.font = '700 10px "Lexend", sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('CAPACITY 8', 1117, 398); ctx.fillText('PLEASE FACE', 1117, 412); ctx.fillText('THE DOORS', 1117, 424);
+    paperEllipse(ctx, 640, 223, 12, 4.5, '#2f3240', 610, { amp: 0.3 });
+    // capacity sign on the shaft wall
+    paperRect(ctx, 780, 330, 86, 36, '#f6efdf', 611, { stroke: INK, lw: 1, amp: 0.6 });
+    ctx.fillStyle = INK; ctx.font = '700 7px "Lexend", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('CAPACITY 8', 823, 343); ctx.fillText('PLEASE FACE', 823, 352); ctx.fillText('THE DOORS', 823, 361);
   }
 
   function drawDoors(ctx, open) {
     const { paperRect, INK } = Art;
-    const gap = open * 110;
-    paperRect(ctx, 500, CAR.y1 - 4, 140 - gap, 22, '#b7bcc6', 620, { amp: 0.8, stroke: INK, lw: 1.5 });
-    paperRect(ctx, 640 + gap, CAR.y1 - 4, 140 - gap, 22, '#b7bcc6', 621, { amp: 0.8, stroke: INK, lw: 1.5 });
-    paperRect(ctx, 488, CAR.y1 - 8, 12, 30, '#6f7480', 622, { amp: 0.5 });
-    paperRect(ctx, 780, CAR.y1 - 8, 12, 30, '#6f7480', 623, { amp: 0.5 });
-    if (open > 0.05) { ctx.fillStyle = 'rgba(255,240,200,0.25)'; ctx.fillRect(640 - gap, CAR.y1 - 2, gap * 2, 22); }
+    const gap = open * 48;
+    paperRect(ctx, 590, CAR.y1 - 2, 50 - gap, 10, '#b7bcc6', 620, { amp: 0.3, stroke: INK, lw: 0.8 });
+    paperRect(ctx, 640 + gap, CAR.y1 - 2, 50 - gap, 10, '#b7bcc6', 621, { amp: 0.3, stroke: INK, lw: 0.8 });
+    paperRect(ctx, 584, CAR.y1 - 4, 6, 14, '#6f7480', 622, { amp: 0.2 });
+    paperRect(ctx, 690, CAR.y1 - 4, 6, 14, '#6f7480', 623, { amp: 0.2 });
+    paperRect(ctx, CAR.x0 - 15, CAR.y1 - 2, 590 - (CAR.x0 - 15), 12, '#8b8f99', 624, { amp: 0.3, stroke: INK, lw: 0.8 });
+    paperRect(ctx, 696, CAR.y1 - 2, CAR.x1 + 15 - 696, 12, '#8b8f99', 625, { amp: 0.3, stroke: INK, lw: 0.8 });
+    if (open > 0.05) { ctx.fillStyle = 'rgba(255,240,200,0.35)'; ctx.fillRect(640 - gap, CAR.y1, gap * 2, 10); }
   }
 })();

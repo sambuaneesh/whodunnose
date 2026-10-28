@@ -3,17 +3,22 @@
 // drains into vents and open doors, and slowly fades. Where it goes is evidence.
 // Each level supplies its walls, air pushers (AC, fans), vents and doors.
 const Gas = (() => {
-  const CELL = 20, COLS = 64, ROWS = 36, N = COLS * ROWS;
+  const COLS = 64, ROWS = 36, N = COLS * ROWS;
+  let CELL = 20, OX = 0, OY = 0;
   let c = new Float32Array(N), tmp = new Float32Array(N);
   const vx = new Float32Array(N), vy = new Float32Array(N), wall = new Uint8Array(N), drain = new Float32Array(N);
   const DECAY = 0.004;
   let cfg = null, diffusion = 8, doorState = {}, emitters = [];
 
   const idx = (x, y) => y * COLS + x;
-  const cellPos = (x, y) => [x * CELL + CELL / 2, y * CELL + CELL / 2];
+  const cellPos = (x, y) => [OX + x * CELL + CELL / 2, OY + y * CELL + CELL / 2];
 
   function configure(gasCfg) {
-    cfg = gasCfg; diffusion = gasCfg.diffusion || 8; doorState = {};
+    cfg = gasCfg; doorState = {};
+    // the grid always covers the level's view, so a small elevator gets fine cells
+    const r = gasCfg.rect || { x: 0, y: 0, w: 1280, h: 720 };
+    CELL = r.w / COLS; OX = r.x; OY = r.y;
+    diffusion = (gasCfg.diffusion || 3200) / (CELL * CELL);
     for (const id in (gasCfg.doors || {})) doorState[id] = false;
     for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) { const [px, py] = cellPos(x, y); wall[idx(x, y)] = gasCfg.wall(px, py) ? 1 : 0; }
     rebuild();
@@ -40,7 +45,8 @@ const Gas = (() => {
         ux += (dx / d) * s; uy += (dy / d) * s;
         if (d < dd.r) dr += dd.drain;
       }
-      ux += Math.sin(py / 90 + px / 260) * 3; uy += Math.cos(px / 110) * 2;
+      const sw = cfg.swirl ?? 3;
+      ux += Math.sin(py / 90 + px / 260) * sw; uy += Math.cos(px / 110) * sw * 0.67;
       vx[i] = ux / CELL; vy[i] = uy / CELL; drain[i] = dr;
     }
   }
@@ -50,7 +56,7 @@ const Gas = (() => {
   const doorOpen = (id) => !!doorState[id];
 
   function deposit(px, py, amount) {
-    const gx = Math.round(px / CELL - 0.5), gy = Math.round(py / CELL - 0.5);
+    const gx = Math.round((px - OX) / CELL - 0.5), gy = Math.round((py - OY) / CELL - 0.5);
     for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
       const x = gx + ox, y = gy + oy;
       if (x < 0 || x >= COLS || y < 0 || y >= ROWS || wall[idx(x, y)]) continue;
@@ -72,7 +78,7 @@ const Gas = (() => {
   function step(dt) {
     for (const e of emitters) { const d = Math.min(dt, e.left); deposit(e.x, e.y, e.rate * d); e.left -= dt; }
     emitters = emitters.filter((e) => e.left > 0);
-    const sub = 2, k = diffusion * dt / sub;
+    const sub = Math.max(2, Math.ceil(diffusion * dt / 0.2)), k = diffusion * dt / sub;
     for (let s = 0; s < sub; s++) {
       for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
         const i = idx(x, y);
@@ -93,9 +99,9 @@ const Gas = (() => {
     for (let i = 0; i < N; i++) c[i] *= fade * (1 - drain[i] * dt);
   }
 
-  const sample = (px, py) => sampleArr(c, px / CELL - 0.5, py / CELL - 0.5);
+  const sample = (px, py) => sampleArr(c, (px - OX) / CELL - 0.5, (py - OY) / CELL - 0.5);
   function gradient(px, py) {
-    const h = 30;
+    const h = CELL * 1.5;
     return { x: sample(px + h, py) - sample(px - h, py), y: sample(px, py + h) - sample(px, py - h) };
   }
   function total() { let t = 0; for (let i = 0; i < N; i++) t += c[i]; return t; }
@@ -119,6 +125,6 @@ const Gas = (() => {
     }
   }
 
-  return { CELL, COLS, ROWS, reset, setDoor, doorOpen, emit, step, sample, gradient, total, paint };
+  return { get CELL() { return CELL; }, get rect() { return cfg ? (cfg.rect || { x: 0, y: 0, w: 1280, h: 720 }) : { x: 0, y: 0, w: 1280, h: 720 }; }, COLS, ROWS, reset, setDoor, doorOpen, emit, step, sample, gradient, total, paint };
 })();
 if (typeof module !== 'undefined') module.exports = Gas;

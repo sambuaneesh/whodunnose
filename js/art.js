@@ -63,28 +63,66 @@ const Art = (() => {
   }
 
   // The level paints its own room; we add the paper grain on top.
-  function buildBackground(level, scale) {
+  function buildBackground(level, pxPerUnit) {
+    const v = level.view;
     const cv = document.createElement('canvas');
-    cv.width = W * scale; cv.height = H * scale;
+    cv.width = Math.round(v.w * pxPerUnit); cv.height = Math.round(v.h * pxPerUnit);
     const ctx = cv.getContext('2d');
-    ctx.scale(scale, scale);
+    ctx.scale(pxPerUnit, pxPerUnit); ctx.translate(-v.x, -v.y);
     level.buildBackground(ctx);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalCompositeOperation = 'overlay';
-    ctx.globalAlpha = 0.18; ctx.fillStyle = grainPattern(ctx); ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.18; ctx.fillStyle = grainPattern(ctx); ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     return cv;
   }
 
-  function drawZoneTags(ctx, strong) {
+  // Zone labels are drawn at screen scale so they stay readable whatever the camera zoom is.
+  function drawZoneTags(ctx, strong, toScreen) {
     ctx.save();
     ctx.font = '700 11px "Lexend", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     for (const z of ZONES) {
-      const x = z.x + 8, y = z.y + (z.id === 'back' ? z.h - 18 : 16), w = ctx.measureText(z.name.toUpperCase()).width + 14;
-      ctx.globalAlpha = strong ? 0.95 : 0.55;
+      const a = toScreen(z.x, z.y), b = toScreen(z.x + z.w, z.y + z.h);
+      const x = a.x + 6, y = a.y + 12, w = ctx.measureText(z.name.toUpperCase()).width + 14;
+      ctx.globalAlpha = strong ? 0.95 : 0.5;
       paperRect(ctx, x, y - 9, w, 18, strong ? '#fff3b0' : '#f3ead6', z.x + z.y, { amp: 1, shadow: false });
       ctx.fillStyle = INK; ctx.fillText(z.name.toUpperCase(), x + 7, y + 0.5);
-      if (strong) { ctx.strokeStyle = 'rgba(255,240,170,0.5)'; ctx.setLineDash([6, 6]); ctx.strokeRect(z.x, z.y, z.w, z.h); ctx.setLineDash([]); }
+      if (strong) { ctx.strokeStyle = 'rgba(255,240,170,0.55)'; ctx.setLineDash([6, 6]); ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y); ctx.setLineDash([]); }
     }
+    ctx.restore();
+  }
+
+  // The eye over your head: how many people can see you right now.
+  function eyeIndicator(ctx, x, y, count, t) {
+    const seen = count > 0;
+    ctx.save(); ctx.translate(x, y);
+    const pulse = seen ? 1 + Math.sin(t * 10) * 0.05 : 1;
+    ctx.scale(pulse, pulse);
+    paperRect(ctx, -34, -14, 68, 28, seen ? '#ffe2d6' : '#eef4e4', 51, { amp: 0.8, stroke: INK, lw: 1.5 });
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = INK; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(-26, 0); ctx.quadraticCurveTo(-15, -11, -4, 0); ctx.quadraticCurveTo(-15, 11, -26, 0); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = seen ? '#d9434f' : '#6b8f3a'; ctx.beginPath(); ctx.arc(-15, 0, 3.6, 0, Math.PI * 2); ctx.fill();
+    if (!seen) { ctx.strokeStyle = '#6b8f3a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-26, 8); ctx.lineTo(-4, -8); ctx.stroke(); }
+    ctx.fillStyle = INK; ctx.font = '400 14px "Bowlby One SC", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(seen ? String(count) : '0', 12, 1);
+    ctx.restore();
+  }
+
+  // Reaction order: 1, 2, 3... pops up over heads as people smell it.
+  function badge(ctx, x, y, n, age) {
+    const pop = Math.min(1, age * 4), s = 0.6 + pop * 0.4 + Math.max(0, 0.25 - age) * 1.2;
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    paperEllipse(ctx, 0, 0, 14, 14, n === 1 ? '#f2c14e' : '#fffdf6', 60 + n, { amp: 0.8, stroke: INK, lw: 2 });
+    ctx.fillStyle = INK; ctx.font = '400 15px "Bowlby One SC", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(n), 0, 1);
+    ctx.restore();
+  }
+
+  // Hold-to-search progress ring.
+  function holdRing(ctx, x, y, k) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(28,26,31,0.35)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x, y, 22, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x, y, 22, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2); ctx.stroke();
     ctx.restore();
   }
 
@@ -197,6 +235,14 @@ const Art = (() => {
     if (o.back) { drawHairBackView(ctx, look, seed); ctx.restore(); return; }
     drawFace(ctx, look, hy, o, seed);
     drawHairFront(ctx, look, seed, hy);
+    if (o.sweat) {
+      // nervous sweat: two drops sliding down the temples
+      for (const [sx, ph] of [[-20, 0], [19, 0.5]]) {
+        const k = ((o.t * 0.9 + ph) % 1), yy = hy - 10 + k * 16;
+        ctx.save(); ctx.globalAlpha = 1 - k * 0.6; ctx.fillStyle = '#7cc4f2'; ctx.strokeStyle = INK; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(sx, yy - 6); ctx.quadraticCurveTo(sx + 4, yy, sx, yy + 3); ctx.quadraticCurveTo(sx - 4, yy, sx, yy - 6); ctx.fill(); ctx.stroke(); ctx.restore();
+      }
+    }
     ctx.restore();
   }
 
@@ -402,5 +448,5 @@ const Art = (() => {
     return portraitCache[key];
   }
 
-  return { buildBackground, drawZoneTags, drawItem, drawPerson, drawDog, drawBaby, bubble, stinkLines, puff, portrait, paper, paperRect, paperEllipse, rectPts, grainPattern, INK };
+  return { eyeIndicator, badge, holdRing, buildBackground, drawZoneTags, drawItem, drawPerson, drawDog, drawBaby, bubble, stinkLines, puff, portrait, paper, paperRect, paperEllipse, rectPts, grainPattern, INK };
 })();
