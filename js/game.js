@@ -156,6 +156,7 @@ const Game = (() => {
   function once(flag, fn) { if (!G.flags[flag]) { G.flags[flag] = true; fn(); } }
   const api = {
     once, has,
+    set: (k, v) => { G.flags['=' + k] = v; }, get: (k) => G.flags['=' + k], // small per-run memory for level scripts
     say(id, text, dur = 3.5, tone = 'speech') {
       const n = npcById(id);
       if (n) { if (n.present) NPC.say(n, text, dur, tone); return; }

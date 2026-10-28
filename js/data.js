@@ -121,7 +121,7 @@ const TIPS = {
 const CASES = [
   { id: 'c1', setting: 'elevator', num: 1, title: 'Going Down', seed: 1103, cast: ['thornbury', 'dana', 'josh', 'chad'], rules: R1,
     timeline: { fart: 8, mention: Infinity, speakNow: 92, end: 110 }, loud: [], callWhen: 'before the lobby',
-    goal: 'Four strangers, one small elevator, thirty floors down. Someone is about to ruin everyone\'s morning. Work out who before the doors open in the lobby.',
+    goal: 'Four new colleagues, one small elevator, thirty floors down. Someone is about to ruin everyone\'s afternoon. Work out who before the doors open in the lobby.',
     learn: [['WASD', 'Walk', 'Or click where you want to stand.'], ['Q', 'Sniff', 'Work out what the smell is.'], ['E', 'Talk', 'Ask people what they ate.'], ['O', 'Call it', 'Point at the culprit.']],
     objectives: ['reactions', 'smell', 'askFood', 'call'], tips: ['fart', 'smell', 'claim', 'callPoint'] },
   { id: 'c2', setting: 'elevator', num: 2, title: 'Rush Hour', seed: 2205, cast: ['thornbury', 'dana', 'josh', 'chad', 'priya', 'leo'], rules: R2,
@@ -137,7 +137,7 @@ const CASES = [
   { id: 'c4', setting: 'wedding', num: 4, title: 'The Rehearsal', seed: 4404, cast: ['mulligan', 'gary', 'brittany', 'brad', 'pemberton', 'kevin', 'biscuit'], rules: R4,
     timeline: { places: Infinity, procession: Infinity, vows: Infinity, speakNow: 138, end: 158, mention: 80 }, loud: null, callWhen: 'before the ceremony',
     speakNow: { who: 'mulligan', line: 'Places in one minute, everyone! If anyone has anything to say, say it now.', caption: 'Last chance before the ceremony. Press O to call it.' },
-    goal: 'A chapel full of people who keep moving and keep whispering. The culprit is covering their tracks. And you have eaten something you regret.',
+    goal: 'A chapel full of people who keep moving and keep whispering. The culprit is covering their tracks. And Uncle Gary\'s chili is starting to work on you.',
     learn: [['👂', 'Whispers', 'Stand close to overhear.'], ['?!', 'Cover-ups', 'The culprit acts suspicious. So do nervous people.'], ['F', 'Your tummy', 'Let it go only under something loud.']],
     objectives: ['smell', 'where', 'overhear', 'cover', 'safe', 'call'], tips: ['badgesOff', 'whisper', 'tell', 'tummy', 'mention', 'callProof'] },
   { id: 'c5', setting: 'wedding', num: 5, title: 'Til Death Do Us Fart', seed: 5506, cast: null, rules: R5,
@@ -147,7 +147,7 @@ const CASES = [
     objectives: ['smell', 'where', 'liar', 'cover', 'photo', 'call'], tips: ['photo', 'rumble', 'vows', 'cross'] },
   { id: 'c6', setting: 'elevator', num: 6, title: 'Express Down', seed: 6606, cast: null, rules: R6,
     timeline: {}, loud: null, callWhen: 'before the lobby',
-    goal: 'Everything you have learned, in thirty floors. The culprit is spreading rumours about you. Spread some of your own.',
+    goal: 'Everything you have learned, in thirty floors. The culprit knows who you are and is telling everyone it was you. Spread some rumours of your own.',
     learn: [['E', 'Rumours', 'Tell people who you think did it.'], ['!!', 'Confrontations', 'Stay calm when someone accuses you.'], ['N', 'Smell Board', 'Lock in your full theory for a bonus.']],
     objectives: ['smell', 'law', 'where', 'liar', 'cover', 'call'], tips: ['rumor', 'confront'] },
 ];
@@ -199,6 +199,13 @@ function buildLevel(caseDef) {
   lv.callWhen = caseDef.callWhen;
   if (caseDef.speakNow) lv.speakNow = caseDef.speakNow;
   lv.lateArrivals = (base.lateArrivals || []).filter((id) => lv.cast.some((c) => c.id === id));
+  // an authored case rewrites roles, voice lines and the opening caption for this case only
+  const st = caseDef.story;
+  if (st) {
+    lv.voices = Object.fromEntries(Object.entries(base.voices).map(([id, v]) => [id, { ...v, ...((st.say || {})[id] || {}) }]));
+    lv.cast = lv.cast.map((c) => ((st.roles || {})[c.id] ? { ...c, role: st.roles[c.id] } : c));
+    if (st.intro) lv.intro = st.intro;
+  }
   return lv;
 }
 function loadLevel(caseDef) {

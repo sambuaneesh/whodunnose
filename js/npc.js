@@ -137,12 +137,13 @@ const NPC = (() => {
     if (RULES.deflect && n.isCulprit && !n.def.dog && t >= n.nextDeflect && t < TIMELINE.speakNow && !n.bubble && !n.anim && !(L.quiet(t))) {
       n.nextDeflect = t + 26 + Math.random() * 10;
       const avgSus = G.npcs.filter((o) => !o.def.dog && o.present).reduce((a, o) => a + o.sus, 0) / Math.max(1, G.npcs.length);
-      const target = avgSus > 25 ? 'player' : G.cs.roles.nearDecoy;
+      const st = G.caseDef && G.caseDef.story;
+      const target = (st && st.fix.framesYou) || avgSus > 25 ? 'player' : G.cs.roles.nearDecoy;
       // you do not tell someone it was them: whisper to the nearest person who is not the target
       const buddy = nearestOther(n, G, target);
       if (buddy) {
         if (target === 'player') buddy.sus = Math.min(100, buddy.sus + 10); else suspect(buddy, target, 18);
-        const name = target === 'player' ? 'the one in orange' : castById(target).name;
+        const name = target === 'player' ? (st && st.youAre) || 'the one in orange' : castById(target).name;
         const close = U.dist(G.player, n) < L.ranges.overhear;
         say(n, close ? `(whispering) Honestly? Pretty sure it was ${name}.` : '*whisper whisper*', 4, 'whisper');
         n.face = Math.atan2(buddy.y - n.y, buddy.x - n.x);

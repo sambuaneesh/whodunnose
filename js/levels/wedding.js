@@ -1,5 +1,5 @@
 'use strict';
-// Episode 2: the wedding of Brad & Chantelle. Mingling, then a ceremony; "speak now" is the courtroom.
+// Episode 2: the wedding of Brad & Dana (Dana from HR, in the campaign). Mingling, then a ceremony; "speak now" is the courtroom.
 (() => {
   const PEW_ROWS = [340, 405, 470, 535];
   const PEW_BLOCKS = [{ x0: 80, x1: 560 }, { x0: 720, x1: 1200 }];
@@ -117,7 +117,7 @@
     ],
     mention: { who: 'gary', line: 'WHOA! WHO CUT THE CHEESE?!', caption: 'Gary said it out loud first. Under playground law, he dealt it. Now everyone can talk about the smell.' },
     speakNow: { who: 'mulligan', line: 'If anyone here knows why these two should not be wed, speak now, or forever hold your peace.', caption: 'This is it. Press O to OBJECT and name the farter in front of everyone.' },
-    intro: "St. Swithin's Chapel, 10:58. Brad and Chantelle's wedding starts any minute. Mingle.",
+    intro: "St. Swithin's Chapel, 10:58. Brad and Dana's wedding starts any minute. Mingle.",
 
     quiet: (t) => t >= 190 && t < 268,
     phaseLabel(t) {
@@ -147,8 +147,8 @@
         api.caption('The vows. Dead silence. Walking or whispering now gets noticed. Seated guests face the altar, though.', 6);
         api.log('The vows begin.');
       });
-      const lines = [[T.vows + 3, 'mulligan', 'Dearly beloved, we are gathered here today...'], [T.vows + 22, 'mulligan', 'Do you, Brad, take Chantelle...'],
-        [T.vows + 30, 'brad', 'I... I do!'], [T.vows + 44, 'mulligan', 'And do you, Chantelle, take Brad...'], [T.vows + 52, 'bride', 'I do.'],
+      const lines = [[T.vows + 3, 'mulligan', 'Dearly beloved, we are gathered here today...'], [T.vows + 22, 'mulligan', 'Do you, Brad, take Dana...'],
+        [T.vows + 30, 'brad', 'I... I do!'], [T.vows + 44, 'mulligan', 'And do you, Dana, take Brad...'], [T.vows + 52, 'bride', 'I do.'],
         [T.vows + 64, 'mulligan', 'Wonderful. Before I pronounce you...']];
       lines.forEach(([at, who, text], i) => { if (t >= at) api.once('line' + i, () => api.say(who, text, 3.5)); });
     },
@@ -185,7 +185,7 @@
     },
     voices: {
       edna: {
-        hello: "EH? Oh, hello dear. Are you Chantelle's friend from the pottery class? Or the prison?",
+        hello: "EH? Oh, hello dear. Are you Dana's friend from the pottery class? Or the prison?",
         breakfast: 'BREAKFAST? I had {food}, dear. Same as every Saturday since 1962.',
         where: "WHERE WAS I? By the {zone}. I'm ninety-one, I'm allowed to wander.",
         smell: '{Smell}. My nose retired in 1987 and even it came back for this one.',
@@ -242,7 +242,7 @@
         where: 'I was by the {zone} doing content. The lighting there is a moment.',
         smell: 'Ew, yes. {Smell}. I almost threw up on my followers.',
         gossip: "Okay so I'm not one to gossip, but: {fact}",
-        gossipNone: "Chantelle's dress is a rental. You didn't hear it from me. You heard it from my story.",
+        gossipNone: "Dana's dress is a rental. You didn't hear it from me. You heard it from my story.",
         confront: "Okay, was that you? Be honest. I won't post it. I'll post it.",
         guilty: "Okay, fine, it was me. Please stop filming. Who's filming?",
         reluctant: "I mean... it COULD have been me. I'm not confirming. No comment.",
@@ -255,10 +255,10 @@
         where: "I was by the {zone}, practicing my vows. 'I, Brad...' I forgot the rest.",
         smell: "Oh no. Yes. {Smell}. Is that a bad omen? That's a bad omen.",
         gossip: "I'm not supposed to notice things today, but {fact}",
-        gossipNone: "Chantelle's dad keeps looking at me like I'm a parking ticket.",
+        gossipNone: "Dana's dad keeps looking at me like I'm a parking ticket.",
         confront: 'Dude. Was that you? Today of all days?',
         guilty: "It was me. It was nerves! I'm getting MARRIED!",
-        reluctant: "Okay. It might have been me. Please don't tell Chantelle.",
+        reluctant: "Okay. It might have been me. Please don't tell Dana.",
         innocent: 'ON MY WEDDING DAY?!',
         rumor: '{name}? At my wedding? Okay. Okay. Breathing. I\'m breathing.',
       },
@@ -291,7 +291,7 @@
     },
   };
 
-  const BRIDE_LOOK = { body: '#ffffff', skin: '#f5d4b8', hair: '#5a3418', hairStyle: 'veil', acc: 'bouquet', scale: 1.0, dress: true };
+  const BRIDE_LOOK = { body: '#ffffff', skin: '#c98e64', hair: '#2a1a12', hairStyle: 'veil', acc: 'bouquet', scale: 1.0, dress: true };
 
   function drawPew(ctx, x0, x1, y, seed) {
     Art.paperRect(ctx, x0, y - 14, x1 - x0, 12, '#6e4424', seed, { amp: 1.2 });

@@ -57,7 +57,7 @@ const UI = (() => {
     $('#caseMap').innerHTML = CASES.map((c, i) => {
       const open = Store.unlocked(i), pr = Store.progress(c.id), setting = LEVELS[c.setting].title;
       return `<button class="case ${open ? '' : 'locked'} ${c === next ? 'next' : ''}" data-case="${i}" ${open ? '' : 'disabled'}>
-        <span class="case-n">${c.num}</span><span class="case-t"><b>${esc(c.title)}</b><small>${c.setting === 'elevator' ? 'Elevator' : 'Chapel'} · ${open ? (pr && pr.best ? 'Best: ' + pr.best : 'New') : 'Locked'}</small></span>
+        <span class="case-n">${c.num}</span><span class="case-t"><b>${esc(c.title)}</b><small>${c.story ? esc(c.story.when) + ' · ' : ''}${c.setting === 'elevator' ? 'Elevator' : 'Chapel'} · ${open ? (pr && pr.best ? 'Best: ' + pr.best : 'New') : 'Locked'}</small></span>
         ${pr && pr.best ? `<span class="case-r r-${pr.best}">${pr.best}</span>` : ''}</button>`;
     }).join('') + `<div class="free ${Store.unlocked(3) ? '' : 'locked'}"><b>Free Play</b><small>${Store.unlocked(3) ? 'Everything on, random cases.' : 'Unlocks after Case 3.'}</small>
         <div class="free-row"><button data-free="elevator" ${Store.unlocked(3) ? '' : 'disabled'}>Elevator</button><button data-free="wedding" ${Store.unlocked(3) ? '' : 'disabled'}>Chapel</button></div></div>`;
@@ -72,8 +72,11 @@ const UI = (() => {
     hide('#title'); hide('#results');
     Game.showcase(caseDef);
     G.state = 'briefing'; Sfx.duck(true);
-    $('#briefKicker').textContent = caseDef.free ? `Free Play · ${LEVELS[caseDef.setting].title} · ${DIFFICULTY[S().difficulty].label}` : `Case ${caseDef.num} of ${CASES.length} · ${caseDef.setting === 'elevator' ? 'The elevator' : 'The chapel'}`;
+    const st = caseDef.story;
+    $('#briefKicker').textContent = caseDef.free ? `Free Play · ${LEVELS[caseDef.setting].title} · ${DIFFICULTY[S().difficulty].label}` : `Case ${caseDef.num} of ${CASES.length} · ${st ? `${st.when}, ${st.time} · ` : ''}${caseDef.setting === 'elevator' ? 'Thornbury Tower, the elevator' : "St. Swithin's Chapel"}`;
     $('#briefTitle').textContent = caseDef.title;
+    $('#briefStory').textContent = st ? st.previously : '';
+    $('#briefStory').hidden = !st;
     $('#briefGoal').textContent = caseDef.goal;
     $('#briefLearn').innerHTML = caseDef.learn.length ? `<h3>New this case</h3><ul>${caseDef.learn.map(([k, t, d]) => `<li><kbd>${esc(k)}</kbd><div><b>${esc(t)}</b><span>${esc(d)}</span></div></li>`).join('')}</ul>` : '';
     $('#briefObj').innerHTML = `<h3>Case file</h3><ul>${caseDef.objectives.map((id) => { const o = OBJECTIVES[id]; return `<li>${esc(typeof o.label === 'function' ? (L.callWhen = caseDef.callWhen, o.label()) : o.label)}</li>`; }).join('')}</ul>`;
@@ -562,7 +565,8 @@ const UI = (() => {
   function showResults(r) {
     $('#hud').hidden = true; $('#actionbar').hidden = true; speakNow(false);
     const cs = G.cs, cul = castById(cs.culprit);
-    const truth = `It was <b>${esc(cul.name)}</b>. They had ${esc(cs.food.name)} (${esc(cs.food.smell)}), it started by the ${esc(cs.origin.name)}${cs.fartType === 'sbd' ? ', silent but deadly' : cs.fartType === 'trumpet' ? ', and it was loud' : ''}${RULES.tells ? `, and they covered it up by ${esc(cs.cover.label)}` : ''}.`;
+    const st = G.caseDef.story, passed = r.rank !== 'F' && r.rank !== 'D';
+    const truth = st && st.fix.culprit === cs.culprit ? esc(st.truth) : `It was <b>${esc(cul.name)}</b>. They had ${esc(cs.food.name)} (${esc(cs.food.smell)}), it started by the ${esc(cs.origin.name)}${cs.fartType === 'sbd' ? ', silent but deadly' : cs.fartType === 'trumpet' ? ', and it was loud' : ''}${RULES.tells ? `, and they covered it up by ${esc(cs.cover.label)}` : ''}.`;
     const intro = { bankrupt: 'Your Aura hit zero. Everyone has quietly agreed it was you.', peace: L.peaceText, accuse: '' }[r.kind];
     const vl = G.verdictLine;
     const panels = [
@@ -578,6 +582,7 @@ const UI = (() => {
       ${panels.length ? `<div class="comic">${panels.map((p) => `<div class="panel">${p.img ? `<img alt="" src="${p.img}">` : `<div class="pp"><img alt="" src="${p.portrait}"></div>`}<div class="pcap">${esc(p.cap)}</div></div>`).join('')}</div>` : ''}
       <div class="res-cols">
         <div><h3>What really happened</h3><p>${truth}</p>
+          ${st && passed ? `<h3>${st.finale ? 'And finally' : 'What happened next'}</h3><p class="next-beat">${esc(st.next)}</p>${st.finale ? `<p class="season-end"><b>${esc(SEASON.title)}</b> · case closed.</p>` : ''}` : ''}
           ${r.missed.length ? `<h3>What you missed</h3><ul class="missed">${r.missed.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : '<h3>What you missed</h3><p class="muted">Nothing. Clean case.</p>'}</div>
         <div><h3>Score</h3><table class="score">${r.rows.map(([l, v]) => `<tr><td>${esc(l)}</td><td>${v > 0 ? '+' : ''}${v}</td></tr>`).join('')}<tr class="tot"><td>Total</td><td>${r.score}</td></tr></table>
           ${nextCase && r.rank !== 'F' && r.rank !== 'D' ? `<div class="unlock"><b>Case ${nextCase.num} unlocked: ${esc(nextCase.title)}</b><span>New: ${nextCase.learn.map((l) => esc(l[1])).join(', ')}</span></div>` : ''}</div>

@@ -52,6 +52,35 @@ A comedy deduction game. Someone farted at the worst possible moment. You work o
 
 **Art:** South Park's look comes from cut construction paper, later emulated digitally, with separate mouth shapes. We use jagged paper polygons with drop shadows, 8 fps pose-hopping, three mouth shapes for talking, and eyebrows for expression.
 
+## What players love (research, iteration 3)
+
+Read across reviews and essays on comedy and deduction games, October 2026:
+
+- **Deduction they do themselves.** Reviewers of [The Case of the Golden Idol](https://www.pcgamer.com/best-story-2022-the-case-of-the-golden-idol) and the newer wave of detective games praise "asking the right questions ... and putting the clues together yourself" ([bit-tech](https://bit-tech.net/features/gaming/pc/the-10-best-detective-games/1)). We never auto-solve: the Smell Board and the accusation are the player's call.
+- **A climax where you confront the culprit.** A common complaint is that detective games "lack a climactic moment where the detective confronts and accuses the true culprit". Every case ends in a public call-out, and from case 5 a cross-examination with a confession.
+- **Characters you remember.** Golden Idol's mysteries were praised but its cast less so; [Duck Detective](https://gameluster.com/?p=105366) wins on characters ("from the gruff boss to the emotional receptionist, they were all great"). Ace Attorney fans love recurring characters and running gags ([Gameluster on The Great Ace Attorney](https://gameluster.com/gamelusters-2021-top-10-the-great-ace-attorney-chronicles/)). So the same people recur across the season and change because of what happens.
+- **Comedy from doing, not telling.** [Untitled Goose Game](https://www.acmi.net.au/stories-and-ideas/untitled-goose-player-comedians/) "gives you the material to make your own jokes". Our systemic jokes (whispers, the playground law, getting caught in a bag) sit beside scripted timing (the mention, the organ, the vows).
+- **Short runs you want to replay.** [Overboard!](https://www.pcgamer.com/uk/reverse-murder-mystery-overboard-is-a-deliciously-evil-twist-on-the-detective-genre) is loved for short, replayable runs and small checklist goals; it is also the model for the planned reverse case ("you dealt it").
+
+What this changed: campaign cases are now authored rather than rolled, every lie has a motive, every case plants the next, and the debrief tells the story of what really happened.
+
+## Season one: Thornbury Tower
+
+You are a new junior analyst on the thirtieth floor of Thornbury & Partners. One week, one elevator, one wedding.
+
+| Case | When | Culprit | Why they ate it | Why they lie | What it sets up |
+| --- | --- | --- | --- | --- | --- |
+| 1 Going Down | Mon 12:52 | Chad (protein shake) | Potluck "isn't in his macros" | He doesn't (no lies yet) | Thornbury cancels Dana's potluck and caters; Josh collects the food |
+| 2 Rush Hour | Wed 5:04 | Josh (garlic knots) | Unpaid, no lunch money | The knots were stolen from the CEO's order | Josh gets paid; Dana starts a juice cleanse for her dress |
+| 3 Floor Nine | Fri 4:47 | Dana (deviled eggs) | Broke her cleanse at her own send-off | The head of HR wrote the odour policy | Dana invites you to her wedding rehearsal |
+| 4 The Rehearsal | Sat 9:30 | Brittany (broccoli quiche) | Sponsored "zero bloat" quiche, eaten live | Admitting it ends the sponsorship | Mrs. Pemberton decides you are trouble; the video goes viral |
+| 5 Til Death Do Us Fart | Sat 10:58 | Mrs. Pemberton (tuna melt) | Refused Edna's eggs, ate in secret in the car | She blames Edna's eggs and the dog | The grandmothers make peace; Gary sends the couple home with chili |
+| 6 Express Down | Mon 12:52 | Mr. Thornbury (chili) | Ate the potluck he banned | The CEO, in front of "the Nose"; he frames you | The potluck returns; you become Head of Air Quality |
+
+Running threads: the car always stops at floor nine for nobody (Accounting calls it and takes the stairs, explained in case 3); Thornbury always stands in "his" back right corner (where case 6 starts); Pemberton always orders the tuna melt (case 4, then case 5); Gary's chili feeds the player's own tummy in cases 4 and 5 and the finale in case 6.
+
+Each case's data lives in `js/story.js`: the fixed mystery (`fix`: culprit, meal, lie, decoys, witness, where people stood, witness and bag text), per-case voice lines and confessions (`say`), roles, the briefing, "what really happened" and "what happened next". Free Play stays fully procedural.
+
 ## Next steps
 
 - Playtest with people who have not seen it: is the elevator readable in one run, and is the wedding too long?

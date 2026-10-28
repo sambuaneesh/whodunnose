@@ -5,7 +5,9 @@
   // Real proportions: people are ~40 units wide (about half a metre), so this car is ~2.0 x 1.4 m.
   const CAR = { x0: 530, x1: 750, y0: 300, y1: 455 };
   const BABY_COVER = { id: 'face', label: 'making the poop face', anim: 'face', bubble: null };
-  const floorAt = (t) => Math.max(0, 30 - Math.floor(t / 4.2));
+  // thirty floors in the time it takes to reach the lobby, so a shorter case is a faster ride
+  const floorAt = (t) => Math.max(0, 30 - Math.floor(t / ((L && L.timeline ? L.timeline.speakNow : 126) / 30)));
+  const SAL_FLOOR = 22, NINE = 9; // the two stops: Sal gets on at twenty-two; floor nine calls the car and never waits
 
   LEVELS.elevator = {
     id: 'elevator', episode: 'Season 1 · Episode 1', title: 'Going Down', length: '~2.5 min',
@@ -89,9 +91,9 @@
     timeline: { fart: 8, mention: 41, places: Infinity, vows: Infinity, speakNow: 126, end: 142, glanceFrom: 8 },
     loud: [
       { t: 22, dur: 3.5, label: "Dana's phone rings. Loudly." },
-      { t: 36, dur: 2.5, label: 'DING. The doors open.' },
+      { t: 34, dur: 2.5, label: 'DING. The doors open.' },
       { t: 66, dur: 3, label: 'The muzak hits a key change' },
-      { t: 92, dur: 2.5, label: 'DING. Nobody there.' },
+      { t: 88, dur: 2.5, label: 'DING. Nobody there.' },
       { t: 110, dur: 2.5, label: "Chad's shaker hits the floor" },
     ],
     mention: { who: 'sal', line: 'Oh WOW. What died in here?', caption: 'Sal said it first, but he only just got on. Playground law does not apply to people who were not there. Now everyone can talk about it.', exempt: true },
@@ -111,7 +113,8 @@
       const T = this.timeline;
       if (t >= 0) api.once('speakerActor', () => api.actor('speaker', { look: null, x: 640, y: 300 }));
       if (api.changed('floor', floorAt(t)) && t > 1) api.floorTick();
-      if (t >= 36) api.once('stop1', () => {
+      if (floorAt(t) <= SAL_FLOOR) api.once('stop1', () => {
+        api.set('stop1T', t);
         api.door('main', true);
         if (api.has('sal')) {
           api.caption(`DING. Floor ${floorAt(t)}. The doors open and a pizza guy squeezes in.`, 3);
@@ -122,13 +125,14 @@
           api.log(`The doors open on floor ${floorAt(t)}. Nobody gets on.`);
         }
       });
-      if (t >= 44) api.once('stop1close', () => api.door('main', false));
-      if (t >= 92) api.once('stop2', () => {
+      if (api.get('stop1T') !== undefined && t >= api.get('stop1T') + 8) api.once('stop1close', () => api.door('main', false));
+      if (floorAt(t) <= NINE) api.once('stop2', () => {
+        api.set('stop2T', t);
         api.door('main', true);
         api.caption(`DING. Floor ${floorAt(t)}. Nobody is there. The doors stay open for a long, awkward moment.`, 4);
         api.log(`Floor ${floorAt(t)}: doors open, nobody gets on. Fresh air.`);
       });
-      if (t >= 99) api.once('stop2close', () => api.door('main', false));
+      if (api.get('stop2T') !== undefined && t >= api.get('stop2T') + 7) api.once('stop2close', () => api.door('main', false));
       if (t >= T.speakNow) api.once('lobbyMusic', () => api.music('tension'));
     },
 
@@ -216,14 +220,14 @@
       sal: {
         hello: "Pizza for the lobby! Well, for a guy in the lobby. He's gonna love it. Who ordered pizza to the lobby?",
         breakfast: 'Me? Slice of {food} pizza. Off-menu. Do not ask.',
-        where: "I wasn't even here, pal! I got on at twenty-one. Walked straight into it.",
+        where: "I wasn't even here, pal! I got on at twenty-two. Walked straight into it.",
         smell: '{Smell}. I deliver to a fish market and THIS is worse.',
         gossip: "I deliver to every floor. I see things. {fact}",
         gossipNone: "The guy in the lobby tips in coupons. I'm just saying.",
         confront: "Hey. I just got here and I already think it was you.",
         guilty: "It was... wait, I wasn't even here.",
         reluctant: "I wasn't even HERE.",
-        innocent: "I got on at TWENTY-ONE! Do the math!",
+        innocent: "I got on at TWENTY-TWO! Do the math!",
         rumor: "{name}, huh? I could see that. I could totally see that.",
       },
       priya: {

@@ -20,9 +20,9 @@ Working agreement (from the product owner, 2026-10-29):
 - [x] Replace the Settings "Presenter mode: unlock every case" with this; keep the pitch tour for presenters
 
 ### Iteration 3: writing and world
-- [ ] Research what players love in comedy mysteries (reviews, blogs, forums) and write findings into docs/DESIGN.md
-- [ ] A season story that connects the cases (same building, same people, the wedding as the finale), recurring characters with arcs
-- [ ] Hand-authored per-case dialogue, motives (why they ate it, why they lie), and an ending beat per case
+- [x] Research what players love in comedy mysteries (reviews, blogs, forums) and write findings into docs/DESIGN.md
+- [x] A season story that connects the cases (same building, same people, the wedding as the finale), recurring characters with arcs
+- [x] Hand-authored per-case dialogue, motives (why they ate it, why they lie), and an ending beat per case
 - [ ] Audit every line of text and every mechanic for consistency ("connect all the dots")
 
 ### Iteration 4 (v4 release)
@@ -36,3 +36,4 @@ Working agreement (from the product owner, 2026-10-29):
 - 2026-10-29: audio engine v4 done (buses, compressor, generated room reverb, adaptive themes with intensity layers, ducking, ambience, new farts/voices/foley, end jingles). Levels measured headlessly; no clipping.
 - 2026-10-29: character design v2 (arms/sleeves, trousers/skirts/shoes, outfits, per-character features, breathing, clipped eyelids, brows above eyes, face-clipped tints, raised cap/beanie brims). The floating watching-eye moved into the HUD; zone labels painted on the floor under people; reaction badges smaller. Iteration 1 complete.
 - 2026-10-29: playtest tools (js/playtest.js). Open the game with `?playtest=pullmyfinger` (or `#pullmyfinger`); `?playtest=off` or the Settings checkbox turns it off. Backquote (or F2, or the PLAYTEST badge) opens the panel: jump to any case or Free Play with any seed; the case's full truth (culprit, food, origin, cover-up, lie, decoys, witness, every fact); time controls (pause, ×0.25–×4, +15 s, jump to the fart or the call-out); god view (culprit and origin marked, where everyone stood, gas always visible, NPC labels with suspicion/theory/knowledge, vision cones); cheats (reveal all clues, refill Aura, calm everyone, tummy, rumble, force the mention, call it, solve instantly); live rule toggles and accusation mode; audio meter. Shift-click teleports. Playtest runs never write campaign progress. Presenter mode now only shows the pitch tour and ] skip. Iteration 2 complete.
+- 2026-10-29: iteration 3 (writing). Research summary in DESIGN.md. Season one "Thornbury Tower" in js/story.js: six authored cases (fixed culprit, meal, lie with a motive, decoys, witness, positions, witness and bag lines, per-case voice lines and confessions), a briefing "previously" paragraph, "what really happened" and "what happened next" on the results, a season-end card. The bride is now Dana from HR. Consistency fixes: the elevator descends thirty floors over each case's own length, Sal gets on at twenty-two (he said twenty-one; the car stopped at twenty-two), floor nine is a real stop in every ride, the c1 lobby no longer arrives at floor nine. Verified: every authored case generates as written, only the culprit and near decoy stand at the origin, all cases solve in the stress script; Free Play culprits still spread across the whole cast.

@@ -472,6 +472,11 @@ button { cursor: pointer; }
 #rotate { display: none; }
 @media (max-width: 560px) and (orientation: portrait) { #rotate { display: block; position: fixed; left: 16px; right: 16px; bottom: 16px; color: #f3eadb; font-size: 13px; text-align: center; } }
 
+/* season story */
+.season-k { font-family: var(--f-display); font-size: .95em; margin: .7em 0 .35em; } .season-k span { font-family: var(--f-body); font-size: .8em; color: var(--muted); margin-left: .4em; }
+.brief-story { font-family: var(--f-hand); font-size: 1.12em; line-height: 1.4; margin: .2em 0 .7em; color: #3b3542; border-left: 4px solid var(--gold); padding-left: .7em; }
+.next-beat { font-family: var(--f-hand); font-size: 1.08em; line-height: 1.4; }
+.season-end { margin-top: .4em; padding: .4em .7em; background: var(--gold); border: 2px solid var(--ink); display: inline-block; }
 /* playtest tools (unlocked by URL code) */
 #ptBadge { position: absolute; left: 50%; top: .25em; transform: translateX(-50%); z-index: 30; font: 700 .7em var(--f-body); letter-spacing: .1em; background: #3a1f4d; color: var(--gold); border: 1.5px solid var(--gold); padding: .15em .7em; border-radius: 999px; cursor: pointer; opacity: .8; }
 #pt { position: absolute; left: .6em; top: .6em; bottom: .6em; width: 23em; z-index: 31; overflow-y: auto; background: rgba(24,20,34,.95); color: #eee; border: 2px solid var(--gold); border-radius: 6px; padding: .6em .8em; font: 400 .8em/1.35 var(--f-body); }
@@ -563,6 +568,7 @@ button { cursor: pointer; }
     <div class="brief paper">
       <div id="briefKicker" class="brief-k"></div>
       <h2 id="briefTitle"></h2>
+      <p id="briefStory" class="brief-story" hidden></p>
       <p id="briefGoal" class="brief-goal"></p>
       <div class="brief-cols"><div id="briefLearn"></div><div id="briefObj"></div></div>
       <div id="briefDiff" class="seg" hidden></div>
@@ -632,6 +638,7 @@ button { cursor: pointer; }
       </div>
       <div class="start-card paper">
         <button class="big" id="btnPlay">Play</button>
+        <div class="season-k">Season One: Thornbury Tower <span>One week, one elevator, one wedding</span></div>
         <div id="caseMap"></div>
         <div class="title-links"><button class="linkish" id="btnHowto">How to play</button><button class="linkish" id="btnSettings">Settings</button><button class="linkish" id="btnPitchSheet">The pitch</button></div>
       </div>
@@ -675,6 +682,7 @@ button { cursor: pointer; }
 
 <script src="js/util.js"></script>
 <script src="js/data.js"></script>
+<script src="js/story.js"></script>
 <script src="js/save.js"></script>
 <script src="js/art.js"></script>
 <script src="js/levels/elevator.js"></script>
