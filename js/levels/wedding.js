@@ -124,8 +124,9 @@
       const T = this.timeline;
       return t < T.fart ? 'Mingling' : t < T.places ? 'Mingling (something smells)' : t < T.procession ? 'Places, everyone' : t < T.vows ? 'Here comes the bride' : t < T.speakNow ? 'The vows (silence)' : 'Speak now...';
     },
-    clockLabel(t) { const m = 58 + Math.floor(t / 60); return m >= 60 ? `11:${String(m - 60).padStart(2, '0')}` : `10:${m}`; },
-    stampTime(t) { const s = 58 * 60 + Math.floor(t); return `10:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; },
+    clockStart: [10, 58], // the ceremony; the campaign's rehearsal starts earlier
+    clockLabel(t) { const m = this.clockStart[0] * 60 + this.clockStart[1] + Math.floor(t / 60); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; },
+    stampTime(t) { const s = (this.clockStart[0] * 60 + this.clockStart[1]) * 60 + Math.floor(t); return `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; },
 
     // Level-specific beats. Generic beats (the fart, mention, loud moments, speak now) live in the engine.
     script(t, api) {
@@ -281,7 +282,7 @@
         where: 'At the {zone}, getting establishing shots. Of the establishment.',
         smell: 'Yeah, man. {Smell}. That is going to show up in the photos.',
         gossip: "I see everything through this lens, man. {fact}",
-        gossipNone: "I've shot forty weddings. Somebody always farts. Usually during the vows.",
+        gossipNone: "I've shot four weddings. Somebody always farts. Usually during the vows.",
         confront: "I've got like six photos of you looking weird, man. Was it you?",
         guilty: 'Ugh. Yeah. It was me. Do I still get paid?',
         reluctant: "...I'm gonna say the dog. But also maybe me.",

@@ -95,7 +95,7 @@ const OBJECTIVES = {
 const TIPS = {
   fart: { title: 'Something happened', text: 'Smells spread out from where they start, so the people closest notice first. Watch the numbers that pop up over their heads.' },
   smell: { title: 'That smell is a clue', text: 'What someone ate decides what it smells like. Now find out who ate it: walk up to people and press E to talk.' },
-  claim: { title: 'Two suspects?', text: 'More than one person might have eaten it. The one standing closest to where it started, the one who reacted early, is your culprit.' },
+  claim: { title: 'That is a match', text: 'Their answer matches the smell. If more than one person ate it, the one standing closest to where it started (the one who reacted early) is your culprit.' },
   callPoint: { title: 'Time to call it', text: 'The doors are about to open. Press O and point at whoever did it.' },
   watched: { title: 'Someone can see you', text: 'The eye under your Aura meter shows how many people can see you right now. Odd behaviour only costs Aura if someone sees it. Everyone faces the doors, so behind them is a blind spot.' },
   bag: { title: 'Bags do not lie', text: 'HOLD E next to a bag to search it. Searching is odd behaviour, so check the eye first: zero watching means free.' },
@@ -159,7 +159,7 @@ const FREE_PLAY = (setting, seed) => ({ id: 'free-' + setting, setting, num: 0, 
 const FEATURES = [
   { id: 'art', title: 'Cut-paper style', body: 'Construction-paper cutouts with stop-motion timing and eyebrows that do the acting.' },
   { id: 'levels', title: 'A campaign that teaches', body: 'Six cases, each introducing one to three mechanics, then Free Play with everything.' },
-  { id: 'procedural', title: 'New culprit every case', body: 'Culprit, meal, smell, origin, lies and cover-up are generated from a case number.' },
+  { id: 'procedural', title: 'Written cases, endless Free Play', body: 'The six-case season is written by hand. Free Play generates culprit, meal, smell, origin, lies and cover-up from a case number.' },
   { id: 'gas', title: 'Live gas simulation', body: 'The fart is a fluid. It diffuses, rides air currents and drains out of vents and doors.' },
   { id: 'science', title: 'Real fart science', body: 'What someone ate decides how loud it was and how bad it smells.' },
   { id: 'noses', title: 'Nose height and tolerance', body: 'Kids, babies and dogs smell it first. The order people react in points to the origin.' },
@@ -205,6 +205,7 @@ function buildLevel(caseDef) {
     lv.voices = Object.fromEntries(Object.entries(base.voices).map(([id, v]) => [id, { ...v, ...((st.say || {})[id] || {}) }]));
     lv.cast = lv.cast.map((c) => ((st.roles || {})[c.id] ? { ...c, role: st.roles[c.id] } : c));
     if (st.intro) lv.intro = st.intro;
+    if (st.clock) lv.clockStart = st.clock;
   }
   return lv;
 }

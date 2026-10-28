@@ -87,7 +87,7 @@ const STORY = {
   },
 
   c4: {
-    when: 'Saturday', time: '9:30 AM',
+    when: 'Saturday', time: '9:30 AM', clock: [9, 30], youAre: "Dana's elevator friend",
     previously: 'St. Swithin\'s Chapel. Dana and Brad get married at eleven. Mrs. Pemberton, the groom\'s mother, insisted on a rehearsal the same morning "so nobody forgets anything". Dana is at the hairdresser and has left you in charge of keeping the peace. Brittany, the maid of honour, is livestreaming. Uncle Gary brought a cooler of his famous chili and made you eat two bowls. You are starting to regret the second one.',
     intro: "Saturday, 9:30 AM. The rehearsal. The bride is at the hairdresser, so you're in charge.",
     roles: { mulligan: 'Officiant.', gary: "Groom's uncle. Brought a cooler of chili.", brittany: "Maid of honour. Livestreaming.", brad: 'The groom. Sweating.', pemberton: "Groom's mother. Judges everyone.", kevin: 'Photographer. Hired off a forum.', biscuit: "Brad's dog. Ring dog." },
