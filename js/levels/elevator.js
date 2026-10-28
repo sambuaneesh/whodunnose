@@ -110,6 +110,7 @@
     script(t, api) {
       const T = this.timeline;
       if (t >= 0) api.once('speakerActor', () => api.actor('speaker', { look: null, x: 640, y: 300 }));
+      if (api.changed('floor', floorAt(t)) && t > 1) api.floorTick();
       if (t >= 36) api.once('stop1', () => {
         api.door('main', true);
         if (api.has('sal')) {

@@ -60,7 +60,7 @@ const Game = (() => {
     for (const id in (L.gas.doors || {})) G.doors[id] = { open: 0, target: 0 };
     Gas.reset(L.gas);
     UI.resetRun();
-    Sfx.setMusic(L.music);
+    Sfx.setScene(L.id); Sfx.setMusic(L.music); Sfx.setIntensity(0);
     if (L.mode === 'mingle') Sfx.startMurmur();
     logEvent(L.intro);
     UI.caption(L.intro, 5);
@@ -167,6 +167,8 @@ const Game = (() => {
     door(id, open) { Gas.setDoor(id, open); if (G.doors[id]) G.doors[id].target = open ? 1 : 0; },
     doorOpen: (id) => (G.doors && G.doors[id] ? G.doors[id].open : 0),
     time: () => G.t || 0,
+    changed(key, v) { const k = 'chg-' + key; if (G.flags[k] === v) return false; G.flags[k] = v; return true; },
+    floorTick: () => Sfx.floorTick(),
     music: (id) => Sfx.setMusic(id),
     organ: (dur) => { Sfx.stopMurmur(); Sfx.organ(dur); },
     actor(id, spec) { G.actors[id] = { id, walking: false, bubble: null, face: Math.PI / 2, speed: 34, ...spec }; },
@@ -200,7 +202,7 @@ const Game = (() => {
       logEvent('Something happened.');
       G.beatT = 1.1; shake(4);
       if (cs.fartType !== 'sbd') {
-        Sfx.fart(cs.fartType, s.x);
+        Sfx.fart(cs.fartType, s.x, 1, { size: 0.8 + cs.food.loud * 0.5 });
         const side = s.x < L.view.x + L.view.w * 0.45 ? 'left' : s.x > L.view.x + L.view.w * 0.55 ? 'right' : 'middle';
         const kind = cs.fartType === 'squeaker' ? 'A high, squeaky one' : 'A long, low trumpet';
         UI.beat('*pfrrrt*', `${kind}, from the ${side}.`);
@@ -213,6 +215,7 @@ const Game = (() => {
       }
       G.photoPending = RULES.photo;
       G.tipQueue.push('__fart');
+      setTimeout(() => Sfx.setIntensity(1), 2500);
     });
     if (t >= 5) once('procFeat', () => feature('procedural'));
     if (t >= T.fart + 5) once('gasFeat', () => feature('gas'));
@@ -233,6 +236,7 @@ const Game = (() => {
       UI.caption(L.speakNow.caption, 8);
       logEvent(`"${L.speakNow.line}"`);
       feature('object');
+      Sfx.setIntensity(2);
       tip(RULES.accuse === 'point' ? 'callPoint' : 'callProof');
     });
     if (t >= T.end && !G.objected) return finish('peace');
@@ -383,9 +387,13 @@ const Game = (() => {
       }
     }
     const nx = U.clamp(p.x + (mx / len) * speed * dt, B.x0, B.x1), ny = U.clamp(p.y + (my / len) * speed * dt, B.y0, B.y1);
+    const ox = p.x, oy = p.y;
     if (!blocked(nx, p.y)) p.x = nx;
     if (!blocked(p.x, ny)) p.y = ny;
     p.face = Math.atan2(my, mx);
+    // footsteps: carpet thuds in the elevator, wooden taps in the chapel
+    p.stepAcc = (p.stepAcc || 0) + Math.hypot(p.x - ox, p.y - oy);
+    if (p.stepAcc > (L.mode === 'elevator' ? 13 : 30)) { p.stepAcc = 0; Sfx.step(L.id); }
   }
 
   function updateActors(dt) {
@@ -465,6 +473,7 @@ const Game = (() => {
     G.know.reactions.push({ id: n.id, t: G.t, zone: n.reactZone });
     n.reactOrder = G.know.reactions.length;
     logEvent(`${n.def.name} reacts to the smell (by the ${zoneById(n.reactZone).name}).`);
+    if (!n.def.dog) Sfx.gag(n.x);
     if (G.know.reactions.length === 1) feature('noses');
     if (G.know.reactions.length === 3) {
       const first = G.know.reactions.slice(0, 3).map((r) => `${castById(r.id).name} (${zoneById(r.zone).name})`).join(', ');
@@ -783,7 +792,7 @@ const Game = (() => {
     if (G.state !== 'play') return;
     if (!G.flags.fart || G.t < TIMELINE.fart + 3) { UI.caption('Call out what? Nothing has happened yet.', 2.5); return; }
     G.objected = true; G.state = 'accuse';
-    Sfx.stopOrgan(); Sfx.stamp(); Sfx.sting('objection'); Sfx.setMusic('trial');
+    Sfx.stopOrgan(); Sfx.stamp(); Sfx.sting('objection'); Sfx.setMusic('trial'); Sfx.duck(false);
     feature('object');
     G.npcs.forEach((n) => { if (!n.present) return; n.face = Math.atan2(G.player.y - n.y, G.player.x - n.x); n.expr = 'shock'; n.exprT = 99; n.bubble = null; });
     focus(G.player, 1.5); shake(16);
@@ -862,7 +871,7 @@ const Game = (() => {
       tr.broken.add(i);
       tr.belief = Math.min(100, tr.belief + 30);
       if (n) { n.expr = 'shock'; n.exprT = 99; }
-      UI.stamp('OBJECTION!', 'red'); shake(18); Sfx.sting('break');
+      UI.stamp('OBJECTION!', 'red'); shake(18); Sfx.sting('break'); Sfx.setIntensity(Math.min(3, tr.broken.size));
       return { hit: true };
     }
     tr.belief = Math.max(0, tr.belief - 10);
@@ -941,6 +950,7 @@ const Game = (() => {
     const title = TITLES[rank] || (kind === 'bankrupt' ? 'Aura bankrupt' : L.mode === 'elevator' ? 'Socially fired' : 'Wedding ruiner');
     const prog = Store.record(G.caseDef.free ? 'free' : G.caseDef.id, rank);
     G.result = { kind, acc, rows, score: Math.max(0, score), rank, title, missed: missed(), progress: prog };
+    Sfx.jingle(rank);
     UI.showResults(G.result);
   }
 

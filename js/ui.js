@@ -46,6 +46,8 @@ const UI = (() => {
     }));
     renderMap();
     renderTour();
+    // browsers only allow sound after a click: start the title music on the first one
+    $('#title').addEventListener('pointerdown', () => { Sfx.init(); if (G.state === 'title') Sfx.setMusic('title'); });
   }
 
   // ---------------- title: campaign map ----------------
@@ -69,7 +71,7 @@ const UI = (() => {
     G.pendingCase = caseDef;
     hide('#title'); hide('#results');
     Game.showcase(caseDef);
-    G.state = 'briefing';
+    G.state = 'briefing'; Sfx.duck(true);
     $('#briefKicker').textContent = caseDef.free ? `Free Play · ${LEVELS[caseDef.setting].title} · ${DIFFICULTY[S().difficulty].label}` : `Case ${caseDef.num} of ${CASES.length} · ${caseDef.setting === 'elevator' ? 'The elevator' : 'The chapel'}`;
     $('#briefTitle').textContent = caseDef.title;
     $('#briefGoal').textContent = caseDef.goal;
@@ -83,7 +85,7 @@ const UI = (() => {
   }
   function beginCase() {
     if (G.state !== 'briefing') return;
-    hide('#briefing');
+    hide('#briefing'); Sfx.duck(false);
     const c = G.pendingCase;
     Game.newGame(c, c.seed);
     Sfx.sting('title');
@@ -166,7 +168,7 @@ const UI = (() => {
     tipDone = done;
     $('#tipTitle').textContent = tip.title;
     $('#tipText').textContent = tip.text;
-    show('#tip'); Sfx.ui('tick');
+    show('#tip'); Sfx.ui('tip');
     setTimeout(() => $('#tipOk').focus(), 30);
   }
   function closeTip() { if ($('#tip').hidden) return; hide('#tip'); const d = tipDone; tipDone = null; if (d) d(); }
@@ -188,6 +190,7 @@ const UI = (() => {
   function toTitle() {
     ['#hud', '#actionbar', '#dialogue', '#notebook', '#accuse', '#results', '#tip', '#briefing'].forEach(hide);
     G.state = 'title'; Game.showcase(Store.nextCase()); renderMap(); show('#title');
+    Sfx.setScene(null); Sfx.duck(false); Sfx.setMusic('title');
   }
   function openHowto(back) { overlayBack = back || null; if (back) hide(back); show('#howto'); }
   function openSettings(back) { overlayBack = back || null; if (back) hide(back); syncSettings(); show('#settings'); }
@@ -255,7 +258,7 @@ const UI = (() => {
     const speed = { slow: 1, normal: 2, fast: 4, instant: 999 }[S().textSpeed] || 2;
     typeTimer = setInterval(() => {
       i += speed; el.textContent = text.slice(0, i);
-      if (i % 4 < speed && text[i] && text[i] !== ' ') Sfx.blip(voice);
+      if (i % 4 < speed && text[i] && text[i] !== ' ') Sfx.blip(voice, text[i]);
       if (i >= text.length) { clearInterval(typeTimer); dlg.typing = false; }
     }, 22);
   }
@@ -277,7 +280,7 @@ const UI = (() => {
     n.greeted = true;
     typeText(open, n.def.look.voice);
     renderOptions(); renderSus();
-    show('#dialogue');
+    show('#dialogue'); Sfx.duck(true);
   }
   function openItem(c, it, bag, photo) {
     dlg = { n: null, mode: 'item' };
@@ -337,7 +340,7 @@ const UI = (() => {
     renderOptions(); renderSus();
   }
   function closeDialogue() {
-    clearInterval(typeTimer); dlg = null; hide('#dialogue');
+    clearInterval(typeTimer); dlg = null; hide('#dialogue'); Sfx.duck(false);
     if (G.state === 'dialogue') G.state = 'play';
   }
 
@@ -346,9 +349,9 @@ const UI = (() => {
     if (tab) nbTab = tab;
     G.state = 'notebook'; G.unseenClues = 0;
     renderNotebook();
-    show('#notebook');
+    show('#notebook'); Sfx.ui('page'); Sfx.duck(true);
   }
-  function closeNotebook() { hide('#notebook'); if (G.state === 'notebook') G.state = 'play'; }
+  function closeNotebook() { hide('#notebook'); Sfx.duck(false); Sfx.ui('page'); if (G.state === 'notebook') G.state = 'play'; }
   const KIND_LABEL = { claim: 'Said', zone: 'Where', bag: 'Bag', witness: 'Witness', gossip: 'Heard', smell: 'Smell', sound: 'Sound', tell: 'Behaviour', deflect: 'Behaviour', contradiction: 'Lie', reaction: 'Noses', odd: 'Odd', photo: 'Photo' };
 
   function renderNotebook() {
