@@ -1001,6 +1001,7 @@ const Game = (() => {
       if (sv) { ctx.fillStyle = 'rgba(18,24,12,0.55)'; ctx.fillRect(v.x, v.y, v.w, v.h); }
       ctx.save(); ctx.imageSmoothingEnabled = true; ctx.drawImage(gasCv, 0, 0, Gas.COLS, Gas.ROWS, gr.x, gr.y, gr.w, gr.h); ctx.restore();
     }
+    if (!photoFrame && !sv && RULES.questions.includes('where')) Art.drawZoneDecals(ctx, cam.z);
     const items = [...L.props(api)];
     const bagNear = inPlay ? nearestBag() : null;
     for (const c of CAST) {
@@ -1036,10 +1037,10 @@ const Game = (() => {
     // ---- screen pass: everything you read stays crisp at any zoom ----
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     const head = (n) => toScreen(n.x, n.y - (n.def && n.def.dog ? 58 : 96 * ((n.def ? n.def.look.scale : 1) || 1)));
-    if (!photoFrame && (sv || (inPlay && RULES.questions.includes('where')))) Art.drawZoneTags(ctx, sv, toScreen);
+    if (!photoFrame && sv) Art.drawZoneTags(ctx, sv, toScreen);
     if (RULES.badges && inPlay) for (const n of G.npcs) if (n.present && n.reactOrder) {
       const age = G.t - n.reactT; if (age > 30) continue;
-      const hp = head(n); ctx.save(); ctx.globalAlpha = age > 25 ? (30 - age) / 5 : 1; Art.badge(ctx, hp.x, hp.y - 14, n.reactOrder, age); ctx.restore();
+      const hp = head(n); ctx.save(); ctx.globalAlpha = (age > 25 ? (30 - age) / 5 : 1) * 0.92; ctx.translate(hp.x + 18, hp.y - 4); ctx.scale(0.78, 0.78); Art.badge(ctx, 0, 0, n.reactOrder, age); ctx.restore();
     }
     if (G.state !== 'accuse') {
       for (const n of G.npcs) if (n.present && n.bubble) { const hp = head(n); Art.bubble(ctx, hp.x, hp.y - 6, n.bubble.text, { tone: n.bubble.tone, alpha: Math.min(1, n.bubble.t * 3), belowY: toScreen(n.x, n.y).y }); }
@@ -1064,7 +1065,6 @@ const Game = (() => {
       if (prop) lines.push(['E', `Check the ${prop.label.toLowerCase()}`, '']);
       UI.prompt(lines);
       if (G.searching) { const ip = toScreen(G.items[G.searching.c.id].x, G.items[G.searching.c.id].y - 12); Art.holdRing(ctx, ip.x, ip.y, G.searching.k); }
-      if (RULES.aura) { const ep = head({ x: G.player.x, y: G.player.y, def: { look: PLAYER_LOOK } }); Art.eyeIndicator(ctx, ep.x, ep.y - 22, G.watchers, t); }
       if (G.rumble) {
         const k = G.rumble.held / 0.8, pulse = 1 + Math.sin(t * 20) * 0.06, rp = toScreen(G.player.x, G.player.y - 40);
         ctx.save(); ctx.translate(rp.x, rp.y);

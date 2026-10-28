@@ -77,6 +77,21 @@ const Art = (() => {
     return cv;
   }
 
+  // Zone names painted on the floor, under the people standing there (world space, scaled to stay readable).
+  function drawZoneDecals(ctx, zoom) {
+    ctx.save();
+    const fs = 10 / zoom * (zoom > 1.5 ? 1.25 : 1);
+    ctx.font = `700 ${fs}px "Lexend", sans-serif`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    for (const z of ZONES) {
+      const label = z.name.toUpperCase(), w = ctx.measureText(label).width + fs * 1.2, h = fs * 1.7;
+      const x = z.x + fs * 0.4, y = z.y + z.h - h - fs * 0.3;
+      ctx.globalAlpha = 0.6;
+      paperRect(ctx, x, y, w, h, '#f3ead6', z.x + z.y, { amp: fs * 0.08, shadow: false });
+      ctx.fillStyle = INK; ctx.fillText(label, x + fs * 0.6, y + h / 2 + fs * 0.05);
+    }
+    ctx.restore();
+  }
+
   // Zone labels are drawn at screen scale so they stay readable whatever the camera zoom is.
   function drawZoneTags(ctx, strong, toScreen) {
     ctx.save();
@@ -92,7 +107,7 @@ const Art = (() => {
     ctx.restore();
   }
 
-  // The eye over your head: how many people can see you right now.
+  // An eye with a count (kept for the playtest overlay; the HUD shows the player's own watchers).
   function eyeIndicator(ctx, x, y, count, t) {
     const seen = count > 0;
     ctx.save(); ctx.translate(x, y);
@@ -174,71 +189,113 @@ const Art = (() => {
   }
 
   // ---------- characters ----------
-  // opts: { t, walking, faceDir (-1/1), lookX, lookY, back, expr, talking, anim, animT, blinkSeed }
+  // Construction: shoes, trousers or a skirt, a torso dressed by `look.outfit`, arms as sleeves ending in mitten hands,
+  // a held prop, then the head. Faces are drawn so that nothing leaks: eyelids are clipped inside the eyes, tints are
+  // clipped to the face, eyebrows sit just above the eyes. Everything breathes a little.
+  // opts: { t, walking, faceDir (-1/1), lookX, lookY, back, expr, talking, anim, animT, blinkSeed, sweat }
   // expr: neutral | happy | disgust | shock | sus | angry | worried
+  const HOLDS = ['phone', 'camera', 'coffee', 'pizza', 'shaker', 'bouquet'];
+  const shade = (hex, k) => {
+    const n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    const f = (c) => Math.max(0, Math.min(255, Math.round(k < 0 ? c * (1 + k) : c + (255 - c) * k)));
+    return `rgb(${f(r)},${f(g)},${f(b)})`;
+  };
+  function limb(ctx, x0, y0, x1, y1, color, w = 7) {
+    ctx.save(); ctx.lineCap = 'round';
+    ctx.strokeStyle = INK; ctx.lineWidth = w + 3; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.restore();
+  }
+
   function drawPerson(ctx, look, x, y, o) {
     const s = look.scale || 1;
     const step = Math.floor(o.t * 8);
     const bob = o.walking ? (step % 2) * -3 : 0;
     const tilt = o.walking ? (step % 2 ? 0.05 : -0.05) : (o.expr === 'shock' ? Math.sin(o.t * 40) * 0.02 : 0);
+    const seed = (look.body.charCodeAt(1) || 7) * 31 + (look.hair || '').length;
+    const breath = o.walking ? 0 : Math.sin(o.t * 2.2 + seed) * 0.7;
+    const outfit = look.dress ? 'gown' : (look.outfit || 'tee');
+    const hold = look.hold || (HOLDS.includes(look.acc) ? look.acc : null);
+    const long = ['gown', 'cassock', 'dress'].includes(outfit) || look.skirt;
     ctx.save();
     ctx.translate(x, y);
     ctx.fillStyle = 'rgba(25,15,5,0.22)'; ctx.beginPath(); ctx.ellipse(0, 0, 19 * s, 5 * s, 0, 0, Math.PI * 2); ctx.fill();
     ctx.translate(0, bob); ctx.rotate(tilt);
     if (o.faceDir < 0) ctx.scale(-1, 1);
     ctx.scale(s, s);
-    const seed = (look.body.charCodeAt(1) || 7) * 31 + (look.hair || '').length;
 
-    if (look.dress) {
-      paper(ctx, [[-10, -44], [10, -44], [34, -2], [-34, -2]], '#ffffff', seed, { stroke: INK, lw: 2 });
+    // ---- lower body ----
+    const shoes = look.shoes || INK, pants = look.pants || shade(look.body, -0.35);
+    const step2 = o.walking ? (step % 2 ? 2 : -2) : 0;
+    if (long) {
+      const len = outfit === 'dress' ? -12 : -3, col = outfit === 'gown' ? '#ffffff' : look.skirt ? pants : look.body;
+      if (outfit === 'dress') { limb(ctx, -6, -12, -6, -4, look.skin, 5); limb(ctx, 6, -12, 6, -4, look.skin, 5); }
+      paperEllipse(ctx, -7 + step2, -3, 6.5, 3.8, shoes, seed + 1, { shadow: false, amp: 0.6 });
+      paperEllipse(ctx, 7 - step2, -3, 6.5, 3.8, shoes, seed + 2, { shadow: false, amp: 0.6 });
+      const flare = outfit === 'gown' ? 34 : outfit === 'dress' ? 22 : 21;
+      paper(ctx, [[-15, -26], [15, -26], [flare, len], [-flare, len]], col, seed + 3, { stroke: INK, lw: 2, amp: 1.2 });
+      if (outfit === 'gown') for (let i = -2; i <= 2; i++) { ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(i * 5, -24); ctx.lineTo(i * 12, -4); ctx.stroke(); }
     } else {
-      paperEllipse(ctx, -8, -4, 7, 5, INK, seed + 1, { shadow: false, amp: 1 });
-      paperEllipse(ctx, 8, -4, 7, 5, INK, seed + 2, { shadow: false, amp: 1 });
-      paper(ctx, [[-15, -42], [15, -42], [19, -6], [-19, -6]], look.body, seed + 3, { stroke: INK, lw: 2, amp: 1.5 });
-      if (look.shirt === 'hawaiian') for (let i = 0; i < 6; i++) paperEllipse(ctx, -10 + (i % 3) * 10, -34 + Math.floor(i / 3) * 14, 3.5, 3.5, i % 2 ? '#ffe066' : '#5ec26a', seed + 10 + i, { shadow: false, amp: 1 });
-      if (look.shirt === 'tank') { paper(ctx, [[-15, -42], [-8, -42], [-12, -24], [-18, -22]], look.skin, seed + 16, { shadow: false, amp: 0.8 }); paper(ctx, [[15, -42], [8, -42], [12, -24], [18, -22]], look.skin, seed + 17, { shadow: false, amp: 0.8 }); }
-      if (look.shirt === 'lanyard') { ctx.strokeStyle = '#2f62b8'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-7, -42); ctx.lineTo(0, -24); ctx.lineTo(7, -42); ctx.stroke(); paperRect(ctx, -5, -25, 10, 12, '#fff', seed + 18, { amp: 0.4, shadow: false }); }
-      if (look.body === '#222228' || look.body === '#26262e' || look.body === '#3d4250') paper(ctx, [[-5, -42], [5, -42], [0, -18]], '#f4f4f4', seed + 5, { shadow: false, amp: 0.6 });
-      if (look.acc === 'tie') paper(ctx, [[-2.5, -40], [2.5, -40], [4, -20], [0, -15], [-4, -20]], '#a51f2d', seed + 19, { shadow: false, amp: 0.4 });
-    }
-    if (!o.back) drawHairBack(ctx, look, seed);
-    const hand = (hx, hy) => paperEllipse(ctx, hx, hy, 6, 6, look.skin, seed + 20 + hx, { stroke: INK, lw: 1.5, amp: 0.8 });
-    const a = o.anim, at = o.animT || 0;
-    let Lh = [-21, -20], R = [21, -20];
-    if (a === 'fan') R = [26, -12 + Math.sin(at * 22) * 9];
-    else if (a === 'spray') R = [22, -50];
-    else if (a === 'point') R = [32, -32];
-    else if (a === 'arms') { Lh = [-26, -52 + Math.sin(at * 10) * 3]; R = [26, -52 - Math.sin(at * 10) * 3]; }
-    else if (a === 'cough') R = [6, -46];
-    else if (look.acc === 'phone') R = [14, -32];
-    else if (look.acc === 'bouquet') { Lh = [-8, -26]; R = [8, -26]; }
-    else if (look.acc === 'coffee' || look.acc === 'pizza') { Lh = [-14, -28]; R = [14, -28]; }
-    else if (look.acc === 'shaker') R = [20, -30];
-    if (!o.back) {
-      hand(Lh[0], Lh[1]); hand(R[0], R[1]);
-      if (a === 'spray') {
-        paperRect(ctx, 18, -66, 8, 14, '#c86dd7', seed + 30, { amp: 0.6 });
-        for (let i = 0; i < 6; i++) { ctx.fillStyle = 'rgba(230,180,255,0.6)'; ctx.beginPath(); ctx.arc(30 + i * 5 + Math.sin(at * 9 + i) * 3, -62 + Math.cos(at * 7 + i) * 6, 3 + i * 0.6, 0, Math.PI * 2); ctx.fill(); }
+      const shorts = look.shorts;
+      for (const side of [-1, 1]) {
+        const lx = side * 7 + (side < 0 ? step2 : -step2);
+        paper(ctx, [[lx - 6, -16], [lx + 6, -16], [lx + 5.5, shorts ? -10 : -5], [lx - 5.5, shorts ? -10 : -5]], pants, seed + 4 + side, { stroke: INK, lw: 1.5, amp: 0.6 });
+        if (shorts) limb(ctx, lx, -10, lx, -5, look.skin, 6);
+        paperEllipse(ctx, lx + side * 1.5, -3, 7, 3.8, shoes, seed + 6 + side, { shadow: false, amp: 0.6 });
       }
-      if (look.acc === 'phone' && !a) paperRect(ctx, 9, -44, 10, 16, '#222', seed + 31, { amp: 0.5 });
-      if (look.acc === 'bouquet') for (let i = 0; i < 5; i++) paperEllipse(ctx, -8 + i * 4, -30 - (i % 2) * 5, 5, 5, i % 2 ? '#f6b6cf' : '#fff', seed + 40 + i, { amp: 1 });
-      if (look.acc === 'camera') { paperRect(ctx, -10, -36, 20, 13, '#2b2b2b', seed + 32, { amp: 0.6 }); paperEllipse(ctx, 0, -29, 4.5, 4.5, '#8fb6d9', seed + 33, { shadow: false, amp: 0.4 }); }
-      if (look.acc === 'collar') paperRect(ctx, -4, -44, 8, 6, '#ffffff', seed + 34, { amp: 0.5, shadow: false });
-      if (look.acc === 'bowtie') paper(ctx, [[-8, -46], [0, -42], [8, -46], [8, -38], [0, -42], [-8, -38]], '#c0392b', seed + 35, { amp: 0.5, shadow: false });
-      if (look.acc === 'pearls') for (let i = 0; i < 7; i++) { ctx.fillStyle = '#fffaf0'; ctx.beginPath(); ctx.arc(-9 + i * 3, -41 + Math.sin(i / 6 * Math.PI) * 3, 1.8, 0, Math.PI * 2); ctx.fill(); }
-      if (look.acc === 'coffee') { paperRect(ctx, -18, -36, 36, 6, '#8a6a42', seed + 36, { amp: 0.4 }); for (let i = 0; i < 4; i++) paperRect(ctx, -16 + i * 9, -48, 7, 12, i % 2 ? '#fff' : '#f3e2c4', seed + 37 + i, { amp: 0.3, shadow: false }); }
-      if (look.acc === 'pizza') { paperRect(ctx, -22, -40, 44, 9, '#d8b07a', seed + 41, { amp: 0.4, stroke: INK, lw: 1 }); }
-      if (look.acc === 'shaker' && a !== 'spray') { paperRect(ctx, 15, -48, 10, 20, '#2b2b2b', seed + 42, { amp: 0.4 }); paperRect(ctx, 15, -50, 10, 4, '#e74c3c', seed + 43, { amp: 0.2, shadow: false }); }
     }
+
+    ctx.translate(0, breath * 0.4);
+    // ---- arms (behind the torso when they hang at the sides) ----
+    const a = o.anim, at = o.animT || 0;
+    let Lh = [-21, -19], R = [21, -19];
+    if (a === 'fan') R = [27, -12 + Math.sin(at * 22) * 9];
+    else if (a === 'spray') R = [22, -52];
+    else if (a === 'point') R = [34, -33];
+    else if (a === 'arms') { Lh = [-27, -54 + Math.sin(at * 10) * 3]; R = [27, -54 - Math.sin(at * 10) * 3]; }
+    else if (a === 'cough') R = [6, -50];
+    else if (hold === 'phone') R = [13, -33];
+    else if (hold === 'bouquet') { Lh = [-7, -24]; R = [7, -24]; }
+    else if (hold === 'coffee' || hold === 'pizza') { Lh = [-15, -23]; R = [15, -23]; }
+    else if (hold === 'shaker') R = [22, -21];
+    else if (hold === 'camera') { Lh = [-9, -27]; R = [9, -27]; }
+    const sleeve = outfit === 'tank' ? look.skin : outfit === 'hawaiian' || outfit === 'tee' ? look.skin : look.body;
+    const sleeveTop = outfit === 'hawaiian' || outfit === 'tee' ? look.body : sleeve;
+    const arm = (sx, h) => {
+      limb(ctx, sx, -38, h[0], h[1], sleeve, 7);
+      if (sleeveTop !== sleeve) { const mx = sx + (h[0] - sx) * 0.42, my = -38 + (h[1] + 38) * 0.42; limb(ctx, sx, -38, mx, my, sleeveTop, 8); }
+    };
+    if (!o.back) { arm(-13, Lh); arm(13, R); }
+
+    // ---- torso ----
+    const top = -43, bot = long ? -24 : -14;
+    paper(ctx, [[-15, top], [15, top], [18, bot], [-18, bot]], outfit === 'gown' ? '#ffffff' : look.body, seed + 9, { stroke: INK, lw: 2, amp: 1.2 });
+    if (!o.back) drawOutfit(ctx, look, outfit, top, bot, seed);
+    else if (look.hairStyle === 'long' || look.hairStyle === 'veil') { /* hair covers the back, drawn with the head */ }
+
+    if (!o.back) {
+      // hands
+      const hand = (h) => paperEllipse(ctx, h[0], h[1], 5.5, 5.5, look.skin, seed + 20 + Math.round(h[0]), { stroke: INK, lw: 1.5, amp: 0.6 });
+      drawHold(ctx, look, hold, a, at, seed, 'under');
+      hand(Lh); hand(R);
+      drawHold(ctx, look, hold, a, at, seed, 'over');
+    } else {
+      // from behind: arms hang at the sides
+      limb(ctx, -14, -38, -20, -19, look.body, 7); limb(ctx, 14, -38, 20, -19, look.body, 7);
+    }
+
+    // ---- head ----
+    ctx.translate(0, breath * 0.6);
     const hy = -64;
+    if (!o.back) drawHairBack(ctx, look, seed);
     paperEllipse(ctx, 0, hy, 24, 21, o.back ? (['bald', 'buzz'].includes(look.hairStyle) ? look.skin : look.hair) : look.skin, seed + 50, { stroke: INK, lw: 2, amp: 1.2 });
     if (o.back) { drawHairBackView(ctx, look, seed); ctx.restore(); return; }
     drawFace(ctx, look, hy, o, seed);
     drawHairFront(ctx, look, seed, hy);
+    drawBrows(ctx, look, hy, o);
     if (o.sweat) {
-      // nervous sweat: two drops sliding down the temples
       for (const [sx, ph] of [[-20, 0], [19, 0.5]]) {
-        const k = ((o.t * 0.9 + ph) % 1), yy = hy - 10 + k * 16;
+        const k = ((o.t * 0.9 + ph) % 1), yy = hy - 6 + k * 16;
         ctx.save(); ctx.globalAlpha = 1 - k * 0.6; ctx.fillStyle = '#7cc4f2'; ctx.strokeStyle = INK; ctx.lineWidth = 1.2;
         ctx.beginPath(); ctx.moveTo(sx, yy - 6); ctx.quadraticCurveTo(sx + 4, yy, sx, yy + 3); ctx.quadraticCurveTo(sx - 4, yy, sx, yy - 6); ctx.fill(); ctx.stroke(); ctx.restore();
       }
@@ -246,41 +303,126 @@ const Art = (() => {
     ctx.restore();
   }
 
+  // Clothes are flat shapes on the torso: lapels, buttons, collars, prints.
+  function drawOutfit(ctx, look, outfit, top, bot, seed) {
+    const inner = look.inner || '#f4f4f4', dark = shade(look.body, -0.3);
+    switch (outfit) {
+      case 'suit': case 'tux': case 'blazer':
+        paper(ctx, [[-6, top], [6, top], [0, top + 16]], inner, seed + 30, { shadow: false, amp: 0.4 });
+        paper(ctx, [[-15, top], [-6, top], [0, top + 18], [-4, top + 22]], dark, seed + 31, { shadow: false, amp: 0.4 });
+        paper(ctx, [[15, top], [6, top], [0, top + 18], [4, top + 22]], dark, seed + 32, { shadow: false, amp: 0.4 });
+        for (const by of [top + 21, top + 26]) { ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(1.5, by, 1.1, 0, Math.PI * 2); ctx.fill(); }
+        break;
+      case 'cardigan':
+        paper(ctx, [[-4, top], [4, top], [3, bot], [-3, bot]], inner, seed + 33, { shadow: false, amp: 0.4 });
+        for (let i = 0; i < 3; i++) { ctx.fillStyle = shade(look.body, -0.45); ctx.beginPath(); ctx.arc(-5.5, top + 7 + i * 8, 1.2, 0, Math.PI * 2); ctx.fill(); }
+        break;
+      case 'vest':
+        paper(ctx, [[-5, top], [5, top], [3, bot], [-3, bot]], inner, seed + 34, { shadow: false, amp: 0.4 });
+        for (const px of [-11, 5]) paperRect(ctx, px, top + 14, 7, 6, dark, seed + 35 + px, { amp: 0.3, shadow: false });
+        break;
+      case 'hawaiian':
+        for (let i = 0; i < 7; i++) paperEllipse(ctx, -10 + (i % 3) * 10, top + 7 + Math.floor(i / 3) * 9, 3, 3, i % 2 ? '#ffe066' : '#5ec26a', seed + 36 + i, { shadow: false, amp: 0.8 });
+        paper(ctx, [[-6, top], [0, top + 8], [6, top]], look.skin, seed + 44, { shadow: false, amp: 0.3 });
+        break;
+      case 'tank':
+        paper(ctx, [[-15, top], [-8, top], [-11, top + 18], [-17, top + 20]], look.skin, seed + 45, { shadow: false, amp: 0.6 });
+        paper(ctx, [[15, top], [8, top], [11, top + 18], [17, top + 20]], look.skin, seed + 46, { shadow: false, amp: 0.6 });
+        break;
+      case 'hoodie':
+        paper(ctx, [[-10, top], [10, top], [6, top + 6], [-6, top + 6]], dark, seed + 47, { shadow: false, amp: 0.4 });
+        paperRect(ctx, -9, bot - 11, 18, 7, dark, seed + 48, { amp: 0.4, shadow: false });
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-3, top + 6); ctx.lineTo(-3, top + 13); ctx.moveTo(3, top + 6); ctx.lineTo(3, top + 13); ctx.stroke();
+        break;
+      case 'cassock':
+        for (let i = 0; i < 4; i++) { ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(0, top + 8 + i * 6, 1, 0, Math.PI * 2); ctx.fill(); }
+        break;
+      case 'shirt':
+        paper(ctx, [[-6, top], [0, top + 6], [6, top]], '#fff', seed + 49, { shadow: false, amp: 0.3 });
+        break;
+      case 'dress':
+        paper(ctx, [[-15, bot - 4], [15, bot - 4], [15, bot], [-15, bot]], dark, seed + 50, { shadow: false, amp: 0.3 });
+        break;
+    }
+    if (look.shirt === 'lanyard') { ctx.strokeStyle = '#2f62b8'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(-7, top + 1); ctx.lineTo(0, top + 16); ctx.lineTo(7, top + 1); ctx.stroke(); paperRect(ctx, -5, top + 15, 10, 11, '#fff', seed + 51, { amp: 0.3, shadow: false }); }
+    const acc = look.acc;
+    if (acc === 'tie') paper(ctx, [[-2.5, top + 2], [2.5, top + 2], [4, top + 20], [0, top + 25], [-4, top + 20]], look.tieColor || '#a51f2d', seed + 52, { shadow: false, amp: 0.3 });
+    if (acc === 'bowtie') paper(ctx, [[-8, top - 1], [0, top + 3], [8, top - 1], [8, top + 7], [0, top + 3], [-8, top + 7]], '#c0392b', seed + 53, { amp: 0.4, shadow: false });
+    if (acc === 'collar') paperRect(ctx, -4, top - 1, 8, 6, '#ffffff', seed + 54, { amp: 0.3, shadow: false });
+    if (acc === 'pearls') for (let i = 0; i < 7; i++) { ctx.fillStyle = '#fffaf0'; ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.arc(-9 + i * 3, top + 2 + Math.sin(i / 6 * Math.PI) * 3, 1.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+  }
+
+  // Held props, split so hands can sit on top of trays and around bottles.
+  function drawHold(ctx, look, hold, a, at, seed, layer) {
+    if (a === 'spray' && layer === 'over') {
+      paperRect(ctx, 18, -68, 8, 14, '#c86dd7', seed + 60, { amp: 0.6 });
+      for (let i = 0; i < 6; i++) { ctx.fillStyle = 'rgba(230,180,255,0.6)'; ctx.beginPath(); ctx.arc(30 + i * 5 + Math.sin(at * 9 + i) * 3, -64 + Math.cos(at * 7 + i) * 6, 3 + i * 0.6, 0, Math.PI * 2); ctx.fill(); }
+      return;
+    }
+    if (a && ['fan', 'point', 'arms', 'cough'].includes(a) && ['coffee', 'pizza', 'bouquet'].includes(hold)) return; // put it down while gesturing
+    if (layer === 'under') {
+      if (hold === 'camera') { ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-9, -42); ctx.lineTo(-6, -33); ctx.moveTo(9, -42); ctx.lineTo(6, -33); ctx.stroke(); paperRect(ctx, -11, -36, 22, 14, '#2b2b2b', seed + 61, { amp: 0.6 }); paperEllipse(ctx, 0, -29, 5, 5, '#8fb6d9', seed + 62, { shadow: false, amp: 0.4, stroke: INK, lw: 1 }); }
+      if (hold === 'shaker') { paperRect(ctx, 17, -34, 10, 20, '#2b2b2b', seed + 63, { amp: 0.4, stroke: INK, lw: 1 }); paperRect(ctx, 17, -36, 10, 4, '#e74c3c', seed + 64, { amp: 0.2, shadow: false }); }
+      if (hold === 'phone' && !a) paperRect(ctx, 8, -46, 10, 16, '#222', seed + 65, { amp: 0.5 });
+      return;
+    }
+    if (hold === 'coffee') { paperRect(ctx, -20, -26, 40, 5, '#8a6a42', seed + 66, { amp: 0.4, stroke: INK, lw: 1 }); for (let i = 0; i < 4; i++) paperRect(ctx, -17 + i * 9, -37, 7, 11, i % 2 ? '#fff' : '#f3e2c4', seed + 67 + i, { amp: 0.3, shadow: false, stroke: INK, lw: 0.8 }); }
+    if (hold === 'pizza') { paperRect(ctx, -22, -30, 44, 8, '#d8b07a', seed + 71, { amp: 0.4, stroke: INK, lw: 1 }); ctx.fillStyle = '#b03a2e'; ctx.font = '700 5px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('PIZZA', 0, -24.5); }
+    if (hold === 'bouquet') for (let i = 0; i < 5; i++) paperEllipse(ctx, -8 + i * 4, -30 - (i % 2) * 5, 5, 5, i % 2 ? '#f6b6cf' : '#fff', seed + 72 + i, { amp: 1 });
+  }
+
+  // Eyes: white ellipses; lids are painted *inside* the eye (clipped), so nothing spills onto hair or glasses.
   function drawFace(ctx, look, hy, o, seed) {
-    const e = o.expr || 'neutral';
+    const e = o.expr || 'neutral', f = look.features || [];
     const disgust = e === 'disgust', sus = e === 'sus', shock = e === 'shock', angry = e === 'angry', worried = e === 'worried';
-    if (disgust) { ctx.fillStyle = 'rgba(120,190,60,0.45)'; ctx.beginPath(); ctx.ellipse(0, hy + 2, 22, 18, 0, 0, Math.PI * 2); ctx.fill(); }
-    if (angry) { ctx.fillStyle = 'rgba(220,60,50,0.25)'; ctx.beginPath(); ctx.ellipse(0, hy + 2, 22, 18, 0, 0, Math.PI * 2); ctx.fill(); }
-    if (worried) { ctx.fillStyle = 'rgba(120,170,230,0.6)'; ctx.beginPath(); ctx.ellipse(17, hy - 8, 2.5, 4, 0.3, 0, Math.PI * 2); ctx.fill(); }
+    const faceClip = () => { ctx.beginPath(); ctx.ellipse(0, hy, 23, 20, 0, 0, Math.PI * 2); ctx.clip(); };
+    // cheeks, stubble, freckles, wrinkles: all clipped to the face
+    ctx.save(); faceClip();
+    if (f.includes('blush')) { ctx.fillStyle = 'rgba(240,120,130,0.35)'; for (const cx of [-14, 14]) { ctx.beginPath(); ctx.ellipse(cx, hy + 6, 5, 3, 0, 0, Math.PI * 2); ctx.fill(); } }
+    if (f.includes('stubble')) { ctx.fillStyle = 'rgba(40,30,30,0.35)'; for (let i = 0; i < 26; i++) { const px = -14 + (i * 37 % 28), py = hy + 6 + (i * 13 % 11); ctx.fillRect(px, py, 1.2, 1.2); } }
+    if (f.includes('freckles')) { ctx.fillStyle = 'rgba(150,80,40,0.55)'; for (const [px, py] of [[-14, 5], [-11, 7], [-15, 8], [11, 5], [14, 7], [12, 8]]) { ctx.beginPath(); ctx.arc(px, hy + py, 0.9, 0, Math.PI * 2); ctx.fill(); } }
+    if (disgust) { ctx.fillStyle = 'rgba(120,190,60,0.45)'; ctx.fillRect(-25, hy - 22, 50, 44); }
+    if (angry) { ctx.fillStyle = 'rgba(220,60,50,0.25)'; ctx.fillRect(-25, hy - 22, 50, 44); }
+    ctx.restore();
     const lx = U.clamp(o.lookX || 0, -1, 1) * 2.4, ly = U.clamp(o.lookY || 0, -1, 1) * 2;
-    // blink every few seconds, offset per character
     const blink = !disgust && !shock && ((o.t * 1000 + (o.blinkSeed || seed) * 397) % 3700) < 130;
+    const rx = 7, ry = 8.5, ey = hy - 3;
     for (const ex of [-6.8, 6.8]) {
       const side = ex < 0 ? -1 : 1;
+      ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
       if (disgust || blink) {
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(ex, hy - 2, 7, blink ? 1.6 : 3.5, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.stroke();
-      } else {
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(ex, hy - 3, 7, 8.5, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(ex + lx, hy - 2 + ly, shock ? 1.4 : 2.3, 0, Math.PI * 2); ctx.fill();
-        if (sus || angry) { ctx.fillStyle = look.skin; ctx.fillRect(ex - 8, hy - 13, 16, sus ? 7 : 4); ctx.beginPath(); ctx.moveTo(ex - 8, hy - (sus ? 6 : 9)); ctx.lineTo(ex + 8, hy - (sus ? 6 : 9)); ctx.stroke(); }
+        // closed or screwed-up eyes: a curved line, no white
+        ctx.beginPath();
+        if (disgust) { const inward = -side; ctx.moveTo(ex - 5 * inward, ey - 4); ctx.lineTo(ex + 4 * inward, ey); ctx.lineTo(ex - 5 * inward, ey + 4); } // squeezed shut: > <
+        else { ctx.moveTo(ex - 6, ey + 1); ctx.quadraticCurveTo(ex, ey + 4, ex + 6, ey + 1); }
+        ctx.lineWidth = 2; ctx.stroke();
+        continue;
       }
-      // eyebrows do most of the acting
-      ctx.strokeStyle = INK; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-      ctx.beginPath();
-      if (angry) { ctx.moveTo(ex - 6 * side, hy - 15); ctx.lineTo(ex + 5 * side, hy - 10); }
-      else if (worried) { ctx.moveTo(ex - 6 * side, hy - 11); ctx.lineTo(ex + 5 * side, hy - 16); }
-      else if (shock) { ctx.moveTo(ex - 5, hy - 18); ctx.quadraticCurveTo(ex, hy - 21, ex + 5, hy - 18); }
-      else if (sus) { ctx.moveTo(ex - 5, hy - 12 - (side > 0 ? 3 : 0)); ctx.lineTo(ex + 5, hy - 12 - (side > 0 ? 4 : 0)); }
-      else if (disgust) { ctx.moveTo(ex - 6 * side, hy - 9); ctx.lineTo(ex + 5 * side, hy - 8); }
-      ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(ex, ey, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.save();
+      ctx.beginPath(); ctx.ellipse(ex, ey, rx, ry, 0, 0, Math.PI * 2); ctx.clip();
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(ex + lx, ey + 1 + ly, shock ? 1.4 : 2.4, 0, Math.PI * 2); ctx.fill();
+      // eyelids, inside the eye only
+      ctx.fillStyle = look.skin;
+      let lid = null;
+      if (sus) lid = [[ex - rx, ey - ry], [ex + rx, ey - ry], [ex + rx, ey - 1], [ex - rx, ey - 1]];
+      else if (angry) lid = [[ex - rx, ey - ry], [ex + rx, ey - ry], [ex + rx * side, ey - ry + 1], [ex - rx * side, ey - 2]];
+      else if (worried) lid = [[ex - rx, ey - ry], [ex + rx, ey - ry], [ex - rx * side, ey - ry + 2], [ex + rx * side, ey - 3]];
+      else if (f.includes('bags') || f.includes('tired')) lid = [[ex - rx, ey - ry], [ex + rx, ey - ry], [ex + rx, ey - 4], [ex - rx, ey - 4]];
+      if (lid) { ctx.beginPath(); lid.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); ctx.closePath(); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(lid[3][0], lid[3][1]); ctx.lineTo(lid[2][0], lid[2][1]); ctx.stroke(); }
+      ctx.restore();
+      ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(ex, ey, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+      if (f.includes('lashes')) { ctx.lineWidth = 1.3; for (let k = 0; k < 2; k++) { const ang = -Math.PI / 2 + side * (0.7 + k * 0.35); ctx.beginPath(); ctx.moveTo(ex + Math.cos(ang) * rx, ey + Math.sin(ang) * ry); ctx.lineTo(ex + Math.cos(ang) * (rx + 3), ey + Math.sin(ang) * (ry + 3)); ctx.stroke(); } }
+      if (f.includes('bags')) { ctx.strokeStyle = 'rgba(80,50,90,0.6)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(ex, ey + 6, 5, 0.3, Math.PI - 0.3); ctx.stroke(); }
+      if (f.includes('wrinkles')) { ctx.strokeStyle = 'rgba(60,40,30,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(ex + side * 8, ey - 1); ctx.lineTo(ex + side * 11, ey - 3); ctx.moveTo(ex + side * 8, ey + 2); ctx.lineTo(ex + side * 11, ey + 3); ctx.stroke(); }
     }
-    if (look.acc === 'glasses') { ctx.strokeStyle = INK; ctx.lineWidth = 1.5; for (const ex of [-6.8, 6.8]) { ctx.beginPath(); ctx.arc(ex, hy - 3, 9, 0, Math.PI * 2); ctx.stroke(); } }
+    if (look.acc === 'glasses') { ctx.strokeStyle = INK; ctx.lineWidth = 1.6; for (const ex of [-6.8, 6.8]) { ctx.beginPath(); ctx.arc(ex, ey, 9.2, 0, Math.PI * 2); ctx.stroke(); } ctx.beginPath(); ctx.moveTo(-2.4, ey - 1); ctx.lineTo(2.4, ey - 1); ctx.stroke(); }
     if (look.acc === 'shades') paperRect(ctx, -16, hy - 10, 32, 11, '#111', seed + 60, { amp: 0.6, shadow: false });
+    if (f.includes('earrings')) for (const sx of [-23, 23]) { ctx.fillStyle = '#f2c14e'; ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(sx, hy + 7, 2.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
     // mouth: talking cycles through three cutout mouth shapes
     ctx.strokeStyle = INK; ctx.fillStyle = '#5a1d1d'; ctx.lineWidth = 2;
     const my = hy + 12;
+    if (f.includes('mustache')) paper(ctx, [[-9, my - 3], [0, my - 6], [9, my - 3], [7, my - 1], [0, my - 3], [-7, my - 1]], look.hair === '#c0392b' ? '#3a2416' : look.hair, seed + 61, { shadow: false, amp: 0.4, stroke: INK, lw: 1 });
     const shape = o.talking ? Math.floor(o.t * 11 + seed) % 3 : -1;
     if (shock || shape === 2) { ctx.beginPath(); ctx.ellipse(0, my, shock ? 4 : 5.5, shock ? 5.5 : 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
     else if (shape === 1) { ctx.beginPath(); ctx.ellipse(0, my, 4.5, 2.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
@@ -291,39 +433,64 @@ const Art = (() => {
     else { ctx.beginPath(); ctx.moveTo(-4, my); ctx.lineTo(4, my); ctx.stroke(); }
   }
 
+  // Eyebrows sit just above the eye (and above glasses), drawn last so expressions always read.
+  function drawBrows(ctx, look, hy, o) {
+    const e = o.expr || 'neutral', f = look.features || [], bushy = f.includes('bushybrows');
+    if (e === 'neutral' && !bushy) return;
+    if (e === 'disgust' || look.acc === 'shades') return;
+    const by = hy - 3 - 8.5 - (look.acc === 'glasses' ? 4 : 2.5);
+    ctx.save(); ctx.lineCap = 'round';
+    ctx.strokeStyle = bushy ? (look.hair || INK) : INK; ctx.lineWidth = bushy ? 3.6 : 2.4;
+    if (bushy) { ctx.shadowColor = INK; ctx.shadowBlur = 0; }
+    for (const ex of [-6.8, 6.8]) {
+      const side = ex < 0 ? -1 : 1;
+      ctx.beginPath();
+      if (e === 'angry') { ctx.moveTo(ex - 5 * side, by - 2); ctx.lineTo(ex + 5 * side, by + 2); }
+      else if (e === 'worried') { ctx.moveTo(ex - 5 * side, by + 2); ctx.lineTo(ex + 5 * side, by - 2); }
+      else if (e === 'shock') { ctx.moveTo(ex - 5, by - 2); ctx.quadraticCurveTo(ex, by - 5, ex + 5, by - 2); }
+      else if (e === 'sus') { const lift = side > 0 ? -2.5 : 0.5; ctx.moveTo(ex - 5, by + lift); ctx.lineTo(ex + 5, by + lift - (side > 0 ? 1 : 0)); }
+      else if (e === 'happy') { ctx.moveTo(ex - 5, by); ctx.quadraticCurveTo(ex, by - 2.5, ex + 5, by); }
+      else { ctx.moveTo(ex - 5, by); ctx.lineTo(ex + 5, by); }
+      ctx.stroke();
+      if (bushy) { ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.stroke(); ctx.strokeStyle = look.hair || INK; ctx.lineWidth = 3.6; }
+    }
+    ctx.restore();
+  }
+
   function drawHairBack(ctx, look, seed) {
     if (look.hairStyle === 'long') paper(ctx, [[-25, -70], [25, -70], [24, -34], [-24, -34]], look.hair, seed + 70, { stroke: INK, lw: 1.5 });
     if (look.hairStyle === 'mullet') paper(ctx, [[-22, -64], [22, -64], [20, -40], [-20, -40]], look.hair, seed + 71, { stroke: INK, lw: 1.5 });
     if (look.hairStyle === 'bob') paper(ctx, [[-27, -70], [27, -70], [26, -50], [-26, -50]], look.hair, seed + 73, { stroke: INK, lw: 1.5 });
     if (look.hairStyle === 'veil') paper(ctx, [[-30, -86], [30, -86], [38, -10], [-38, -10]], 'rgba(255,255,255,0.75)', seed + 72, { stroke: '#bbb', lw: 1 });
   }
+  // Fringes stop above the eyes (top of the eyes is ~12 units above head centre).
   function drawHairFront(ctx, look, seed, hy) {
     const Hc = look.hair;
     switch (look.hairStyle) {
-      case 'bun': paper(ctx, [[-23, hy - 6], [-16, hy - 18], [0, hy - 22], [16, hy - 18], [23, hy - 6], [12, hy - 14], [-12, hy - 14]], Hc, seed + 80, { stroke: INK, lw: 1.5 });
+      case 'bun': paper(ctx, [[-23, hy - 6], [-16, hy - 18], [0, hy - 22], [16, hy - 18], [23, hy - 6], [12, hy - 15], [-12, hy - 15]], Hc, seed + 80, { stroke: INK, lw: 1.5 });
         paperEllipse(ctx, 0, hy - 26, 9, 7, Hc, seed + 81, { stroke: INK, lw: 1.5 }); break;
-      case 'spiky': paper(ctx, [[-22, hy - 8], [-18, hy - 26], [-10, hy - 16], [-4, hy - 30], [3, hy - 17], [10, hy - 28], [14, hy - 15], [22, hy - 22], [22, hy - 8], [0, hy - 14]], Hc, seed + 82, { stroke: INK, lw: 1.5 }); break;
+      case 'spiky': paper(ctx, [[-22, hy - 8], [-18, hy - 26], [-10, hy - 17], [-4, hy - 30], [3, hy - 18], [10, hy - 28], [14, hy - 16], [22, hy - 22], [22, hy - 8], [0, hy - 15]], Hc, seed + 82, { stroke: INK, lw: 1.5 }); break;
       case 'bald': paperEllipse(ctx, -22, hy + 2, 5, 7, Hc, seed + 83, { shadow: false }); paperEllipse(ctx, 22, hy + 2, 5, 7, Hc, seed + 84, { shadow: false }); break;
-      case 'buzz': paper(ctx, [[-23, hy - 4], [-18, hy - 17], [0, hy - 22], [18, hy - 17], [23, hy - 4], [14, hy - 13], [-14, hy - 13]], Hc, seed + 85, { shadow: false, amp: 0.8 }); break;
+      case 'buzz': paper(ctx, [[-23, hy - 4], [-18, hy - 17], [0, hy - 22], [18, hy - 17], [23, hy - 4], [14, hy - 14], [-14, hy - 14]], Hc, seed + 85, { shadow: false, amp: 0.8 }); break;
       case 'bob':
-        paper(ctx, [[-26, hy + 4], [-22, hy - 16], [-6, hy - 23], [12, hy - 22], [24, hy - 14], [26, hy + 4], [18, hy - 8], [0, hy - 14], [-18, hy - 8]], Hc, seed + 86, { stroke: INK, lw: 1.5 }); break;
+        paper(ctx, [[-26, hy + 4], [-22, hy - 16], [-6, hy - 23], [12, hy - 22], [24, hy - 14], [26, hy + 4], [19, hy - 6], [0, hy - 15], [-19, hy - 6]], Hc, seed + 86, { stroke: INK, lw: 1.5 }); break;
       case 'mullet': case 'combed': case 'messy': case 'long':
-        paper(ctx, [[-24, hy - 2], [-20, hy - 16], [-6, hy - 23], [10, hy - 22], [22, hy - 14], [24, hy - 2], look.hairStyle === 'combed' ? [8, hy - 12] : [12, hy - 10], [-6, hy - 13]], Hc, seed + 87, { stroke: INK, lw: 1.5 });
+        paper(ctx, [[-24, hy - 2], [-20, hy - 16], [-6, hy - 23], [10, hy - 22], [22, hy - 14], [24, hy - 2], look.hairStyle === 'combed' ? [8, hy - 14] : [12, hy - 13], [-6, hy - 15]], Hc, seed + 87, { stroke: INK, lw: 1.5 });
         if (look.hairStyle === 'messy') { paper(ctx, [[-6, hy - 22], [-2, hy - 32], [4, hy - 21]], Hc, seed + 88, { shadow: false }); paper(ctx, [[6, hy - 21], [14, hy - 29], [14, hy - 18]], Hc, seed + 89, { shadow: false }); }
         break;
       case 'hat':
-        paperEllipse(ctx, 0, hy - 16, 36, 7, Hc, seed + 90, { stroke: INK, lw: 1.5 });
-        paper(ctx, [[-17, hy - 18], [-14, hy - 34], [14, hy - 34], [17, hy - 18]], Hc, seed + 91, { stroke: INK, lw: 1.5 });
-        paper(ctx, [[12, hy - 32], [30, hy - 52], [20, hy - 30]], '#f2c14e', seed + 92, { shadow: false }); break;
+        paperEllipse(ctx, 0, hy - 17, 36, 7, Hc, seed + 90, { stroke: INK, lw: 1.5 });
+        paper(ctx, [[-17, hy - 19], [-14, hy - 35], [14, hy - 35], [17, hy - 19]], Hc, seed + 91, { stroke: INK, lw: 1.5 });
+        paper(ctx, [[12, hy - 33], [30, hy - 53], [20, hy - 31]], '#f2c14e', seed + 92, { shadow: false }); break;
       case 'beanie':
-        paper(ctx, [[-24, hy - 6], [-20, hy - 20], [0, hy - 27], [20, hy - 20], [24, hy - 6]], Hc, seed + 93, { stroke: INK, lw: 1.5 });
-        paperRect(ctx, -24, hy - 10, 48, 6, '#b03a2e', seed + 94, { amp: 0.6, shadow: false }); break;
+        paper(ctx, [[-24, hy - 12], [-20, hy - 24], [0, hy - 31], [20, hy - 24], [24, hy - 12]], Hc, seed + 93, { stroke: INK, lw: 1.5 });
+        paperRect(ctx, -24, hy - 18, 48, 6, '#b03a2e', seed + 94, { amp: 0.6, shadow: false }); break;
       case 'cap':
-        paper(ctx, [[-24, hy - 6], [-20, hy - 20], [0, hy - 26], [20, hy - 20], [24, hy - 6]], Hc, seed + 95, { stroke: INK, lw: 1.5 });
-        paper(ctx, [[8, hy - 8], [36, hy - 6], [34, hy - 1], [8, hy - 3]], Hc, seed + 96, { stroke: INK, lw: 1.5 });
-        paperEllipse(ctx, 0, hy - 16, 6, 4, '#fff', seed + 97, { shadow: false }); break;
+        paper(ctx, [[-24, hy - 13], [-20, hy - 24], [0, hy - 30], [20, hy - 24], [24, hy - 13]], Hc, seed + 95, { stroke: INK, lw: 1.5 });
+        paper(ctx, [[6, hy - 19], [36, hy - 18], [34, hy - 14], [6, hy - 15]], Hc, seed + 96, { stroke: INK, lw: 1.5 });
+        paperEllipse(ctx, 0, hy - 22, 6, 4, '#fff', seed + 97, { shadow: false }); break;
       case 'veil':
-        paper(ctx, [[-22, hy - 6], [-16, hy - 19], [0, hy - 23], [16, hy - 19], [22, hy - 6], [6, hy - 14], [-10, hy - 12]], Hc, seed + 98, { stroke: INK, lw: 1.5 });
+        paper(ctx, [[-22, hy - 6], [-16, hy - 19], [0, hy - 23], [16, hy - 19], [22, hy - 6], [6, hy - 15], [-10, hy - 14]], Hc, seed + 98, { stroke: INK, lw: 1.5 });
         for (let i = 0; i < 5; i++) paperEllipse(ctx, -10 + i * 5, hy - 22 - (i % 2) * 3, 2.5, 2.5, '#f2c14e', seed + 99 + i, { shadow: false, amp: 0.3 }); break;
     }
   }
@@ -332,9 +499,9 @@ const Art = (() => {
     if (look.hairStyle === 'bald') { paperEllipse(ctx, -22, hy + 2, 5, 7, look.hair, seed + 105, { shadow: false }); paperEllipse(ctx, 22, hy + 2, 5, 7, look.hair, seed + 106, { shadow: false }); }
     if (look.hairStyle === 'buzz') paper(ctx, [[-23, hy - 2], [-18, hy - 17], [0, hy - 21], [18, hy - 17], [23, hy - 2], [0, hy + 8]], look.hair, seed + 104, { shadow: false, amp: 0.8 });
     if (look.hairStyle === 'bun') paperEllipse(ctx, 0, hy - 22, 9, 7, look.hair, seed + 107, { stroke: INK, lw: 1.5 });
-    if (look.hairStyle === 'hat') { paperEllipse(ctx, 0, hy - 16, 36, 7, look.hair, seed + 108, { stroke: INK, lw: 1.5 }); paper(ctx, [[-17, hy - 18], [-14, hy - 34], [14, hy - 34], [17, hy - 18]], look.hair, seed + 109, { stroke: INK, lw: 1.5 }); }
-    if (look.hairStyle === 'beanie') paperRect(ctx, -24, hy - 10, 48, 6, '#b03a2e', seed + 110, { amp: 0.6, shadow: false });
-    if (look.hairStyle === 'cap') paperEllipse(ctx, 0, hy - 18, 22, 8, look.hair, seed + 111, { stroke: INK, lw: 1.5 });
+    if (look.hairStyle === 'hat') { paperEllipse(ctx, 0, hy - 17, 36, 7, look.hair, seed + 108, { stroke: INK, lw: 1.5 }); paper(ctx, [[-17, hy - 19], [-14, hy - 35], [14, hy - 35], [17, hy - 19]], look.hair, seed + 109, { stroke: INK, lw: 1.5 }); }
+    if (look.hairStyle === 'beanie') paperRect(ctx, -24, hy - 15, 48, 6, '#b03a2e', seed + 110, { amp: 0.6, shadow: false });
+    if (look.hairStyle === 'cap') paperEllipse(ctx, 0, hy - 19, 22, 8, look.hair, seed + 111, { stroke: INK, lw: 1.5 });
     if (look.hairStyle === 'long' || look.hairStyle === 'mullet') paper(ctx, [[-22, hy], [22, hy], [20, hy + 26], [-20, hy + 26]], look.hair, seed + 112, { stroke: INK, lw: 1.5 });
     if (look.hairStyle === 'bob') paper(ctx, [[-26, hy - 4], [26, hy - 4], [25, hy + 14], [-25, hy + 14]], look.hair, seed + 114, { stroke: INK, lw: 1.5 });
     if (look.hairStyle === 'veil') paper(ctx, [[-28, hy - 18], [28, hy - 18], [34, hy + 52], [-34, hy + 52]], 'rgba(255,255,255,0.8)', seed + 113, { stroke: '#bbb', lw: 1 });
@@ -448,5 +615,5 @@ const Art = (() => {
     return portraitCache[key];
   }
 
-  return { eyeIndicator, badge, holdRing, buildBackground, drawZoneTags, drawItem, drawPerson, drawDog, drawBaby, bubble, stinkLines, puff, portrait, paper, paperRect, paperEllipse, rectPts, grainPattern, INK };
+  return { eyeIndicator, badge, holdRing, buildBackground, drawZoneTags, drawZoneDecals, drawItem, drawPerson, drawDog, drawBaby, bubble, stinkLines, puff, portrait, paper, paperRect, paperEllipse, rectPts, grainPattern, INK };
 })();

@@ -447,6 +447,11 @@ button { cursor: pointer; }
 #dlgPortrait { width: 7.5em; height: 7.5em; }
 #dlgText { font-size: 1.05em; min-height: 2.6em; }
 
+#watch { display: flex; align-items: center; gap: .45em; font-size: .82em; font-weight: 700; margin-top: .35em; padding: .1em .5em; border-radius: 3px; background: #e1f3c8; color: #3b6118; }
+#watch svg { width: 1.6em; height: 1em; }
+#watch circle { fill: #3b6118; }
+#watch.seen { background: #ffd9d4; color: #9b1c25; }
+#watch.seen circle { fill: #d9434f; }
 #prompt { position: absolute; left: 50%; bottom: 4.1em; transform: translateX(-50%); display: grid; gap: .3em; justify-items: center; pointer-events: none; }
 .pr { display: flex; align-items: center; gap: .5em; background: #fffdf6; border: 2px solid var(--ink); padding: .25em .7em .25em .35em; border-radius: 3px; box-shadow: 0 3px 0 rgba(0,0,0,.3); font-weight: 600; font-size: .92em; }
 .pr kbd { font-family: var(--f-display); background: var(--ink); color: var(--paper); border-radius: 3px; padding: .05em .4em; font-size: .85em; }
@@ -477,6 +482,7 @@ button { cursor: pointer; }
       <div class="hud-card paper" id="caseFile"><div id="caseTag" class="cf-tag"></div><ul id="objList"></ul></div>
       <div class="hud-card paper" id="meters">
         <div class="meter" id="auraMeter" title="Your reputation. It drops when people see you do something odd, and recovers while you act normal."><span class="lbl">Aura</span><div class="bar"><i id="auraFill"></i></div><span id="auraVal">100</span></div>
+        <div id="watch" title="How many people can see you right now"><svg viewBox="0 0 24 14" aria-hidden="true"><path d="M1 7 Q12 -4 23 7 Q12 18 1 7Z" fill="#fff" stroke="#1c1a1f" stroke-width="1.6"/><circle cx="12" cy="7" r="3.2"/></svg><span id="watchTxt">nobody watching</span></div>
         <div class="meter" id="tummyMeter" title="You need to go too. Let it go (F) only during something loud."><span class="lbl">Tummy</span><div class="bar"><i id="tummyFill"></i></div><span></span></div>
       </div>
     </div>
@@ -576,7 +582,7 @@ button { cursor: pointer; }
       <div class="ht-grid">
         <div class="ht"><h4>1. Notice</h4><p>Something happens. Smell spreads out from where it started, so the people closest react first. Sniff (Q) to work out what it is. The smell tells you what they ate.</p></div>
         <div class="ht"><h4>2. Investigate</h4><p>Talk to people (E). Ask what they ate and where they were standing. Hold E next to a bag to search it. Stand close to whisperers to overhear them. One person is lying.</p></div>
-        <div class="ht"><h4>3. Stay unseen</h4><p>Odd behaviour costs Aura, but only if someone sees it. The eye over your head shows how many people are watching. Walking and polite questions are always free.</p></div>
+        <div class="ht"><h4>3. Stay unseen</h4><p>Odd behaviour costs Aura, but only if someone sees it. The eye under your Aura meter shows how many people can see you. Walking and polite questions are always free.</p></div>
         <div class="ht"><h4>4. Call it</h4><p>Before time runs out, press O. Early cases just need a name. Later ones need proof, and the final cases are a full cross-examination.</p></div>
       </div>
       <h3>Controls</h3>

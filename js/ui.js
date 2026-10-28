@@ -100,7 +100,7 @@ const UI = (() => {
     $('#objectLabel').textContent = 'Call it';
     // only show what this case has taught
     const R = RULES;
-    $('#auraMeter').hidden = !R.aura; $('#tummyMeter').hidden = !R.tummy;
+    $('#auraMeter').hidden = !R.aura; $('#tummyMeter').hidden = !R.tummy; $('#watch').hidden = !R.aura;
     $('#meters').hidden = !R.aura && !R.tummy;
     $('#roomSus').hidden = true;
     $('#btnHint').hidden = !G.diff.hints;
@@ -117,6 +117,9 @@ const UI = (() => {
     $('#auraFill').style.width = G.auraShown.toFixed(1) + '%';
     setText($('#auraVal'), 'aura', Math.round(G.auraShown) + '');
     $('#auraMeter').classList.toggle('low', G.auraShown < 35);
+    const w = G.watchers || 0;
+    setText($('#watchTxt'), 'watch', w ? `${w} watching you` : 'nobody watching');
+    $('#watch').classList.toggle('seen', w > 0);
     $('#tummyFill').style.width = (G.pressure ?? 0).toFixed(1) + '%';
     $('#tummyMeter').classList.toggle('danger', G.pressure > 70);
     const t = G.t || 0;

@@ -12,8 +12,8 @@ Working agreement (from the product owner, 2026-10-29):
 - [x] Audio engine v4: mixing bus with compressor, generated reverb per setting, music ducking under dialogue
 - [x] Adaptive music: per-setting themes with intensity layers (calm → investigating → tension → trial), stingers for key beats
 - [x] Sound design: richer fart synthesis (body, flutter, turbulence, sputter tail, food-dependent), character voice blips with distinct timbres, ambience beds (elevator motor, cables, floor ticks; chapel room tone, pew creaks), footsteps, paper UI sounds
-- [ ] Character design v2: real arms and sleeves, trousers and shoes, clothing details, per-character facial features, idle breathing, more expressions
-- [ ] Fix: eyes, eyelids and eyebrows drawing over hair, glasses and neighbours (clip eyelids to the eye shape, brows relative to eyes)
+- [x] Character design v2: real arms and sleeves, trousers and shoes, clothing details, per-character facial features, idle breathing, more expressions
+- [x] Fix: eyes, eyelids and eyebrows drawing over hair, glasses and neighbours (clip eyelids to the eye shape, brows relative to eyes)
 
 ### Iteration 2: playtest tools
 - [ ] Admin / playtest mode unlocked by a code in the URL: every case open, god view (culprit, origin, all facts), NPC debug overlay (suspicion, theories, who sees whom), time controls (pause, ×0.5–×4, skip), teleport, reveal clues, toggle rules, pick seeds
@@ -34,3 +34,4 @@ Working agreement (from the product owner, 2026-10-29):
 ## Log
 - 2026-10-29: roadmap created. Starting iteration 1.
 - 2026-10-29: audio engine v4 done (buses, compressor, generated room reverb, adaptive themes with intensity layers, ducking, ambience, new farts/voices/foley, end jingles). Levels measured headlessly; no clipping.
+- 2026-10-29: character design v2 (arms/sleeves, trousers/skirts/shoes, outfits, per-character features, breathing, clipped eyelids, brows above eyes, face-clipped tints, raised cap/beanie brims). The floating watching-eye moved into the HUD; zone labels painted on the floor under people; reaction badges smaller. Iteration 1 complete.
