@@ -28,7 +28,7 @@ Working agreement (from the product owner, 2026-10-29):
 ### Iteration 4 (v4 release)
 - [ ] New settings and cases where they serve the story
 - [x] Reverse case ("you dealt it")
-- [ ] Daily case, achievements
+- [x] Daily case, achievements
 - [ ] Accessibility: colour-blind palette check, touch controls, remappable keys
 - [ ] Performance pass, final polish, v4 release notes
 
@@ -40,3 +40,4 @@ Working agreement (from the product owner, 2026-10-29):
 - 2026-10-29: iteration 3 (writing). Research summary in DESIGN.md. Season one "Thornbury Tower" in js/story.js: six authored cases (fixed culprit, meal, lie with a motive, decoys, witness, positions, witness and bag lines, per-case voice lines and confessions), a briefing "previously" paragraph, "what really happened" and "what happened next" on the results, a season-end card. The bride is now Dana from HR. Consistency fixes: the elevator descends thirty floors over each case's own length, Sal gets on at twenty-two (he said twenty-one; the car stopped at twenty-two), floor nine is a real stop in every ride, the c1 lobby no longer arrives at floor nine. Verified: every authored case generates as written, only the culprit and near decoy stand at the origin, all cases solve in the stress script; Free Play culprits still spread across the whole cast.
 - 2026-10-29: consistency audit. Chapel clock now starts at each case's time (the rehearsal is 9:30, not 10:58); the "Two suspects?" tip became "That is a match" (case 1 has a single eater); the pitch tour says the season is written and Free Play is generated; Kevin has shot four weddings (he has one review); whispers that blame you use who you are in that case ("Dana's elevator friend", "the elevator person", "the Nose"). Iteration 3 complete.
 - 2026-10-29: bonus case 7 "You Dealt It" (reverse): you are the culprit; release timing and place, gag, plant your cup, hush the witness, rumours, and the room decides at the lobby. Own objectives, tips, ranks and endings; playtest panel shows the room's live scores. Verified headlessly: good play earns S, doing nothing gets you named, partial play earns A/B; detective cases unchanged in the stress script.
+- 2026-10-29: daily case (same seed for everyone on a date, alternating elevator and chapel, Normal difficulty, first finish of the day counts, streak, spoiler-free "Copy result" text) and 19 achievements (js/meta.js) with an unlock pop-up and a list on the title screen. Campaign reset keeps achievements and daily history; playtest runs never count. Fixed the chapel bunting, which still said BRAD + CHANTELLE.

@@ -20,6 +20,8 @@ const UI = (() => {
     $('#btnSettings').addEventListener('click', () => openSettings());
     $('#btnPitchSheet').addEventListener('click', () => show('#pitchsheet'));
     $('#btnPitchClose').addEventListener('click', () => hide('#pitchsheet'));
+    $('#btnAch').addEventListener('click', openAchievements);
+    $('#achClose').addEventListener('click', () => hide('#achievements'));
     $('#btnTour').addEventListener('click', toggleTour);
     $('#btnTourClose').addEventListener('click', toggleTour);
     $('#btnPause').addEventListener('click', () => G.state === 'play' && pause());
@@ -60,9 +62,30 @@ const UI = (() => {
         <span class="case-n">${c.num}</span><span class="case-t"><b>${esc(c.title)}</b><small>${c.bonus ? 'Bonus · ' : ''}${c.story ? esc(c.story.when) + ' · ' : ''}${c.setting === 'elevator' ? 'Elevator' : 'Chapel'} · ${open ? (pr && pr.best ? 'Best: ' + pr.best : 'New') : 'Locked'}</small></span>
         ${pr && pr.best ? `<span class="case-r r-${pr.best}">${pr.best}</span>` : ''}</button>`;
     }).join('') + `<div class="free ${Store.unlocked(3) ? '' : 'locked'}"><b>Free Play</b><small>${Store.unlocked(3) ? 'Everything on, random cases.' : 'Unlocks after Case 3.'}</small>
-        <div class="free-row"><button data-free="elevator" ${Store.unlocked(3) ? '' : 'disabled'}>Elevator</button><button data-free="wedding" ${Store.unlocked(3) ? '' : 'disabled'}>Chapel</button></div></div>`;
+        <div class="free-row"><button data-free="elevator" ${Store.unlocked(3) ? '' : 'disabled'}>Elevator</button><button data-free="wedding" ${Store.unlocked(3) ? '' : 'disabled'}>Chapel</button></div></div>` + dailyCard();
     document.querySelectorAll('[data-case]').forEach((b) => b.addEventListener('click', () => { Sfx.init(); openBriefing(CASES[+b.dataset.case]); }));
     document.querySelectorAll('[data-free]').forEach((b) => b.addEventListener('click', () => { Sfx.init(); openBriefing(FREE_PLAY(b.dataset.free, randomCase())); }));
+    const db = $('[data-daily]'); if (db) db.addEventListener('click', () => { Sfx.init(); openBriefing(Meta.dailyCase()); });
+    $('#btnAch').textContent = `Achievements (${Object.keys(Meta.unlocked()).length}/${Meta.ACH.length})`;
+  }
+  function dailyCard() {
+    const open = Store.unlocked(3), dc = Meta.dailyCase(), rec = Store.bag('daily')[dc.daily], st = Meta.streak();
+    return `<div class="daily ${open ? '' : 'locked'}"><b>Daily Case #${dc.dailyNum}</b>
+      <small>${dc.setting === 'elevator' ? 'Elevator' : 'Chapel'} · ${open ? (rec ? `Today: ${rec.first.rank}` : 'Same case for everyone today') : 'Unlocks after Case 3'}${st ? ` · ${st}-day streak` : ''}</small>
+      <button data-daily ${open ? '' : 'disabled'}>${rec ? 'Again' : 'Play'}</button></div>`;
+  }
+  function openAchievements() {
+    const got = Meta.unlocked();
+    $('#achCount').textContent = `${Object.keys(got).length} of ${Meta.ACH.length}`;
+    $('#achList').innerHTML = Meta.ACH.map((a) => `<div class="ach ${got[a.id] ? '' : 'locked'}"><b>${esc(a.title)}</b><span>${esc(a.desc)}${got[a.id] ? ` · ${esc(got[a.id])}` : ''}</span></div>`).join('');
+    show('#achievements');
+  }
+  let achT = null;
+  function achievement(a) {
+    const el = $('#achPop');
+    el.innerHTML = `<small>Achievement</small><b>${esc(a.title)}</b><div>${esc(a.desc)}</div>`;
+    el.hidden = false; Sfx.ui('good');
+    clearTimeout(achT); achT = setTimeout(() => { el.hidden = true; }, 3800);
   }
 
   // ---------------- briefing ----------------
@@ -73,15 +96,15 @@ const UI = (() => {
     Game.showcase(caseDef);
     G.state = 'briefing'; Sfx.duck(true);
     const st = caseDef.story;
-    $('#briefKicker').textContent = caseDef.free ? `Free Play · ${LEVELS[caseDef.setting].title} · ${DIFFICULTY[S().difficulty].label}` : `${caseDef.bonus ? 'Bonus case' : `Case ${caseDef.num} of ${CASES.filter((c) => !c.bonus).length}`} · ${st ? `${st.when}, ${st.time} · ` : ''}${caseDef.setting === 'elevator' ? 'Thornbury Tower, the elevator' : "St. Swithin's Chapel"}`;
+    $('#briefKicker').textContent = caseDef.daily ? `Daily case · ${caseDef.daily} · ${caseDef.setting === 'elevator' ? 'The elevator' : 'The chapel'} · Normal` : caseDef.free ? `Free Play · ${LEVELS[caseDef.setting].title} · ${DIFFICULTY[S().difficulty].label}` : `${caseDef.bonus ? 'Bonus case' : `Case ${caseDef.num} of ${CASES.filter((c) => !c.bonus).length}`} · ${st ? `${st.when}, ${st.time} · ` : ''}${caseDef.setting === 'elevator' ? 'Thornbury Tower, the elevator' : "St. Swithin's Chapel"}`;
     $('#briefTitle').textContent = caseDef.title;
     $('#briefStory').textContent = st ? st.previously : '';
     $('#briefStory').hidden = !st;
     $('#briefGoal').textContent = caseDef.goal;
     $('#briefLearn').innerHTML = caseDef.learn.length ? `<h3>New this case</h3><ul>${caseDef.learn.map(([k, t, d]) => `<li><kbd>${esc(k)}</kbd><div><b>${esc(t)}</b><span>${esc(d)}</span></div></li>`).join('')}</ul>` : '';
     $('#briefObj').innerHTML = `<h3>Case file</h3><ul>${caseDef.objectives.map((id) => { const o = OBJECTIVES[id]; return `<li>${esc(typeof o.label === 'function' ? (L.callWhen = caseDef.callWhen, o.label()) : o.label)}</li>`; }).join('')}</ul>`;
-    $('#briefDiff').hidden = !caseDef.free;
-    if (caseDef.free) $('#briefDiff').innerHTML = Object.entries(DIFFICULTY).map(([k, d]) => `<button class="${S().difficulty === k ? 'on' : ''}" data-diff="${k}">${d.label}</button>`).join('');
+    $('#briefDiff').hidden = !caseDef.free || !!caseDef.daily;
+    if (caseDef.free && !caseDef.daily) $('#briefDiff').innerHTML = Object.entries(DIFFICULTY).map(([k, d]) => `<button class="${S().difficulty === k ? 'on' : ''}" data-diff="${k}">${d.label}</button>`).join('');
     document.querySelectorAll('[data-diff]').forEach((b) => b.addEventListener('click', () => { Store.set('difficulty', b.dataset.diff); openBriefing({ ...caseDef }); }));
     show('#briefing');
     $('#briefStart').focus();
@@ -99,7 +122,7 @@ const UI = (() => {
     $('#toasts').innerHTML = ''; $('#clueToasts').innerHTML = ''; clueQ = []; clueBusy = false;
     speakNow(false);
     $('#hud').hidden = false; $('#actionbar').hidden = false;
-    $('#caseTag').textContent = G.caseDef.free ? `Free Play · #${G.seed}` : G.caseDef.bonus ? `Bonus: ${G.caseDef.title}` : `Case ${G.caseDef.num}: ${G.caseDef.title}`;
+    $('#caseTag').textContent = G.caseDef.daily ? G.caseDef.title : G.caseDef.free ? `Free Play · #${G.seed}` : G.caseDef.bonus ? `Bonus: ${G.caseDef.title}` : `Case ${G.caseDef.num}: ${G.caseDef.title}`;
     $('#objectLabel').textContent = 'Call it';
     // only show what this case has taught
     const R = RULES;
@@ -583,7 +606,7 @@ const UI = (() => {
     const nextCase = idx >= 0 && idx < CASES.length - 1 && Store.unlocked(idx + 1) ? CASES[idx + 1] : null;
     const criteria = cs.reverse ? 'S: someone else named by a clear margin, Aura 80+, no hints · A: clear margin, Aura 50+ · B: someone else named · C: nobody named · F: you were named.' : RULES.accuse === 'point' ? 'S: right culprit, no hints. F: wrong person.' : 'S: right culprit, full proof, Aura 80+, no hints · A: full proof, Aura 50+ · B: some proof · C: no proof · D: never called it · F: wrong person or no Aura left.';
     $('#resultsBody').innerHTML = `
-      <div class="res-top"><div class="rank r-${r.rank}">${r.rank}</div><div><div class="res-k">${G.caseDef.free ? 'Free Play' : `Case ${G.caseDef.num}`} · ${esc(G.caseDef.title)} · Score ${r.score}</div><h2>${esc(r.title)}</h2>${intro ? `<p>${esc(intro)}</p>` : ''}<p class="crit">${esc(criteria)}</p></div></div>
+      <div class="res-top"><div class="rank r-${r.rank}">${r.rank}</div><div><div class="res-k">${G.caseDef.daily ? G.caseDef.title : G.caseDef.free ? 'Free Play' : `Case ${G.caseDef.num}`} · ${esc(G.caseDef.title)} · Score ${r.score}</div><h2>${esc(r.title)}</h2>${intro ? `<p>${esc(intro)}</p>` : ''}<p class="crit">${esc(criteria)}</p></div></div>
       ${panels.length ? `<div class="comic">${panels.map((p) => `<div class="panel">${p.img ? `<img alt="" src="${p.img}">` : `<div class="pp"><img alt="" src="${p.portrait}"></div>`}<div class="pcap">${esc(p.cap)}</div></div>`).join('')}</div>` : ''}
       <div class="res-cols">
         <div><h3>What really happened</h3><p>${truth}</p>
@@ -592,10 +615,16 @@ const UI = (() => {
         <div><h3>Score</h3><table class="score">${r.rows.map(([l, v]) => `<tr><td>${esc(l)}</td><td>${v > 0 ? '+' : ''}${v}</td></tr>`).join('')}<tr class="tot"><td>Total</td><td>${r.score}</td></tr></table>
           ${nextCase && r.rank !== 'F' && r.rank !== 'D' ? `<div class="unlock"><b>Case ${nextCase.num} unlocked: ${esc(nextCase.title)}</b><span>New: ${nextCase.learn.map((l) => esc(l[1])).join(', ')}</span></div>` : ''}</div>
       </div>
-      <div class="acc-row"><button class="ghost" id="rTitle">Case select</button><button class="ghost" id="rSame">Try again</button>${nextCase && r.rank !== 'F' && r.rank !== 'D' ? '<button id="rNext">Next case</button>' : G.caseDef.free ? '<button id="rNew">New random case</button>' : ''}</div>`;
+      <div class="acc-row"><button class="ghost" id="rTitle">Case select</button><button class="ghost" id="rSame">Try again</button>${G.caseDef.daily ? '<button id="rShare">Copy result</button>' : nextCase && r.rank !== 'F' && r.rank !== 'D' ? '<button id="rNext">Next case</button>' : G.caseDef.free ? '<button id="rNew">New random case</button>' : ''}</div>`;
     $('#rTitle').addEventListener('click', () => { hide('#results'); toTitle(); });
     $('#rSame').addEventListener('click', () => openBriefing(G.caseDef));
     const rn = $('#rNext'); if (rn) { rn.addEventListener('click', () => openBriefing(nextCase)); setTimeout(() => rn.focus(), 50); }
+    const rs = $('#rShare');
+    if (rs) rs.addEventListener('click', () => {
+      const text = Meta.shareText(r), done = () => { rs.textContent = 'Copied'; };
+      const manual = () => window.prompt('Copy your result:', text);
+      try { navigator.clipboard.writeText(text).then(done, manual); } catch (e) { manual(); }
+    });
     const rr = $('#rNew'); if (rr) rr.addEventListener('click', () => openBriefing(FREE_PLAY(G.caseDef.setting, randomCase())));
     G.verdictLine = null;
     show('#results');
@@ -607,6 +636,7 @@ const UI = (() => {
     if (!$('#tip').hidden) { if (['Space', 'Enter', 'Escape', 'KeyE'].includes(k)) closeTip(); return true; }
     if (!$('#howto').hidden || !$('#settings').hidden) { if (k === 'Escape') closeSub(); return true; }
     if (!$('#pitchsheet').hidden) { if (k === 'Escape') hide('#pitchsheet'); return true; }
+    if (!$('#achievements').hidden) { if (k === 'Escape') hide('#achievements'); return true; }
     if (k === 'KeyP' && S().presenter && G.state !== 'title') { toggleTour(); return true; }
     if (k === 'KeyM') { Sfx.init(); Store.set('master', S().master > 0 ? 0 : 0.8); applySettings(); caption(S().master ? 'Sound on' : 'Sound off', 1.2); return true; }
     if (G.state === 'paused') { if (k === 'Escape') resume(); return true; }
@@ -623,5 +653,5 @@ const UI = (() => {
     return false;
   }
 
-  return { init, resetRun, hud, objectives, prompt, caption, stamp, beat, speakNow, showTip, featureShown, clueToast, openDialogue, openItem, openPhoto, openNotebook, openAccuse, showResults, handleKey, pause };
+  return { achievement, init, resetRun, hud, objectives, prompt, caption, stamp, beat, speakNow, showTip, featureShown, clueToast, openDialogue, openItem, openPhoto, openNotebook, openAccuse, showResults, handleKey, pause };
 })();

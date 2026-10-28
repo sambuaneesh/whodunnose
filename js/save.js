@@ -8,6 +8,8 @@ const Store = (() => {
     settings: { master: 0.8, music: 0.5, presenter: false, playtest: false, cones: true, shake: true, textSpeed: 'normal', difficulty: 'normal' },
     progress: {}, // caseId -> { done, best, plays }
     tipsSeen: {},
+    achievements: {}, // id -> date unlocked
+    daily: {}, // YYYY-MM-DD -> { best, plays, first }
   });
   let data = defaults();
 
@@ -16,7 +18,8 @@ const Store = (() => {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const saved = JSON.parse(raw), d = defaults();
-        data = { ...d, ...saved, settings: { ...d.settings, ...(saved.settings || {}) }, progress: saved.progress || {}, tipsSeen: saved.tipsSeen || {} };
+        data = { ...d, ...saved, settings: { ...d.settings, ...(saved.settings || {}) }, progress: saved.progress || {}, tipsSeen: saved.tipsSeen || {},
+          achievements: saved.achievements || {}, daily: saved.daily || {} };
       }
     } catch (e) { data = defaults(); }
   }
@@ -43,8 +46,10 @@ const Store = (() => {
   }
   const campaignDone = () => CASES.every((c) => data.progress[c.id] && data.progress[c.id].done);
   const nextCase = () => CASES.find((c, i) => unlocked(i) && !(data.progress[c.id] && data.progress[c.id].done)) || CASES[CASES.length - 1];
-  function reset() { const s = data.settings; data = defaults(); data.settings = s; save(); }
+  // resetting the campaign keeps settings, achievements and daily history
+  function reset() { const { settings, achievements, daily } = data; data = { ...defaults(), settings, achievements, daily }; save(); }
+  const bag = (k) => data[k];
 
   load();
-  return { settings, set, record, progress, unlocked, campaignDone, nextCase, reset, RANKS };
+  return { settings, set, record, progress, unlocked, campaignDone, nextCase, reset, bag, commit: save, RANKS };
 })();

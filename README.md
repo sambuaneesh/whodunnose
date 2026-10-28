@@ -21,6 +21,7 @@ N notebook · O call it · H hint · Esc pause · M mute. Presenter mode (Settin
 | `js/save.js` | Settings and campaign progress in local storage |
 | `js/levels/*.js` | One file per episode: zones, cast, voices, timeline, airflow, art, set pieces |
 | `js/case.js` | Builds a solvable mystery: authored for the season, generated from a case number in Free Play, reversed for the bonus case |
+| `js/meta.js` | The daily case (shared seed per date, streak, shareable result) and achievements |
 | `js/playtest.js` | Playtest tools (god view, time controls, cheats, case launcher), unlocked by a URL code |
 | `js/gas.js` | Grid simulation: diffusion, air currents, vents, doors |
 | `js/npc.js` | NPC AI: vision, reactions, opinions, whispers, tells, confrontations |

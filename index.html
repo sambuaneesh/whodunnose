@@ -473,6 +473,21 @@ button { cursor: pointer; }
 #rotate { display: none; }
 @media (max-width: 560px) and (orientation: portrait) { #rotate { display: block; position: fixed; left: 16px; right: 16px; bottom: 16px; color: #f3eadb; font-size: 13px; text-align: center; } }
 
+/* achievements and the daily case */
+#achievements { z-index: 8; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15em, 1fr)); gap: .55em; margin-top: .6em; }
+.ach { background: #fff; border: 2px solid var(--ink); padding: .55em .7em; display: grid; gap: .15em; }
+.ach b { font-family: var(--f-display); font-weight: 400; }
+.ach span { font-size: .85em; line-height: 1.35; color: var(--muted); }
+.ach.locked { opacity: .55; border-style: dashed; }
+.ach.locked b::before { content: '🔒 '; }
+#achPop { position: absolute; left: 50%; top: 4.6em; transform: translateX(-50%); z-index: 20; background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--ink); padding: .5em 1em; text-align: center; animation: slidein .35s ease-out; pointer-events: none; }
+#achPop small { display: block; font-size: .7em; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+#achPop b { font-family: var(--f-display); font-weight: 400; font-size: 1.15em; }
+.daily { grid-column: 1 / -1; border: 2px solid var(--ink); background: #fff7d6; padding: .55em .7em; margin-top: .45em; display: grid; grid-template-columns: 1fr auto; gap: .1em .6em; align-items: center; }
+.daily small { color: var(--muted); grid-column: 1; }
+.daily button { grid-row: 1 / span 2; grid-column: 2; border: 2px solid var(--ink); background: var(--gold); font-weight: 700; padding: .4em .9em; box-shadow: 0 3px 0 var(--ink); }
+.daily.locked { opacity: .55; }
 /* season story */
 .season-k { font-family: var(--f-display); font-size: .95em; margin: .7em 0 .35em; } .season-k span { font-family: var(--f-body); font-size: .8em; color: var(--muted); margin-left: .4em; }
 .brief-story { font-family: var(--f-hand); font-size: 1.12em; line-height: 1.4; margin: .2em 0 .7em; color: #3b3542; border-left: 4px solid var(--gold); padding-left: .7em; }
@@ -603,6 +618,15 @@ button { cursor: pointer; }
     </div>
   </div>
 
+  <div id="achievements" class="overlay" hidden>
+    <div class="sheet howto">
+      <button class="chipbtn ps-close" id="achClose">Close</button>
+      <h2>Achievements <span id="achCount"></span></h2>
+      <div id="achList" class="ach-grid"></div>
+    </div>
+  </div>
+  <div id="achPop" hidden></div>
+
   <div id="howto" class="overlay" hidden>
     <div class="sheet howto">
       <button class="chipbtn ps-close" id="howtoClose">Close</button>
@@ -641,7 +665,7 @@ button { cursor: pointer; }
         <button class="big" id="btnPlay">Play</button>
         <div class="season-k">Season One: Thornbury Tower <span>One week, one elevator, one wedding</span></div>
         <div id="caseMap"></div>
-        <div class="title-links"><button class="linkish" id="btnHowto">How to play</button><button class="linkish" id="btnSettings">Settings</button><button class="linkish" id="btnPitchSheet">The pitch</button></div>
+        <div class="title-links"><button class="linkish" id="btnHowto">How to play</button><button class="linkish" id="btnSettings">Settings</button><button class="linkish" id="btnAch">Achievements</button><button class="linkish" id="btnPitchSheet">The pitch</button></div>
       </div>
     </div>
   </div>
@@ -694,6 +718,7 @@ button { cursor: pointer; }
 <script src="js/npc.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/playtest.js"></script>
+<script src="js/meta.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

@@ -323,7 +323,7 @@
       }
     });
     ctx.save(); ctx.strokeStyle = '#3b2b1b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(470, 18); ctx.quadraticCurveTo(640, 48, 810, 18); ctx.stroke(); ctx.restore();
-    const letters = 'BRAD + CHANTELLE';
+    const letters = 'BRAD + DANA';
     for (let i = 0; i < letters.length; i++) {
       const tt = i / (letters.length - 1), x = 482 + tt * 316, y = 22 + Math.sin(tt * Math.PI) * 15;
       paper(ctx, [[x - 10, y], [x + 10, y], [x, y + 24]], i % 2 ? '#f6f1e7' : '#f4a9c4', 40 + i, { amp: 1 });

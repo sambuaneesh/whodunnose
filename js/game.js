@@ -36,11 +36,11 @@ const Game = (() => {
 
   function newGame(caseDef, seed) {
     prepare(caseDef);
-    const diff = caseDef.free ? DIFFICULTY[Store.settings().difficulty] : DIFFICULTY.normal;
+    const diff = caseDef.free && !caseDef.daily ? DIFFICULTY[Store.settings().difficulty] : DIFFICULTY.normal;
     Object.assign(G, {
       state: 'play', t: 0, anim: 0, seed, cs: Case.generate(seed), diff,
       aura: 100, auraShown: 100, pressure: caseDef.pressure ?? 12, mentioned: false, mentionBy: null,
-      clues: [], log: [], know: { claims: {}, zones: {}, bags: {}, bagFood: {}, witnessFood: {}, facts: {}, smell: false, reactions: [], tells: 0 },
+      clues: [], log: [], stats: {}, know: { claims: {}, zones: {}, bags: {}, bagFood: {}, witnessFood: {}, facts: {}, smell: false, reactions: [], tells: 0 },
       sv: { charges: RULES.smellVision ? diff.sv : 0, t: 0 }, loud: null, flags: {}, floaters: [], flashes: [], pssts: [], puffs: [], actors: {},
       board: { who: '', food: '', zone: '', cover: '', locked: false, checks: 0, feedback: '' },
       sniffCd: 0, sniffArrow: null, nextConfrontT: 0, gossipT: 1, objected: false, result: null,
@@ -329,6 +329,7 @@ const Game = (() => {
     G.puffs = G.puffs.filter((p) => (p.t += dt) < p.life);
     evalObjectives();
     flushTips();
+    Meta.tick(dt);
   }
 
   function updateRumble(dt) {
@@ -341,7 +342,7 @@ const Game = (() => {
     if (keys.KeyC || G.clenchHeld) r.held += dt;
     r.left -= dt;
     if (r.held >= 0.8) {
-      G.rumble = null; G.pressure = Math.max(0, G.pressure - 8);
+      G.rumble = null; G.pressure = Math.max(0, G.pressure - 8); G.stats.clenches = (G.stats.clenches || 0) + 1;
       floater(G.player.x, G.player.y, 'clenched', '#3c8d2f'); Sfx.ui('good');
     } else if (r.left <= 0) {
       G.rumble = null; G.pressure = Math.min(100, G.pressure + 5);
@@ -469,7 +470,7 @@ const Game = (() => {
     addClue({ key: 'fact-' + n.id, kind: fact.kind === 'witness' ? 'witness' : 'gossip', who: fact.about, text: `${overheard ? 'Overheard ' : ''}${n.def.name}: "${fact.text}"`, implicates: fact.implicates, weight: fact.weight, food: fact.food, zone: fact.zone });
     if (fact.kind === 'witness') { G.know.witnessFood[fact.about] = fact.food; checkContradictions(fact.about); }
   }
-  function onOverhear(n, fact) { learnFact(n, fact, true); feature('eavesdrop'); tip(G.cs.reverse ? 'hush' : 'whisper'); }
+  function onOverhear(n, fact) { G.stats.overheard = (G.stats.overheard || 0) + 1; learnFact(n, fact, true); feature('eavesdrop'); tip(G.cs.reverse ? 'hush' : 'whisper'); }
   function onDeflect(n, buddy, target) {
     const tname = target === 'player' ? 'you' : castById(target).name;
     addClue({ key: 'deflect', kind: 'deflect', who: n.id, text: `Overheard ${n.def.name} whispering to ${buddy.def.name} that it was ${tname}. Why push the blame?`, implicates: [n.id], weight: 1.2 });
@@ -606,7 +607,7 @@ const Game = (() => {
   }
   function snoop(c) {
     const it = G.items[c.id];
-    act(`going through ${it.label}`, COSTS.search, { owner: c.id });
+    if (!act(`going through ${it.label}`, COSTS.search, { owner: c.id }).length) G.stats.unseenBags = (G.stats.unseenBags || 0) + 1;
     const bag = readBag(c);
     feature('snoop');
     const hasPhoto = RULES.photo && L.photo.source === 'item' && L.photo.owner === c.id;
@@ -1099,8 +1100,10 @@ const Game = (() => {
     if (G.hintsUsed) { rows.push([`Hints used (${G.hintsUsed})`, -50 * G.hintsUsed]); score -= 50 * G.hintsUsed; }
     const title = kind === 'reverse' ? REVERSE_TITLES[rank] : TITLES[rank] || (kind === 'bankrupt' ? 'Aura bankrupt' : L.mode === 'elevator' ? 'Socially fired' : 'Wedding ruiner');
     const pid = G.caseDef.free ? 'free' : G.caseDef.id; // playtest runs never touch campaign progress
-    const prog = Playtest.active ? Store.progress(pid) || { done: false, best: null, plays: 0 } : Store.record(pid, rank);
+    const prog = Playtest.active ? Store.progress(pid) || { done: false, best: null, plays: 0 }
+      : G.caseDef.daily ? Meta.recordDaily(G.caseDef.daily, { rank, score }) : Store.record(pid, rank);
     G.result = { kind, acc, rows, score: Math.max(0, score), rank, title, missed: missed(), progress: prog };
+    Meta.onFinish(G.result);
     Sfx.jingle(rank);
     UI.showResults(G.result);
   }
