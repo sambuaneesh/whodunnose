@@ -103,7 +103,7 @@
     quiet: () => false,
     phaseLabel(t) {
       const f = floorAt(t);
-      if (t >= this.timeline.speakNow) return 'Lobby. Call it now.';
+      if (t >= this.timeline.speakNow) return this.caseDef && this.caseDef.reverse ? 'Lobby. The room decides.' : 'Lobby. Call it now.';
       return t < this.timeline.fart ? 'Going down' : `Going down · Floor ${f}`;
     },
     clockLabel(t) { const f = floorAt(t); return f === 0 ? 'L' : `▼ ${f}`; },

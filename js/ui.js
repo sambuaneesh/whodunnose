@@ -638,7 +638,7 @@ const UI = (() => {
     const nextCase = idx >= 0 && idx < CASES.length - 1 && Store.unlocked(idx + 1) ? CASES[idx + 1] : null;
     const criteria = cs.reverse ? 'S: someone else named by a clear margin, Aura 80+, no hints · A: clear margin, Aura 50+ · B: someone else named · C: nobody named · F: you were named.' : RULES.accuse === 'point' ? 'S: right culprit, no hints. F: wrong person.' : 'S: right culprit, full proof, Aura 80+, no hints · A: full proof, Aura 50+ · B: some proof · C: no proof · D: never called it · F: wrong person or no Aura left.';
     $('#resultsBody').innerHTML = `
-      <div class="res-top"><div class="rank r-${r.rank}">${r.rank}</div><div><div class="res-k">${G.caseDef.daily ? G.caseDef.title : G.caseDef.free ? 'Free Play' : `Case ${G.caseDef.num}`} · ${esc(G.caseDef.title)} · Score ${r.score}</div><h2>${esc(r.title)}</h2>${intro ? `<p>${esc(intro)}</p>` : ''}<p class="crit">${esc(criteria)}</p></div></div>
+      <div class="res-top"><div class="rank r-${r.rank}">${r.rank}</div><div><div class="res-k">${G.caseDef.daily ? G.caseDef.title : G.caseDef.free ? 'Free Play' : G.caseDef.bonus ? 'Bonus case' : `Case ${G.caseDef.num}`} · ${esc(G.caseDef.title)} · Score ${r.score}</div><h2>${esc(r.title)}</h2>${intro ? `<p>${esc(intro)}</p>` : ''}<p class="crit">${esc(criteria)}</p></div></div>
       ${panels.length ? `<div class="comic">${panels.map((p) => `<div class="panel">${p.img ? `<img alt="" src="${p.img}">` : `<div class="pp"><img alt="" src="${p.portrait}"></div>`}<div class="pcap">${esc(p.cap)}</div></div>`).join('')}</div>` : ''}
       <div class="res-cols">
         <div><h3>What really happened</h3><p>${truth}</p>

@@ -29,3 +29,5 @@ N notebook · O call it · H hint · Esc pause · M mute. Presenter mode (Settin
 | `js/ui.js` | Title, HUD, dialogue, notebook, cross-examination screen, results |
 | `js/art.js` | Cut-paper characters, expressions, props and effects |
 | `js/audio.js` | Synthesised sound and music |
+
+Release notes: [docs/RELEASE-v4.md](docs/RELEASE-v4.md).
