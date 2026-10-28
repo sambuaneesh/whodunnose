@@ -5,7 +5,7 @@ const Store = (() => {
   const KEY = 'whodunnose.v3';
   const RANKS = ['F', 'D', 'C', 'B', 'A', 'S'];
   const defaults = () => ({
-    settings: { master: 0.8, music: 0.5, presenter: false, cones: true, shake: true, textSpeed: 'normal', difficulty: 'normal' },
+    settings: { master: 0.8, music: 0.5, presenter: false, playtest: false, cones: true, shake: true, textSpeed: 'normal', difficulty: 'normal' },
     progress: {}, // caseId -> { done, best, plays }
     tipsSeen: {},
   });
@@ -35,9 +35,9 @@ const Store = (() => {
     return p;
   }
   const progress = (caseId) => data.progress[caseId] || null;
-  // A case is open if it is the first, the previous one is done, or presenter mode is on.
+  // A case is open if it is the first, the previous one is done, or the playtest tools are on.
   function unlocked(index) {
-    if (index === 0 || data.settings.presenter) return true;
+    if (index === 0 || data.settings.playtest) return true;
     const prev = CASES[index - 1];
     return !!(data.progress[prev.id] && data.progress[prev.id].done);
   }

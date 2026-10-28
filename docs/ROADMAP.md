@@ -16,8 +16,8 @@ Working agreement (from the product owner, 2026-10-29):
 - [x] Fix: eyes, eyelids and eyebrows drawing over hair, glasses and neighbours (clip eyelids to the eye shape, brows relative to eyes)
 
 ### Iteration 2: playtest tools
-- [ ] Admin / playtest mode unlocked by a code in the URL: every case open, god view (culprit, origin, all facts), NPC debug overlay (suspicion, theories, who sees whom), time controls (pause, ×0.5–×4, skip), teleport, reveal clues, toggle rules, pick seeds
-- [ ] Replace the Settings "Presenter mode: unlock every case" with this; keep the pitch tour for presenters
+- [x] Admin / playtest mode unlocked by a code in the URL: every case open, god view (culprit, origin, all facts), NPC debug overlay (suspicion, theories, who sees whom), time controls (pause, ×0.5–×4, skip), teleport, reveal clues, toggle rules, pick seeds
+- [x] Replace the Settings "Presenter mode: unlock every case" with this; keep the pitch tour for presenters
 
 ### Iteration 3: writing and world
 - [ ] Research what players love in comedy mysteries (reviews, blogs, forums) and write findings into docs/DESIGN.md
@@ -35,3 +35,4 @@ Working agreement (from the product owner, 2026-10-29):
 - 2026-10-29: roadmap created. Starting iteration 1.
 - 2026-10-29: audio engine v4 done (buses, compressor, generated room reverb, adaptive themes with intensity layers, ducking, ambience, new farts/voices/foley, end jingles). Levels measured headlessly; no clipping.
 - 2026-10-29: character design v2 (arms/sleeves, trousers/skirts/shoes, outfits, per-character features, breathing, clipped eyelids, brows above eyes, face-clipped tints, raised cap/beanie brims). The floating watching-eye moved into the HUD; zone labels painted on the floor under people; reaction badges smaller. Iteration 1 complete.
+- 2026-10-29: playtest tools (js/playtest.js). Open the game with `?playtest=pullmyfinger` (or `#pullmyfinger`); `?playtest=off` or the Settings checkbox turns it off. Backquote (or F2, or the PLAYTEST badge) opens the panel: jump to any case or Free Play with any seed; the case's full truth (culprit, food, origin, cover-up, lie, decoys, witness, every fact); time controls (pause, ×0.25–×4, +15 s, jump to the fart or the call-out); god view (culprit and origin marked, where everyone stood, gas always visible, NPC labels with suspicion/theory/knowledge, vision cones); cheats (reveal all clues, refill Aura, calm everyone, tummy, rumble, force the mention, call it, solve instantly); live rule toggles and accusation mode; audio meter. Shift-click teleports. Playtest runs never write campaign progress. Presenter mode now only shows the pitch tour and ] skip. Iteration 2 complete.

@@ -205,7 +205,8 @@ const UI = (() => {
     $('#setText').addEventListener('change', (e) => Store.set('textSpeed', e.target.value));
     $('#setShake').addEventListener('change', (e) => Store.set('shake', e.target.checked));
     $('#setCones').addEventListener('change', (e) => Store.set('cones', e.target.checked));
-    $('#setPresenter').addEventListener('change', (e) => { Store.set('presenter', e.target.checked); renderMap(); renderTour(); });
+    $('#setPresenter').addEventListener('change', (e) => { Store.set('presenter', e.target.checked); renderTour(); });
+    $('#setPlaytest').addEventListener('change', (e) => { Playtest.setActive(e.target.checked); renderMap(); });
     $('#setReset').addEventListener('click', () => {
       const b = $('#setReset');
       if (b.dataset.confirm) { Store.reset(); b.textContent = 'Progress reset'; delete b.dataset.confirm; renderMap(); }
@@ -216,6 +217,7 @@ const UI = (() => {
     const s = S();
     $('#setMaster').value = Math.round(s.master * 100); $('#setMusic').value = Math.round(s.music * 100);
     $('#setText').value = s.textSpeed; $('#setShake').checked = s.shake; $('#setCones').checked = s.cones; $('#setPresenter').checked = s.presenter;
+    $('#setPlaytest').checked = !!s.playtest; $('#setPlaytestRow').hidden = !s.playtest; // only offered once unlocked by URL code
     $('#setReset').textContent = 'Reset campaign progress'; delete $('#setReset').dataset.confirm;
   }
   function applySettings() { Sfx.setVolumes(S().master, S().music); }

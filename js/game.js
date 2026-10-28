@@ -85,7 +85,7 @@ const Game = (() => {
 
   // Tips: the first time something happens in a case that teaches it, pause and explain.
   function tip(id) {
-    if (!G.caseDef || !G.caseDef.tips.includes(id) || G.tipsShown[id]) return;
+    if (!G.caseDef || !G.caseDef.tips.includes(id) || G.tipsShown[id] || Playtest.flag('noTips')) return;
     G.tipsShown[id] = true;
     if (G.state === 'play') showTip(id); else G.tipQueue.push(id);
   }
@@ -589,14 +589,18 @@ const Game = (() => {
     else checkProp(target.pr);
   }
 
-  function snoop(c) {
-    const it = G.items[c.id];
-    act(`going through ${it.label}`, COSTS.search, { owner: c.id });
+  function readBag(c) {
+    const it = G.items[c.id], bag = G.cs.bags[c.id];
     G.know.bags[c.id] = 'seen';
-    const bag = G.cs.bags[c.id];
     if (bag.food) G.know.bagFood[c.id] = bag.food;
     addClue({ key: 'bag-' + c.id, kind: 'bag', who: c.id, text: `${it.label}: ${bag.text}`, implicates: bag.implicates, weight: bag.weight, food: bag.food });
     checkContradictions(c.id);
+    return bag;
+  }
+  function snoop(c) {
+    const it = G.items[c.id];
+    act(`going through ${it.label}`, COSTS.search, { owner: c.id });
+    const bag = readBag(c);
     feature('snoop');
     const hasPhoto = RULES.photo && L.photo.source === 'item' && L.photo.owner === c.id;
     if (hasPhoto) findPhoto();
@@ -678,6 +682,23 @@ const Game = (() => {
       }
     }
     return { text: '' };
+  }
+
+  // Playtest: everything a perfect investigator could know by now, at no Aura cost.
+  function revealAll() {
+    const cs = G.cs, q = RULES.questions;
+    if (!G.flags.fart) return UI.caption('Nothing to reveal before it happens.', 2);
+    identifySmell('told');
+    for (const n of humans()) {
+      if (q.includes('food') && !n.asked.breakfast) talkChoose(n, 'breakfast');
+      if (q.includes('where') && !n.asked.where) talkChoose(n, 'where');
+      if (cs.facts[n.id]) learnFact(n, cs.facts[n.id], false);
+    }
+    if (RULES.search) for (const c of CAST) if (G.items[c.id].present && G.know.bags[c.id] !== 'seen' && !c.dog) readBag(c);
+    if (cs.isDog) talkChoose(npcById(L.scapegoat.id), 'pet');
+    if (RULES.tells && !cs.isDog && !G.know.tells) { const n = npcById(cs.culprit); onCover({ id: n.id, def: n.def, x: G.player.x, y: G.player.y }); }
+    if (RULES.photo) findPhoto();
+    UI.caption('Playtest: every clue revealed.', 2);
   }
 
   function plantRumor(n, target) {
@@ -948,7 +969,8 @@ const Game = (() => {
     if (G.board.locked) { rows.push(['Smell Board solved', 150]); score += 150; }
     if (G.hintsUsed) { rows.push([`Hints used (${G.hintsUsed})`, -50 * G.hintsUsed]); score -= 50 * G.hintsUsed; }
     const title = TITLES[rank] || (kind === 'bankrupt' ? 'Aura bankrupt' : L.mode === 'elevator' ? 'Socially fired' : 'Wedding ruiner');
-    const prog = Store.record(G.caseDef.free ? 'free' : G.caseDef.id, rank);
+    const pid = G.caseDef.free ? 'free' : G.caseDef.id; // playtest runs never touch campaign progress
+    const prog = Playtest.active ? Store.progress(pid) || { done: false, best: null, plays: 0 } : Store.record(pid, rank);
     G.result = { kind, acc, rows, score: Math.max(0, score), rank, title, missed: missed(), progress: prog };
     Sfx.jingle(rank);
     UI.showResults(G.result);
@@ -995,7 +1017,8 @@ const Game = (() => {
       }
     }
     if (!photoFrame) {
-      Gas.paint(gasImg, sv ? 0.92 : 0.2, sv);
+      const godGas = Playtest.flag('gas');
+      Gas.paint(gasImg, sv ? 0.92 : godGas ? 0.75 : 0.2, sv || godGas);
       gasCtx.putImageData(gasImg, 0, 0);
       const gr = Gas.rect;
       if (sv) { ctx.fillStyle = 'rgba(18,24,12,0.55)'; ctx.fillRect(v.x, v.y, v.w, v.h); }
@@ -1033,6 +1056,7 @@ const Game = (() => {
     }
     G.flashes = G.flashes.filter((f) => (f.t -= 1 / 60) > 0);
     for (const f of G.flashes) { ctx.fillStyle = `rgba(255,255,240,${f.t * 2.5})`; ctx.beginPath(); ctx.arc(f.x, f.y, 40, 0, Math.PI * 2); ctx.fill(); }
+    if (!photoFrame) Playtest.drawWorld(ctx);
 
     // ---- screen pass: everything you read stays crisp at any zoom ----
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -1086,6 +1110,7 @@ const Game = (() => {
       ctx.fillStyle = f.color; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.textAlign = 'center';
       const y = fp.y - 96 * G.cam.z - 30 - f.t * 30; ctx.strokeText(f.text, fp.x, y); ctx.fillText(f.text, fp.x, y); ctx.restore();
     }
+    Playtest.drawScreen(ctx, toScreen);
     ctx.save(); ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.08; ctx.fillStyle = Art.grainPattern(ctx); ctx.fillRect(0, 0, W, H); ctx.restore();
   }
 
@@ -1124,6 +1149,7 @@ const Game = (() => {
     if (k === 'KeyE' && !down) { G.eDown = null; G.searching = null; }
     if (!down || e.repeat) return;
     if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName) && k !== 'Escape') return;
+    if (Playtest.handleKey(k)) return;
     if (UI.handleKey(k)) return;
     if (G.state !== 'play') return;
     if (k === 'Space' || k === 'Enter') tapE();
@@ -1134,11 +1160,12 @@ const Game = (() => {
     else if (k === 'KeyH') useHint();
     else if (k === 'Tab' || k === 'KeyN') UI.openNotebook();
     else if (k === 'Escape') UI.pause();
-    else if (k === 'BracketRight' && Store.settings().presenter) fastForward();
+    else if (k === 'BracketRight' && (Store.settings().presenter || Playtest.active)) fastForward();
   }
-  function fastForward() {
-    UI.caption('Presenter skip: +15 seconds.', 1.5);
-    for (let i = 0; i < 15 / STEP && G.state === 'play'; i++) { G.beatT = 0; update(STEP); if (G.photoPending) render(); }
+  function fastForward() { UI.caption('Skip: +15 seconds.', 1.5); skipTo(G.t + 15); }
+  // Run the simulation forward to case time t (stops early if a tip, dialogue or the ending interrupts).
+  function skipTo(t) {
+    for (let i = 0; i < 600 / STEP && G.t < t && G.state === 'play'; i++) { G.beatT = 0; update(STEP); if (G.photoPending) render(); }
     G.flashes = [];
   }
 
@@ -1147,6 +1174,7 @@ const Game = (() => {
     const r = cv.getBoundingClientRect();
     const s = { x: ((e.clientX - r.left) / r.width) * W, y: ((e.clientY - r.top) / r.height) * H };
     const w = toWorld(s.x, s.y), p = G.player, B = L.bounds;
+    if (e.shiftKey && Playtest.active) { p.x = U.clamp(w.x, B.x0, B.x1); p.y = U.clamp(w.y, B.y0, B.y1); p.path = []; p.target = null; p.pending = null; return; }
     let hit = null;
     for (const n of present()) { const hp = toScreen(n.x, n.y); if (Math.abs(s.x - hp.x) < 24 * G.cam.z && s.y < hp.y + 6 && s.y > hp.y - 90 * G.cam.z) hit = { type: 'npc', n }; }
     if (!hit && RULES.search) for (const c of CAST) { const it = G.items[c.id]; if (it.present && Math.hypot(w.x - it.x, w.y - (it.y - 8)) < 14) hit = { type: 'item', c }; }
@@ -1166,7 +1194,7 @@ const Game = (() => {
   function frame(now) {
     const dt = Math.min(0.1, (now - last) / 1000 || 0); last = now;
     G.anim = (G.anim || 0) + dt;
-    if (G.state === 'play') { accT += dt; while (accT >= STEP) { update(STEP); accT -= STEP; if (G.state !== 'play') break; } } else accT = 0;
+    if (G.state === 'play') { accT += dt * Playtest.timeScale(); while (accT >= STEP) { update(STEP); accT -= STEP; if (G.state !== 'play') break; } } else accT = 0;
     if (G.state === 'play' && L.mode === 'mingle' && G.t >= TIMELINE.places) {
       const p = G.player; if (!p.walking && U.dist(p, PLAYER_SEAT) < 22) p.face = -Math.PI / 2;
     }
@@ -1198,6 +1226,7 @@ const Game = (() => {
     document.addEventListener('visibilitychange', () => { if (document.hidden && G.state === 'play') UI.pause(); });
     cv.addEventListener('pointerdown', onPointer);
     window.addEventListener('pointerup', onPointerUp);
+    Playtest.init();
     UI.init();
     showcase(Store.nextCase());
     Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 2500))]).then(() => { if (L) background = Art.buildBackground(L, baseZoom() * 2); }).catch(() => {});
@@ -1207,7 +1236,7 @@ const Game = (() => {
   return {
     boot, newGame, showcase, sniff, smellVision, release, object, useHint, tapE, talkOptions, talkChoose, confrontOptions, confrontChoose,
     startConfront, anyConfronting, onReaction, onCover, onIdle, onOverhear, onDeflect, flash, checkBoard, finish, feature,
-    npcById, humans, recomputeAura, fastForward, crowdOpinion, primeSuspect, evalObjectives,
+    npcById, humans, recomputeAura, fastForward, skipTo, revealAll, crowdOpinion, primeSuspect, evalObjectives,
     resolvePoint, resolveProof, testimony, startTrial, trialPress, trialPresent, withdraw, resolveTrial, unfocus, focus, about,
   };
 })();

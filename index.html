@@ -471,6 +471,26 @@ button { cursor: pointer; }
 }
 #rotate { display: none; }
 @media (max-width: 560px) and (orientation: portrait) { #rotate { display: block; position: fixed; left: 16px; right: 16px; bottom: 16px; color: #f3eadb; font-size: 13px; text-align: center; } }
+
+/* playtest tools (unlocked by URL code) */
+#ptBadge { position: absolute; left: 50%; top: .25em; transform: translateX(-50%); z-index: 30; font: 700 .7em var(--f-body); letter-spacing: .1em; background: #3a1f4d; color: var(--gold); border: 1.5px solid var(--gold); padding: .15em .7em; border-radius: 999px; cursor: pointer; opacity: .8; }
+#pt { position: absolute; left: .6em; top: .6em; bottom: .6em; width: 23em; z-index: 31; overflow-y: auto; background: rgba(24,20,34,.95); color: #eee; border: 2px solid var(--gold); border-radius: 6px; padding: .6em .8em; font: 400 .8em/1.35 var(--f-body); }
+#pt .pt-h { display: flex; justify-content: space-between; align-items: center; color: var(--gold); font-size: 1.1em; }
+#pt h4 { margin: .8em 0 .3em; font-size: .78em; text-transform: uppercase; letter-spacing: .1em; color: #b9a4e6; }
+#pt button, #pt select, #pt input { font: inherit; background: #2f2842; color: #fff; border: 1px solid #5a4f72; border-radius: 4px; padding: .2em .5em; cursor: pointer; }
+#pt button:hover { border-color: var(--gold); }
+#pt button.on { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+#pt input[type=checkbox] { padding: 0; }
+#pt #ptSeed { width: 5em; cursor: text; }
+#pt #ptCase { flex: 1; min-width: 0; }
+#pt .pt-row { display: flex; flex-wrap: wrap; gap: .3em; margin: .3em 0; align-items: center; }
+#pt label { display: block; margin: .15em 0; cursor: pointer; }
+#pt .pt-rules { columns: 2; }
+#pt .pt-dl { display: grid; grid-template-columns: 6.5em 1fr; gap: .15em .5em; margin: 0; }
+#pt dt { color: #9d93b3; } #pt dd { margin: 0; }
+#pt .hot { color: #ff7b85; font-weight: 700; }
+#pt .pt-stats { font-variant-numeric: tabular-nums; color: #cfc6e0; }
+#pt .pt-note { color: #9d93b3; font-style: italic; margin: .3em 0; }
 </style>
 </head>
 <body>
@@ -569,7 +589,8 @@ button { cursor: pointer; }
       <label class="set"><span>Text speed</span><select id="setText"><option value="slow">Slow</option><option value="normal">Normal</option><option value="fast">Fast</option><option value="instant">Instant</option></select></label>
       <label class="check"><input type="checkbox" id="setShake"><span>Screen shake</span></label>
       <label class="check"><input type="checkbox" id="setCones"><span>Show where people are looking</span></label>
-      <label class="check"><input type="checkbox" id="setPresenter"><span>Presenter mode: unlock every case, show the pitch tour, enable the ] skip key</span></label>
+      <label class="check"><input type="checkbox" id="setPresenter"><span>Presenter mode: show the pitch tour (P) and enable the ] skip key</span></label>
+      <label class="check" id="setPlaytestRow"><input type="checkbox" id="setPlaytest"><span>Playtest tools: every case open, god view and cheats (backquote key)</span></label>
       <button id="setReset" class="ghost">Reset campaign progress</button>
       <button id="settingsClose" class="big">Done</button>
     </div>
@@ -663,6 +684,7 @@ button { cursor: pointer; }
 <script src="js/case.js"></script>
 <script src="js/npc.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/playtest.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>
