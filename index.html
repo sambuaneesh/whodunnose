@@ -473,6 +473,27 @@ button { cursor: pointer; }
 #rotate { display: none; }
 @media (max-width: 560px) and (orientation: portrait) { #rotate { display: block; position: fixed; left: 16px; right: 16px; bottom: 16px; color: #f3eadb; font-size: 13px; text-align: center; } }
 
+/* small screens (phones held sideways): collapse the case file, tighten the HUD */
+@container (max-width: 760px) {
+  #hud { padding: .5em .6em; gap: .5em; }
+  #caseFile { cursor: pointer; }
+  #caseFile:not(.open) #objList { display: none; }
+  #caseFile:not(.open) .cf-tag { margin: 0; }
+  #caseFile:not(.open) .cf-tag::after { content: ' · ' attr(data-count) ' ▾'; }
+  .meter { grid-template-columns: 3.8em 6.5em 1.8em; font-size: .85em; }
+  #clueToasts { width: 15em; }
+  .act { padding: .3em .55em; font-size: .85em; }
+  #actionbar { gap: .3em; }
+}
+/* touch screens: there is no keyboard, so drop the key hints */
+@media (hover: none) and (pointer: coarse) { .act kbd, #prompt kbd, #btnHint kbd, #briefStart kbd { display: none; } }
+/* key bindings in Settings */
+.keybinds { display: block; width: 100%; }
+.keybinds summary { display: list-item; cursor: pointer; font-weight: 700; padding: .2em 0; }
+#keyBinds { display: grid; grid-template-columns: 1fr auto; gap: .25em .6em; align-items: center; margin: .4em 0; font-size: .9em; }
+#keyBinds button { min-width: 4.5em; text-align: center; font-family: var(--f-display); padding: .15em .5em; }
+#keyBinds button.wait { background: var(--gold); }
+.menu { max-height: 94%; overflow-y: auto; }
 /* achievements and the daily case */
 #achievements { z-index: 8; }
 .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15em, 1fr)); gap: .55em; margin-top: .6em; }
@@ -613,6 +634,7 @@ button { cursor: pointer; }
       <label class="check"><input type="checkbox" id="setCones"><span>Show where people are looking</span></label>
       <label class="check"><input type="checkbox" id="setPresenter"><span>Presenter mode: show the pitch tour (P) and enable the ] skip key</span></label>
       <label class="check" id="setPlaytestRow"><input type="checkbox" id="setPlaytest"><span>Playtest tools: every case open, god view and cheats (backquote key)</span></label>
+      <details class="keybinds"><summary>Controls</summary><div id="keyBinds"></div><button id="keyReset" class="ghost">Reset keys</button></details>
       <button id="setReset" class="ghost">Reset campaign progress</button>
       <button id="settingsClose" class="big">Done</button>
     </div>
@@ -709,6 +731,7 @@ button { cursor: pointer; }
 <script src="js/data.js"></script>
 <script src="js/story.js"></script>
 <script src="js/save.js"></script>
+<script src="js/keys.js"></script>
 <script src="js/art.js"></script>
 <script src="js/levels/elevator.js"></script>
 <script src="js/levels/wedding.js"></script>

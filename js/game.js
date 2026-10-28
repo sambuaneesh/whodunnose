@@ -552,6 +552,12 @@ const Game = (() => {
 
   // Tap E: talk. Hold E: search the bag at your feet. Searching is never an accident.
   function pressE() { if (G.state === 'play') G.eDown = { held: 0, done: false }; }
+  // the on-screen Search button: held down like E, released by the window's pointerup
+  function holdSearch() {
+    if (G.state !== 'play') return;
+    if (!nearestBag()) { UI.caption(G.cs.reverse ? 'Stand next to someone else\'s bag, then hold this.' : 'Stand next to a bag, then hold this.', 2); return; }
+    G.eDown = { held: TAP, done: false, mouse: true };
+  }
   function releaseE() {
     const e = G.eDown; G.eDown = null;
     const wasSearching = !!G.searching; G.searching = null;
@@ -1274,7 +1280,8 @@ const Game = (() => {
 
   // ---------------- input ----------------
   function onKey(e, down) {
-    const k = e.code;
+    const k = Keys.translate(e.code);
+    if (k === null) return; // a default key the player has moved elsewhere
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab'].includes(k) && G.state !== 'title') e.preventDefault();
     const was = keys[k];
     keys[k] = down;
@@ -1359,6 +1366,7 @@ const Game = (() => {
     document.addEventListener('visibilitychange', () => { if (document.hidden && G.state === 'play') UI.pause(); });
     cv.addEventListener('pointerdown', onPointer);
     window.addEventListener('pointerup', onPointerUp);
+    Keys.init();
     Playtest.init();
     UI.init();
     showcase(Store.nextCase());
@@ -1367,7 +1375,7 @@ const Game = (() => {
   }
 
   return {
-    boot, newGame, showcase, sniff, smellVision, release, object, useHint, tapE, talkOptions, talkChoose, confrontOptions, confrontChoose,
+    boot, newGame, showcase, holdSearch, sniff, smellVision, release, object, useHint, tapE, talkOptions, talkChoose, confrontOptions, confrontChoose,
     startConfront, anyConfronting, onReaction, onCover, onIdle, onOverhear, onDeflect, flash, checkBoard, finish, feature,
     npcById, humans, recomputeAura, fastForward, skipTo, revealAll, roomScores, crowdOpinion, primeSuspect, evalObjectives,
     resolvePoint, resolveProof, testimony, startTrial, trialPress, trialPresent, withdraw, resolveTrial, unfocus, focus, about,

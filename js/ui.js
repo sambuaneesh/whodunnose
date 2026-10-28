@@ -37,12 +37,15 @@ const UI = (() => {
     const cl = $('#clenchBtn');
     const hold = (v) => (e) => { e.preventDefault(); G.clenchHeld = v; };
     cl.addEventListener('pointerdown', hold(true)); cl.addEventListener('pointerup', hold(false)); cl.addEventListener('pointerleave', hold(false));
+    // Search (or Plant) is a press-and-hold button too, for touch screens
+    $('[data-act=search]').addEventListener('pointerdown', (e) => { e.preventDefault(); Sfx.init(); Game.holdSearch(); });
+    $('#caseFile').addEventListener('click', () => $('#caseFile').classList.toggle('open'));
     document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {
       const a = b.dataset.act;
       Sfx.init();
       if (a === 'notebook') return G.state === 'play' && openNotebook();
       if (a === 'talk') return Game.tapE();
-      if (a === 'search') return caption('Stand next to a bag and HOLD E.', 2);
+      if (a === 'search') return;
       if (a === 'clench') return;
       Game[a] && Game[a]();
     }));
@@ -131,8 +134,17 @@ const UI = (() => {
     $('#roomSus').hidden = true;
     $('#btnHint').hidden = !G.diff.hints;
     const showAct = { talk: true, search: R.search, sniff: true, smellVision: R.smellVision, release: R.tummy, clench: R.clench, notebook: true, object: !R.reverse };
-    $('[data-act=sniff]').innerHTML = R.reverse ? '<kbd>Q</kbd>Gag' : '<kbd>Q</kbd>Sniff';
-    $('[data-act=search]').innerHTML = R.reverse ? '<kbd>Hold E</kbd>Plant' : '<kbd>Hold E</kbd>Search';
+    // action bar labels follow the player's key bindings
+    const kb = (id) => `<kbd>${esc(Keys.labelFor(id))}</kbd>`;
+    $('[data-act=talk]').innerHTML = `${kb('talk')}Talk`;
+    $('[data-act=sniff]').innerHTML = `${kb('sniff')}${R.reverse ? 'Gag' : 'Sniff'}`;
+    $('[data-act=search]').innerHTML = `<kbd>Hold ${esc(Keys.labelFor('talk'))}</kbd>${R.reverse ? 'Plant' : 'Search'}`;
+    $('#svBtn').firstElementChild.textContent = Keys.labelFor('smellVision');
+    $('[data-act=release]').innerHTML = `${kb('release')}Let it go`;
+    $('#clenchBtn').innerHTML = `${kb('clench')}Clench`;
+    $('#btnNotebook').firstElementChild.textContent = Keys.labelFor('notebook');
+    $('#objectBtn').firstElementChild.textContent = Keys.labelFor('object');
+    $('#btnHint').innerHTML = `Hint ${kb('hint')}`;
     document.querySelectorAll('[data-act]').forEach((b) => { b.hidden = !showAct[b.dataset.act]; });
     renderTour();
     objectives();
@@ -174,6 +186,9 @@ const UI = (() => {
       const o = OBJECTIVES[id], st = G.objState ? G.objState[id] || 'open' : 'open';
       return `<li class="ob-${st}"><span class="ob-box">${st === 'done' ? '✓' : st === 'fail' ? '✗' : ''}</span>${esc(typeof o.label === 'function' ? o.label() : o.label)}</li>`;
     }).join('');
+    // on small screens the case file collapses to its title and a count
+    const ids = G.caseDef.objectives, done = ids.filter((id) => G.objState && G.objState[id] === 'done').length;
+    $('#caseTag').dataset.count = `${done}/${ids.length}`;
   }
 
   let lastPrompt = '';
@@ -236,6 +251,7 @@ const UI = (() => {
     $('#setCones').addEventListener('change', (e) => Store.set('cones', e.target.checked));
     $('#setPresenter').addEventListener('change', (e) => { Store.set('presenter', e.target.checked); renderTour(); });
     $('#setPlaytest').addEventListener('change', (e) => { Playtest.setActive(e.target.checked); renderMap(); });
+    $('#keyReset').addEventListener('click', () => { Keys.reset(); renderKeys(); });
     $('#setReset').addEventListener('click', () => {
       const b = $('#setReset');
       if (b.dataset.confirm) { Store.reset(); b.textContent = 'Progress reset'; delete b.dataset.confirm; renderMap(); }
@@ -248,6 +264,22 @@ const UI = (() => {
     $('#setText').value = s.textSpeed; $('#setShake').checked = s.shake; $('#setCones').checked = s.cones; $('#setPresenter').checked = s.presenter;
     $('#setPlaytest').checked = !!s.playtest; $('#setPlaytestRow').hidden = !s.playtest; // only offered once unlocked by URL code
     $('#setReset').textContent = 'Reset campaign progress'; delete $('#setReset').dataset.confirm;
+    renderKeys();
+  }
+  // click a key, then press the new one (Escape cancels)
+  function renderKeys() {
+    const b = Keys.bound();
+    $('#keyBinds').innerHTML = Keys.ACTIONS.map(([id, label]) => `<span>${esc(label)}</span><button class="chipbtn" data-bind="${id}">${esc(Keys.label(b[id]))}</button>`).join('');
+    document.querySelectorAll('[data-bind]').forEach((btn) => btn.addEventListener('click', () => {
+      btn.textContent = 'Press a key'; btn.classList.add('wait');
+      const grab = (e) => {
+        e.preventDefault(); e.stopImmediatePropagation();
+        window.removeEventListener('keydown', grab, true);
+        if (e.code !== 'Escape' && !Keys.bind(btn.dataset.bind, e.code)) caption('That key is reserved.', 1.5);
+        renderKeys();
+      };
+      window.addEventListener('keydown', grab, true);
+    }));
   }
   function applySettings() { Sfx.setVolumes(S().master, S().music); }
 

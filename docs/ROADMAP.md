@@ -29,7 +29,7 @@ Working agreement (from the product owner, 2026-10-29):
 - [ ] New settings and cases where they serve the story
 - [x] Reverse case ("you dealt it")
 - [x] Daily case, achievements
-- [ ] Accessibility: colour-blind palette check, touch controls, remappable keys
+- [x] Accessibility: colour-blind palette check, touch controls, remappable keys
 - [ ] Performance pass, final polish, v4 release notes
 
 ## Log
@@ -41,3 +41,4 @@ Working agreement (from the product owner, 2026-10-29):
 - 2026-10-29: consistency audit. Chapel clock now starts at each case's time (the rehearsal is 9:30, not 10:58); the "Two suspects?" tip became "That is a match" (case 1 has a single eater); the pitch tour says the season is written and Free Play is generated; Kevin has shot four weddings (he has one review); whispers that blame you use who you are in that case ("Dana's elevator friend", "the elevator person", "the Nose"). Iteration 3 complete.
 - 2026-10-29: bonus case 7 "You Dealt It" (reverse): you are the culprit; release timing and place, gag, plant your cup, hush the witness, rumours, and the room decides at the lobby. Own objectives, tips, ranks and endings; playtest panel shows the room's live scores. Verified headlessly: good play earns S, doing nothing gets you named, partial play earns A/B; detective cases unchanged in the stress script.
 - 2026-10-29: daily case (same seed for everyone on a date, alternating elevator and chapel, Normal difficulty, first finish of the day counts, streak, spoiler-free "Copy result" text) and 19 achievements (js/meta.js) with an unlock pop-up and a list on the title screen. Campaign reset keeps achievements and daily history; playtest runs never count. Fixed the chapel bunting, which still said BRAD + CHANTELLE.
+- 2026-10-29: accessibility. Phones held sideways: the case file collapses to a one-line tab with a count (tap to open), meters, toasts and action buttons tighten, key hints are hidden on touch screens, and Search/Plant is a press-and-hold button. Remappable keys in Settings > Controls (js/keys.js): bindings use physical key positions so WASD works on AZERTY, clashes swap, Escape/Enter/arrows/number keys are reserved, and the action bar shows the bound keys (labelled for the keyboard layout where the browser allows). Colour check: no state is shown by colour alone (vision cones also differ in strength, objectives use ticks and crosses, ranks are letters, Aura has a number, "watching" is text).
