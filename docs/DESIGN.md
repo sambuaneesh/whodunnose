@@ -81,6 +81,21 @@ Running threads: the car always stops at floor nine for nobody (Accounting calls
 
 Each case's data lives in `js/story.js`: the fixed mystery (`fix`: culprit, meal, lie, decoys, witness, where people stood, witness and bag text), per-case voice lines and confessions (`say`), roles, the briefing, "what really happened" and "what happened next". Free Play stays fully procedural.
 
+## Bonus case: You Dealt It
+
+Tuesday, after the finale. You ate the last of Gary's chili, so this time you are the culprit (the reverse-detective idea that [Overboard!](https://www.pcgamer.com/uk/reverse-murder-mystery-overboard-is-a-deliciously-evil-twist-on-the-detective-genre) proved out). Every system is reused from the other side:
+
+- **When and where:** your tummy starts high. Press F under something loud and nobody can place it; in silence, everyone within earshot suspects you. Hold it too long and it comes out on its own, loudly.
+- **The origin is wherever you stood.** Whoever was near you when it started becomes a suspect for the people who smell it, exactly like the detective cases.
+- **Playground law** still applies, now in your favour or against you: whoever mentions it first is suspected. Thornbury mentions it in this case.
+- **Gag (Q):** innocent people react, so faking a reaction once it reaches you clears you with whoever is watching. Gagging before anyone else has smelled it gives you away; gagging twice is a performance.
+- **Plant (hold E):** slip your empty cup into someone's bag. It counts against them when the room decides. Getting seen counts against you.
+- **Hush (talk):** the witness (Josh, who saw you at the fridge) keeps whispering. Ask them to keep quiet; it only works if they do not already suspect you.
+- **Rumours** land harder when they are partly true: Chad really did eat the chili too.
+- **The room decides** at the lobby: highest crowd suspicion, plus planted evidence, plus (for you) how oddly you behaved. S needs someone else named by a clear margin with Aura 80+.
+
+Simulated runs: doing nothing gets you caught; hushing the witness or a couple of rumours earns an A or B; both together earn an S.
+
 ## Next steps
 
 - Playtest with people who have not seen it: is the elevator readable in one run, and is the wedding too long?

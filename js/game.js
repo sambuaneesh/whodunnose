@@ -39,7 +39,7 @@ const Game = (() => {
     const diff = caseDef.free ? DIFFICULTY[Store.settings().difficulty] : DIFFICULTY.normal;
     Object.assign(G, {
       state: 'play', t: 0, anim: 0, seed, cs: Case.generate(seed), diff,
-      aura: 100, auraShown: 100, pressure: 12, mentioned: false, mentionBy: null,
+      aura: 100, auraShown: 100, pressure: caseDef.pressure ?? 12, mentioned: false, mentionBy: null,
       clues: [], log: [], know: { claims: {}, zones: {}, bags: {}, bagFood: {}, witnessFood: {}, facts: {}, smell: false, reactions: [], tells: 0 },
       sv: { charges: RULES.smellVision ? diff.sv : 0, t: 0 }, loud: null, flags: {}, floaters: [], flashes: [], pssts: [], puffs: [], actors: {},
       board: { who: '', food: '', zone: '', cover: '', locked: false, checks: 0, feedback: '' },
@@ -117,7 +117,8 @@ const Game = (() => {
   }
   function primeSuspect() {
     let best = null, bv = 12;
-    for (const c of CAST) { const v = crowdOpinion(c.id); if (v > bv) { bv = v; best = c.id; } }
+    const ids = CAST.map((c) => c.id).concat(G.cs && G.cs.reverse ? ['player'] : []);
+    for (const id of ids) { const v = crowdOpinion(id); if (v > bv) { bv = v; best = id; } }
     return best;
   }
   const watchersNow = () => humans().filter((n) => NPC.sees(n, G.player));
@@ -196,7 +197,7 @@ const Game = (() => {
   // ---------------- the timeline ----------------
   function timeline() {
     const t = G.t, cs = G.cs, T = TIMELINE;
-    if (t >= 1.5) once('startTips', () => { tip('law'); tip('badgesOff'); if (RULES.aura) tip('watched'); });
+    if (t >= 1.5) once('startTips', () => { if (cs.reverse) tip('reverse'); tip('law'); tip('badgesOff'); if (RULES.aura) tip('watched'); });
     if (t >= T.fart) once('fart', () => {
       const s = cs.spots[cs.culprit];
       Gas.emit(s.x, s.y, L.gas.amount * (0.7 + 0.6 * cs.food.stink), 1.4);
@@ -231,7 +232,10 @@ const Game = (() => {
         logEvent(`${n.def.name}: "${m.line}"`);
       }
     }
-    if (t >= T.speakNow) once('speakNow', () => {
+    if (t >= T.speakNow && cs.reverse) once('speakNow', () => { api.say(L.speakNow.who, L.speakNow.line, 4, 'shout'); Sfx.setIntensity(2); G.decideT = t + 2.5; });
+    if (G.decideT && t >= G.decideT) once('decide', roomDecides);
+    if (G.finishAt && t >= G.finishAt) return finish('reverse', G.roomVerdict);
+    if (t >= T.speakNow && !cs.reverse) once('speakNow', () => {
       api.say(L.speakNow.who, L.speakNow.line, 9, 'shout');
       UI.speakNow(true);
       UI.caption(L.speakNow.caption, 8);
@@ -304,17 +308,19 @@ const Game = (() => {
     if (RULES.rumors && primeSuspect()) once('rumorFeat', () => feature('rumors'));
 
     const c = Gas.sample(G.player.x, G.player.y);
-    if (c > 0.1 && G.flags.fart) identifySmell('nose');
+    if (c > 0.1 && G.flags.fart && !G.cs.reverse) identifySmell('nose');
+    if (G.cs.reverse && G.flags.fart && G.t > TIMELINE.fart + 4) tip('gag');
     if (c > 0.3 && G.player.exprT <= 0 && Math.random() < dt * 0.3) { G.player.expr = 'disgust'; G.player.exprT = 1.5; }
     if (G.player.exprT > 0) { G.player.exprT -= dt; if (G.player.exprT <= 0) G.player.expr = 'neutral'; }
 
     if (RULES.tummy) {
       if (G.t > 4) G.pressure = Math.min(100, G.pressure + dt * L.pressureRate * G.diff.clock);
-      if (G.pressure >= 60) once('pressureWarn', () => { feature('pressure'); tip('tummy'); UI.caption('You need to go too. Hold it, or let it out (F) under something loud.', 5); });
+      if (G.pressure >= 60 && !G.cs.reverse) once('pressureWarn', () => { feature('pressure'); tip('tummy'); UI.caption('You need to go too. Hold it, or let it out (F) under something loud.', 5); });
       if (RULES.clench) updateRumble(dt);
       if (G.pressure >= 100) release(true);
     }
-    if (RULES.search && !G.tipsShown.bag && nearestBag()) tip('bag');
+    const bagTip = G.cs.reverse ? 'plant' : 'bag';
+    if (RULES.search && !G.tipsShown[bagTip] && nearestBag()) tip(bagTip);
 
     if (G.sniffCd > 0) G.sniffCd -= dt;
     if (G.sv.t > 0) G.sv.t -= dt;
@@ -463,7 +469,7 @@ const Game = (() => {
     addClue({ key: 'fact-' + n.id, kind: fact.kind === 'witness' ? 'witness' : 'gossip', who: fact.about, text: `${overheard ? 'Overheard ' : ''}${n.def.name}: "${fact.text}"`, implicates: fact.implicates, weight: fact.weight, food: fact.food, zone: fact.zone });
     if (fact.kind === 'witness') { G.know.witnessFood[fact.about] = fact.food; checkContradictions(fact.about); }
   }
-  function onOverhear(n, fact) { learnFact(n, fact, true); feature('eavesdrop'); tip('whisper'); }
+  function onOverhear(n, fact) { learnFact(n, fact, true); feature('eavesdrop'); tip(G.cs.reverse ? 'hush' : 'whisper'); }
   function onDeflect(n, buddy, target) {
     const tname = target === 'player' ? 'you' : castById(target).name;
     addClue({ key: 'deflect', kind: 'deflect', who: n.id, text: `Overheard ${n.def.name} whispering to ${buddy.def.name} that it was ${tname}. Why push the blame?`, implicates: [n.id], weight: 1.2 });
@@ -529,7 +535,7 @@ const Game = (() => {
     return best;
   }
   function nearestBag() {
-    if (!RULES.search) return null;
+    if (!RULES.search || (G.cs.reverse && (G.flags.planted || !G.flags.fart))) return null; // one empty cup, and only once it is done
     let best = null, bd = L.ranges.search;
     for (const c of CAST) {
       const it = G.items[c.id];
@@ -565,7 +571,7 @@ const Game = (() => {
     const bag = nearestBag();
     if (e.held > TAP && bag) {
       G.searching = { c: bag, k: Math.min(1, (e.held - TAP) / SEARCH_HOLD) };
-      if (G.searching.k >= 1) { e.done = true; G.searching = null; snoop(bag); }
+      if (G.searching.k >= 1) { e.done = true; G.searching = null; if (G.cs.reverse) plantIn(bag); else snoop(bag); }
     } else G.searching = null;
   }
 
@@ -619,6 +625,7 @@ const Game = (() => {
       ? { id: 'smell', label: 'What did it smell like to you?', tag: 'safe now' }
       : { id: 'smell', label: 'Did... you smell that?', tag: 'risky' });
     if (q.includes('rumor') && after && !n.asked.rumor) o.push({ id: 'rumor', label: 'Plant a rumour: "I bet it was..."', tag: 'scheming' });
+    if (q.includes('hush') && G.cs.facts[n.id] && !n.asked.hush) o.push({ id: 'hush', label: 'About this morning... can we keep that between us?', tag: 'risky' });
     o.push({ id: 'leave', label: 'Leave' });
     return o;
   }
@@ -630,6 +637,7 @@ const Game = (() => {
   function smeltIt(n) {
     G.mentioned = true; G.mentionBy = 'player';
     n.sus = Math.min(100, n.sus + COSTS.mentionFirst * G.diff.aura); recomputeAura();
+    if (G.cs.reverse) NPC.suspect(n, 'player', 25);
     UI.stamp('WHOEVER SMELT IT, DEALT IT!'); shake(8);
     feature('folklore');
     logEvent(`You mentioned the smell first. ${n.def.name} noticed.`);
@@ -676,6 +684,14 @@ const Game = (() => {
         const rz = n.reactZone ? ` It hit me over by the ${zoneById(n.reactZone).name}.` : ' Honestly I barely caught it.';
         return { text: U.fill(v.smell, { smell: sm, Smell: U.cap(sm), SMELL: sm.toUpperCase() }) + rz, expr: 'disgust' };
       }
+      case 'hush': {
+        // it only works on someone who does not already suspect you
+        if ((n.op.player || 0) < 40 && n.sus < 50) { n.hushed = true; logEvent(`${n.def.name} agreed to keep quiet.`); return { text: v.hushYes || 'Sure. My lips are sealed.' }; }
+        G.flags.hushFailed = true;
+        for (const o of humans()) if (U.dist(o, n) < L.ranges.overhear) NPC.suspect(o, 'player', 15);
+        logEvent(`${n.def.name} refused to keep quiet, loudly.`);
+        return { text: v.hushNo || 'Keep WHAT between us? ...Oh. OH.', expr: 'shock', bad: true };
+      }
       case 'pet': {
         const sg = L.scapegoat;
         if (cs.isDog) addClue({ key: 'scapebreath', kind: 'witness', who: sg.id, text: sg.breath(true), implicates: [sg.id], weight: 1.5, food: sg.food });
@@ -710,7 +726,9 @@ const Game = (() => {
     if (RULES.folklore && !G.mentioned) { smeltIt(n); note = ' (You brought it up first, though. They noticed.)'; }
     else n.sus = Math.max(0, n.sus - COSTS.rumorRelief);
     const kid = (n.def.gossip ?? 1) >= 2;
-    NPC.suspect(n, target, t.dog && !kid ? 10 : 26);
+    // in the bonus case a rumour with some truth in it (they really did eat it) lands harder
+    NPC.suspect(n, target, t.dog && !kid ? 10 : G.cs.reverse && G.cs.meals[target] === G.cs.food.id ? 36 : 26);
+    if (G.cs.reverse) n.op.player = Math.max(0, (n.op.player || 0) - 6);
     recomputeAura();
     logEvent(`You told ${n.def.name} it was ${t.name}.`);
     const line = t.dog ? (kid ? `${t.name}?! I KNEW it!` : `Blaming ${t.name}? Really? ...I mean, maybe.`) : U.fill(VOICES[n.id].rumor, { name: t.name, NAME: t.name.toUpperCase() });
@@ -751,6 +769,7 @@ const Game = (() => {
 
   function sniff() {
     if (G.state !== 'play' || G.sniffCd > 0) return;
+    if (G.cs.reverse) return gag();
     G.sniffCd = 1.6; Sfx.sniff();
     act('sniffing the air like a bloodhound', COSTS.sniff);
     const p = G.player, c = Gas.sample(p.x, p.y);
@@ -808,10 +827,12 @@ const Game = (() => {
       UI.stamp('THAT WAS AUDIBLE.'); shake(8);
       logEvent('You farted in silence. People heard.');
     }
+    if (G.cs.reverse) reverseReleased(forced ? 'forced' : G.loud ? 'loud' : 'audible');
   }
 
   function object() {
     if (G.state !== 'play') return;
+    if (G.cs.reverse) { UI.caption('Not today. You are the one hiding. Get to the lobby without being named.', 3); return; }
     if (!G.flags.fart || G.t < TIMELINE.fart + 3) { UI.caption('Call out what? Nothing has happened yet.', 2.5); return; }
     G.objected = true; G.state = 'accuse';
     Sfx.stopOrgan(); Sfx.stamp(); Sfx.sting('objection'); Sfx.setMusic('trial'); Sfx.duck(false);
@@ -820,6 +841,86 @@ const Game = (() => {
     focus(G.player, 1.5); shake(16);
     G.snapPending = 'object';
     UI.openAccuse();
+  }
+
+  // ---------------- the bonus case: you dealt it ----------------
+  // The first release is "it happened": the origin is wherever you stood, and whoever was there is a suspect.
+  function reverseReleased(kind) {
+    const cs = G.cs, p = G.player, t = G.t;
+    if (!G.flags.fart) {
+      G.flags.fart = true; TIMELINE.fart = t; TIMELINE.mention = t + 22;
+      cs.origin = zoneAt(p); cs.spots.player = { x: p.x, y: p.y };
+      for (const n of G.npcs) if (n.present) cs.fartZone[n.id] = zoneAt(n).id;
+      for (const n of G.npcs) { n.nextWhisper = t + 8 + Math.random() * 10; n.nextIdle = Math.max(n.nextIdle, t + 10); }
+      setTimeout(() => Sfx.setIntensity(1), 2000);
+    }
+    if (kind !== 'loud') {
+      const earshot = L.ranges.overhear * (kind === 'forced' ? 2.5 : 1.4);
+      for (const n of humans()) if (U.dist(n, p) < earshot) NPC.suspect(n, 'player', kind === 'forced' ? 70 : 40);
+    }
+  }
+
+  function gag() {
+    G.sniffCd = 2.5;
+    const p = G.player, c = Gas.sample(p.x, p.y);
+    p.expr = 'disgust'; p.exprT = 2.2;
+    p.bubble = { text: U.pick(Math.random, ['*gags*', '*cough cough*', '*eyes water*', '*holds nose*']), t: 2, tone: 'thought' };
+    const watching = humans().filter((n) => NPC.sees(n, p) || U.dist(n, p) < L.ranges.overhear);
+    if (!G.flags.fart || c < 0.05) {
+      act('gagging at absolutely nothing', 8);
+      for (const n of watching) NPC.suspect(n, 'player', 6);
+      return;
+    }
+    if (!G.know.reactions.length) {
+      for (const n of watching) NPC.suspect(n, 'player', 14);
+      UI.caption('You reacted before anyone else could smell it. They noticed.', 3); Sfx.ui('bad');
+      return;
+    }
+    if (G.t - (G.lastGagT ?? -99) < 14) { act('overdoing the gagging', 4); UI.caption('Once is convincing. Twice is a performance.', 2.5); return; }
+    G.lastGagT = G.t;
+    for (const n of watching) n.op.player = Math.max(0, (n.op.player || 0) - 12);
+    floater(p.x, p.y, watching.length ? 'convincing' : 'nobody saw', watching.length ? '#3c8d2f' : '#8e5bd6');
+  }
+
+  function plantIn(c) {
+    const it = G.items[c.id];
+    const wit = act(`slipping something into ${it.label}`, COSTS.search, { owner: c.id });
+    G.flags.planted = c.id; G.cs.bags[c.id].planted = true; G.know.bags[c.id] = 'seen';
+    if (wit.length) for (const n of wit) NPC.suspect(n, 'player', 30);
+    else { UI.caption(`Your empty chili cup is now in ${it.label}. Nobody saw.`, 3); Sfx.ui('good'); }
+    logEvent(`You slipped your empty cup into ${it.label}${wit.length ? ', and were seen' : ''}.`);
+  }
+
+  // At the lobby the room settles on someone: whoever the most people suspect, plus planted evidence,
+  // plus, for you, how oddly you have been acting.
+  function roomScores() {
+    const sc = {};
+    for (const c of CAST) { const n = npcById(c.id); if (n.present && G.cs.fartZone[c.id]) sc[c.id] = crowdOpinion(c.id) + (G.cs.bags[c.id].planted ? 22 : 0); }
+    sc.player = crowdOpinion('player') + (RULES.aura ? (100 - G.aura) * 0.35 : 0);
+    return sc;
+  }
+  function roomDecides() {
+    G.objected = true;
+    const sc = roomScores(), ranked = Object.entries(sc).sort((a, b) => b[1] - a[1]);
+    const [top, tv] = ranked[0];
+    const named = tv < 14 ? null : top;
+    const margin = Math.round(named === 'player' ? tv - (ranked[1] ? ranked[1][1] : 0) : (named ? tv : 14) - sc.player);
+    const vd = (G.caseDef.story && G.caseDef.story.verdict) || {};
+    const judge = npcById(vd.judge) || humans()[0];
+    const name = named && named !== 'player' ? castById(named).name : '';
+    const line = named === 'player' ? vd.player || 'It was YOU.' : named ? U.fill(vd.other || 'It was {name}.', { name }) : vd.nobody || 'Nobody? Fine.';
+    if (judge) { NPC.say(judge, line, 5, 'shout'); judge.expr = named === 'player' ? 'angry' : 'sus'; judge.exprT = 6; }
+    const target = named === 'player' ? G.player : named ? npcById(named) : null;
+    for (const n of G.npcs) if (n.present && target && n !== target) { n.face = Math.atan2(target.y - n.y, target.x - n.x); n.expr = 'shock'; n.exprT = 6; }
+    if (named && named !== 'player') { const n = npcById(named); NPC.say(n, n.def.dog ? L.scapegoat.outcome.wrong : VOICES[named].innocent, 4.5, 'shout'); n.expr = 'angry'; n.exprT = 6; }
+    UI.stamp(named === 'player' ? 'IT WAS YOU.' : named ? `IT WAS ${name.toUpperCase()}!` : 'NOBODY KNOWS.', named === 'player' ? undefined : 'gold');
+    shake(10); Sfx.stamp();
+    G.flags.named = named === 'player'; G.flags.survived = named !== 'player';
+    G.roomVerdict = { mode: 'room', named, scores: sc, margin, correct: named !== 'player' };
+    G.verdictLine = { who: judge ? judge.def.name : 'The room', text: line, accused: named || 'player', def: named === 'player' || !named ? { id: 'player', name: 'You', look: PLAYER_LOOK } : null, outcome: named === 'player' ? 'wrong' : 'confess' };
+    logEvent(`At the lobby the room decided: ${named === 'player' ? 'you' : name || 'nobody'}.`);
+    evalObjectives();
+    G.finishAt = G.t + 4.5; G.snapDecideAt = G.t + 1.2;
   }
 
   // ---------------- smell board ----------------
@@ -920,6 +1021,13 @@ const Game = (() => {
   // ---------------- results ----------------
   // Ranks are criteria, not hidden thresholds, so players know what to aim for.
   function rankFor(kind, acc) {
+    if (kind === 'reverse') {
+      if (acc.named === 'player') return 'F';
+      if (!acc.named) return 'C';
+      const aura = G.aura, hints = G.hintsUsed, cap = castById(acc.named).dog ? 'B' : 'S'; // blaming the baby never gets top marks
+      const r = aura >= 80 && acc.margin >= 15 && hints === 0 ? 'S' : acc.margin >= 8 && aura >= 50 ? 'A' : 'B';
+      return Store.RANKS.indexOf(r) > Store.RANKS.indexOf(cap) ? cap : r;
+    }
     if (kind === 'bankrupt' || (acc && !acc.correct)) return 'F';
     if (kind === 'peace') return 'D';
     const aura = RULES.aura ? G.aura : 100, hints = G.hintsUsed;
@@ -928,11 +1036,23 @@ const Game = (() => {
     if (acc.proof === 'full' || acc.proof === 'some') return 'B';
     return 'C';
   }
+  const REVERSE_TITLES = { S: 'The perfect crime', A: 'Smooth operator', B: 'Got away with it', C: 'Nobody knows', F: 'Caught red-cheeked' };
   const TITLES = { S: 'Nose of God', A: 'Certified sniffer', B: 'Decent detective', C: 'Right answer, no proof', D: 'Let it go' };
 
   // What evidence was out there that the player never found: the debrief that teaches.
   function missed() {
-    const cs = G.cs, out = [], cul = castById(cs.culprit);
+    const cs = G.cs, out = [];
+    if (cs.reverse) {
+      if (!G.flags.releasedLoud) out.push('Let it go under something LOUD (it flashes at the top) and nobody can tell where it came from.');
+      if (G.mentionBy === 'player') out.push('You mentioned the smell first. Playground law: whoever smelt it, dealt it.');
+      const w = cs.roles.witness;
+      if (w && !G.npcs.some((n) => n.hushed)) out.push(`${castById(w).name} saw you eat the chili and kept whispering about it. Asking them to keep quiet works if they do not suspect you yet.`);
+      if (!G.flags.planted) out.push(`You still had your empty cup. ${castById(cs.roles.patsy).name} also ate chili; their bag was the obvious place for it.`);
+      if (!G.lastGagT) out.push('You never gagged. Innocent people react to the smell; once it reaches you, press Q.');
+      if (G.hintsUsed) out.push(`You used ${G.hintsUsed} hint${G.hintsUsed > 1 ? 's' : ''}. An S rank needs none.`);
+      return out;
+    }
+    const cul = castById(cs.culprit);
     if (!G.know.smell) out.push('You never worked out the smell. Press Q to sniff, or stand in the cloud.');
     if (RULES.questions.includes('food') && !G.know.claims[cs.culprit] && !cs.isDog) out.push(`You never asked ${cul.name} what they ate.`);
     if (RULES.lies && !cs.isDog && !G.clues.some((c) => c.kind === 'contradiction')) out.push(`${cul.name} lied about what they ate. Their bag or a witness would have shown it.`);
@@ -966,10 +1086,18 @@ const Game = (() => {
         }
       } else rows.push([`Wrongly accused ${castById(acc.accused).name}`, 0]);
     }
+    if (kind === 'reverse') {
+      if (acc.named === 'player') rows.push(['Named by the room', 0]);
+      else {
+        rows.push(['Got away with it', 500]); score += 500;
+        if (acc.named) { const v = castById(acc.named); rows.push([`Framed ${v.name} (${v.shame}/10)`, v.shame * 20]); score += v.shame * 20; }
+        const mb = Math.max(0, Math.min(300, acc.margin * 6)); rows.push([`Margin of doubt (${acc.margin})`, mb]); score += mb;
+      }
+    }
     if (RULES.aura) { const ap = Math.round(G.aura * 4); rows.push([`Aura kept (${Math.round(G.aura)}%)`, ap]); score += ap; }
     if (G.board.locked) { rows.push(['Smell Board solved', 150]); score += 150; }
     if (G.hintsUsed) { rows.push([`Hints used (${G.hintsUsed})`, -50 * G.hintsUsed]); score -= 50 * G.hintsUsed; }
-    const title = TITLES[rank] || (kind === 'bankrupt' ? 'Aura bankrupt' : L.mode === 'elevator' ? 'Socially fired' : 'Wedding ruiner');
+    const title = kind === 'reverse' ? REVERSE_TITLES[rank] : TITLES[rank] || (kind === 'bankrupt' ? 'Aura bankrupt' : L.mode === 'elevator' ? 'Socially fired' : 'Wedding ruiner');
     const pid = G.caseDef.free ? 'free' : G.caseDef.id; // playtest runs never touch campaign progress
     const prog = Playtest.active ? Store.progress(pid) || { done: false, best: null, plays: 0 } : Store.record(pid, rank);
     G.result = { kind, acc, rows, score: Math.max(0, score), rank, title, missed: missed(), progress: prog };
@@ -1041,6 +1169,7 @@ const Game = (() => {
 
     if (photoFrame) { G.photoPending = false; takePhoto(); G.snaps.fart = captureScreen(); }
     else if (G.flags.fart && !G.snaps.fart && G.state === 'play') G.snaps.fart = captureScreen();
+    if (G.snapDecideAt && G.t >= G.snapDecideAt && !G.snaps.decide) G.snaps.decide = captureScreen();
     if (G.snapPending && G.state !== 'play' && Math.abs(cam.z - cam.tz) < 0.05) { if (G.snapPending === 'object') G.snaps.object = captureScreen(); G.snapPending = null; }
 
     for (const p of G.puffs) Art.puff(ctx, p);
@@ -1086,7 +1215,7 @@ const Game = (() => {
       // one clear prompt, in a fixed spot above the action bar, with the cost if anyone is watching
       const lines = [];
       if (person) lines.push(['E', person.def.dog ? `${person.def.sprite === 'baby' ? 'Coo at' : 'Pet'} ${person.def.name}` : `Talk to ${person.def.name}`, '']);
-      if (bag) lines.push(['Hold E', `Search ${G.items[bag.id].label}`, RULES.aura ? (G.watchers ? `${G.watchers} watching · about −${Math.round(COSTS.search * G.diff.aura)} Aura` : 'nobody watching') : '']);
+      if (bag) lines.push(['Hold E', `${G.cs.reverse ? 'Slip your empty cup into' : 'Search'} ${G.items[bag.id].label}`, RULES.aura ? (G.watchers ? `${G.watchers} watching · about −${Math.round(COSTS.search * G.diff.aura)} Aura` : 'nobody watching') : '']);
       if (prop) lines.push(['E', `Check the ${prop.label.toLowerCase()}`, '']);
       UI.prompt(lines);
       if (G.searching) { const ip = toScreen(G.items[G.searching.c.id].x, G.items[G.searching.c.id].y - 12); Art.holdRing(ctx, ip.x, ip.y, G.searching.k); }
@@ -1237,7 +1366,7 @@ const Game = (() => {
   return {
     boot, newGame, showcase, sniff, smellVision, release, object, useHint, tapE, talkOptions, talkChoose, confrontOptions, confrontChoose,
     startConfront, anyConfronting, onReaction, onCover, onIdle, onOverhear, onDeflect, flash, checkBoard, finish, feature,
-    npcById, humans, recomputeAura, fastForward, skipTo, revealAll, crowdOpinion, primeSuspect, evalObjectives,
+    npcById, humans, recomputeAura, fastForward, skipTo, revealAll, roomScores, crowdOpinion, primeSuspect, evalObjectives,
     resolvePoint, resolveProof, testimony, startTrial, trialPress, trialPresent, withdraw, resolveTrial, unfocus, focus, about,
   };
 })();

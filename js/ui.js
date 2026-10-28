@@ -57,7 +57,7 @@ const UI = (() => {
     $('#caseMap').innerHTML = CASES.map((c, i) => {
       const open = Store.unlocked(i), pr = Store.progress(c.id), setting = LEVELS[c.setting].title;
       return `<button class="case ${open ? '' : 'locked'} ${c === next ? 'next' : ''}" data-case="${i}" ${open ? '' : 'disabled'}>
-        <span class="case-n">${c.num}</span><span class="case-t"><b>${esc(c.title)}</b><small>${c.story ? esc(c.story.when) + ' · ' : ''}${c.setting === 'elevator' ? 'Elevator' : 'Chapel'} · ${open ? (pr && pr.best ? 'Best: ' + pr.best : 'New') : 'Locked'}</small></span>
+        <span class="case-n">${c.num}</span><span class="case-t"><b>${esc(c.title)}</b><small>${c.bonus ? 'Bonus · ' : ''}${c.story ? esc(c.story.when) + ' · ' : ''}${c.setting === 'elevator' ? 'Elevator' : 'Chapel'} · ${open ? (pr && pr.best ? 'Best: ' + pr.best : 'New') : 'Locked'}</small></span>
         ${pr && pr.best ? `<span class="case-r r-${pr.best}">${pr.best}</span>` : ''}</button>`;
     }).join('') + `<div class="free ${Store.unlocked(3) ? '' : 'locked'}"><b>Free Play</b><small>${Store.unlocked(3) ? 'Everything on, random cases.' : 'Unlocks after Case 3.'}</small>
         <div class="free-row"><button data-free="elevator" ${Store.unlocked(3) ? '' : 'disabled'}>Elevator</button><button data-free="wedding" ${Store.unlocked(3) ? '' : 'disabled'}>Chapel</button></div></div>`;
@@ -73,7 +73,7 @@ const UI = (() => {
     Game.showcase(caseDef);
     G.state = 'briefing'; Sfx.duck(true);
     const st = caseDef.story;
-    $('#briefKicker').textContent = caseDef.free ? `Free Play · ${LEVELS[caseDef.setting].title} · ${DIFFICULTY[S().difficulty].label}` : `Case ${caseDef.num} of ${CASES.length} · ${st ? `${st.when}, ${st.time} · ` : ''}${caseDef.setting === 'elevator' ? 'Thornbury Tower, the elevator' : "St. Swithin's Chapel"}`;
+    $('#briefKicker').textContent = caseDef.free ? `Free Play · ${LEVELS[caseDef.setting].title} · ${DIFFICULTY[S().difficulty].label}` : `${caseDef.bonus ? 'Bonus case' : `Case ${caseDef.num} of ${CASES.filter((c) => !c.bonus).length}`} · ${st ? `${st.when}, ${st.time} · ` : ''}${caseDef.setting === 'elevator' ? 'Thornbury Tower, the elevator' : "St. Swithin's Chapel"}`;
     $('#briefTitle').textContent = caseDef.title;
     $('#briefStory').textContent = st ? st.previously : '';
     $('#briefStory').hidden = !st;
@@ -99,7 +99,7 @@ const UI = (() => {
     $('#toasts').innerHTML = ''; $('#clueToasts').innerHTML = ''; clueQ = []; clueBusy = false;
     speakNow(false);
     $('#hud').hidden = false; $('#actionbar').hidden = false;
-    $('#caseTag').textContent = G.caseDef.free ? `Free Play · #${G.seed}` : `Case ${G.caseDef.num}: ${G.caseDef.title}`;
+    $('#caseTag').textContent = G.caseDef.free ? `Free Play · #${G.seed}` : G.caseDef.bonus ? `Bonus: ${G.caseDef.title}` : `Case ${G.caseDef.num}: ${G.caseDef.title}`;
     $('#objectLabel').textContent = 'Call it';
     // only show what this case has taught
     const R = RULES;
@@ -107,7 +107,9 @@ const UI = (() => {
     $('#meters').hidden = !R.aura && !R.tummy;
     $('#roomSus').hidden = true;
     $('#btnHint').hidden = !G.diff.hints;
-    const showAct = { talk: true, search: R.search, sniff: true, smellVision: R.smellVision, release: R.tummy, clench: R.clench, notebook: true, object: true };
+    const showAct = { talk: true, search: R.search, sniff: true, smellVision: R.smellVision, release: R.tummy, clench: R.clench, notebook: true, object: !R.reverse };
+    $('[data-act=sniff]').innerHTML = R.reverse ? '<kbd>Q</kbd>Gag' : '<kbd>Q</kbd>Sniff';
+    $('[data-act=search]').innerHTML = R.reverse ? '<kbd>Hold E</kbd>Plant' : '<kbd>Hold E</kbd>Search';
     document.querySelectorAll('[data-act]').forEach((b) => { b.hidden = !showAct[b.dataset.act]; });
     renderTour();
     objectives();
@@ -131,7 +133,8 @@ const UI = (() => {
     const loud = RULES.tummy && G.loud ? `LOUD: ${G.loud.label}` : '';
     setText($('#loud'), 'loud', loud); $('#loud').hidden = !loud;
     const ps = RULES.rumors && G.state === 'play' ? Game.primeSuspect() : null;
-    setText($('#roomSus'), 'room', ps ? `Room suspects: ${castById(ps).name}` : ''); $('#roomSus').hidden = !ps;
+    setText($('#roomSus'), 'room', ps ? `Room suspects: ${ps === 'player' ? 'YOU' : castById(ps).name}` : ''); $('#roomSus').hidden = !ps;
+    $('#roomSus').classList.toggle('you', ps === 'player');
     setText($('#svCharges'), 'sv', G.sv.t > 0 ? `${Math.ceil(G.sv.t)}s` : '●'.repeat(Math.max(0, G.sv.charges)) + (G.sv.charges ? '' : ' empty'));
     $('#svBtn').classList.toggle('active', G.sv.t > 0);
     $('#clenchBtn').classList.toggle('urgent', !!G.rumble);
@@ -566,17 +569,19 @@ const UI = (() => {
     $('#hud').hidden = true; $('#actionbar').hidden = true; speakNow(false);
     const cs = G.cs, cul = castById(cs.culprit);
     const st = G.caseDef.story, passed = r.rank !== 'F' && r.rank !== 'D';
-    const truth = st && st.fix.culprit === cs.culprit ? esc(st.truth) : `It was <b>${esc(cul.name)}</b>. They had ${esc(cs.food.name)} (${esc(cs.food.smell)}), it started by the ${esc(cs.origin.name)}${cs.fartType === 'sbd' ? ', silent but deadly' : cs.fartType === 'trumpet' ? ', and it was loud' : ''}${RULES.tells ? `, and they covered it up by ${esc(cs.cover.label)}` : ''}.`;
+    const rev = cs.reverse && r.acc, ending = rev && st && st.endings ? st.endings[rev.named === 'player' ? 'caught' : rev.named ? 'framed' : 'nobody'] : null;
+    const truth = ending ? esc(U.fill(ending, { name: rev.named && rev.named !== 'player' ? castById(rev.named).name : '' })) : st && st.fix.culprit === cs.culprit ? esc(st.truth) : `It was <b>${esc(cul.name)}</b>. They had ${esc(cs.food.name)} (${esc(cs.food.smell)}), it started by the ${esc(cs.origin.name)}${cs.fartType === 'sbd' ? ', silent but deadly' : cs.fartType === 'trumpet' ? ', and it was loud' : ''}${RULES.tells ? `, and they covered it up by ${esc(cs.cover.label)}` : ''}.`;
     const intro = { bankrupt: 'Your Aura hit zero. Everyone has quietly agreed it was you.', peace: L.peaceText, accuse: '' }[r.kind];
     const vl = G.verdictLine;
     const panels = [
       G.snaps.fart ? { img: G.snaps.fart, cap: 'It happens.' } : null,
       G.snaps.object ? { img: G.snaps.object, cap: 'You call it.' } : null,
-      vl ? { portrait: Art.portrait(castById(vl.accused), vl.outcome === 'wrong' ? 'angry' : 'shock'), cap: `${vl.who}: "${vl.text}"` } : null,
+      rev && G.snaps.decide ? { img: G.snaps.decide, cap: 'The room decides.' } : null,
+      vl ? { portrait: Art.portrait(vl.def || castById(vl.accused), vl.outcome === 'wrong' ? 'angry' : 'shock'), cap: `${vl.who}: "${vl.text}"` } : null,
     ].filter(Boolean);
     const idx = CASES.findIndex((c) => c.id === G.caseDef.id);
     const nextCase = idx >= 0 && idx < CASES.length - 1 && Store.unlocked(idx + 1) ? CASES[idx + 1] : null;
-    const criteria = RULES.accuse === 'point' ? 'S: right culprit, no hints. F: wrong person.' : 'S: right culprit, full proof, Aura 80+, no hints · A: full proof, Aura 50+ · B: some proof · C: no proof · D: never called it · F: wrong person or no Aura left.';
+    const criteria = cs.reverse ? 'S: someone else named by a clear margin, Aura 80+, no hints · A: clear margin, Aura 50+ · B: someone else named · C: nobody named · F: you were named.' : RULES.accuse === 'point' ? 'S: right culprit, no hints. F: wrong person.' : 'S: right culprit, full proof, Aura 80+, no hints · A: full proof, Aura 50+ · B: some proof · C: no proof · D: never called it · F: wrong person or no Aura left.';
     $('#resultsBody').innerHTML = `
       <div class="res-top"><div class="rank r-${r.rank}">${r.rank}</div><div><div class="res-k">${G.caseDef.free ? 'Free Play' : `Case ${G.caseDef.num}`} · ${esc(G.caseDef.title)} · Score ${r.score}</div><h2>${esc(r.title)}</h2>${intro ? `<p>${esc(intro)}</p>` : ''}<p class="crit">${esc(criteria)}</p></div></div>
       ${panels.length ? `<div class="comic">${panels.map((p) => `<div class="panel">${p.img ? `<img alt="" src="${p.img}">` : `<div class="pp"><img alt="" src="${p.portrait}"></div>`}<div class="pcap">${esc(p.cap)}</div></div>`).join('')}</div>` : ''}

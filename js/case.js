@@ -17,7 +17,53 @@ const Case = (() => {
     return 'sbd';
   }
 
+  // The bonus case: the player did it. Nothing has happened yet; the player decides when and where (see
+  // Game.release). One other person ate the same thing (the obvious patsy), and one person saw the player eat.
+  function generateReverse(seed) {
+    const r = U.rng(seed), fix = (L.caseDef.story && L.caseDef.story.fix) || {}, pin = fix.pins || {};
+    const late = new Set(L.lateArrivals || []);
+    const food = foodById(fix.food || 'chili');
+    const present = HUMANS.filter((id) => !late.has(id));
+    const patsy = present.includes(fix.patsy) ? fix.patsy : U.pick(r, present);
+    const witness = HUMANS.includes(fix.witness) && fix.witness !== patsy ? fix.witness : U.pick(r, present.filter((id) => id !== patsy));
+    const others = HUMAN_FOODS().filter((f) => f.id !== food.id);
+    const meals = {}, claims = {};
+    for (const id of HUMANS) {
+      meals[id] = id === patsy ? food.id : fix.meals && fix.meals[id] && fix.meals[id] !== food.id ? fix.meals[id] : U.pick(r, others).id;
+      claims[id] = meals[id];
+    }
+    meals[L.scapegoat.id] = null;
+    // everyone spread around the car (or room); stroller next to its parent
+    const spots = {}, taken = [{ ...L.player.start }], gap = L.ranges.spacing;
+    const count = (z) => taken.filter((q) => zoneAt(q).id === z.id).length;
+    const place = (z, near) => {
+      for (let tries = 0; tries < 60; tries++) {
+        const p = near ? { x: U.clamp(near.x + (r() - 0.5) * gap * 2.4, z.x + 6, z.x + z.w - 6), y: U.clamp(near.y + (r() - 0.5) * gap, z.y + z.h * 0.3, z.y + z.h - 2) } : spotIn(z, r);
+        if (taken.every((q) => Math.hypot(q.x - p.x, q.y - p.y) > gap) || tries === 59) { taken.push(p); return L.fixSpot ? L.fixSpot(p) : p; }
+      }
+    };
+    for (const c of CAST) {
+      if (late.has(c.id) || c.stayNear) continue;
+      const z = pin[c.id] ? zoneById(pin[c.id]) : U.pick(r, ZONES.filter((q) => count(q) === Math.min(...ZONES.map(count))));
+      spots[c.id] = place(z);
+    }
+    for (const c of CAST) if (c.stayNear && spots[c.stayNear]) spots[c.id] = place(zoneAt(spots[c.stayNear]), spots[c.stayNear]);
+    const facts = { [witness]: { text: fix.witnessText || `You ate ${food.name} this morning. I saw it.`, implicates: ['player'], weight: 2, kind: 'witness', food: food.id, about: 'player', short: `...the ${food.name}...` } };
+    const bags = {};
+    for (const c of CAST) {
+      if (c.dog) { bags[c.id] = { text: L.scapegoat.bedText(false), food: null, implicates: [], weight: 0 }; continue; }
+      const f = foodById(meals[c.id]);
+      bags[c.id] = { text: `${L.bagFlavor[c.id]} ${f.wrapper}.`, food: f.id, implicates: f.id === food.id ? [c.id] : [], weight: 2 };
+    }
+    return {
+      seed, level: L.id, reverse: true, culprit: 'player', isDog: false, food, fartType: null, cover: null, origin: null,
+      spots, fartZone: {}, meals, claims, facts, bags, alibiZone: null, companion: null,
+      roles: { patsy, witness, nearDecoy: null, foodDecoy: patsy }, answer: {},
+    };
+  }
+
   function generate(seed) {
+    if (L.caseDef && L.caseDef.reverse) return generateReverse(seed);
     const r = U.rng(seed);
     const fix = (L.caseDef && L.caseDef.story && L.caseDef.story.fix) || {};
     const pin = fix.pins || {};

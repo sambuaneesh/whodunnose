@@ -116,6 +116,7 @@ const NPC = (() => {
         n.expr = 'disgust'; n.exprT = 3;
         say(n, n.def.dog ? (n.def.sprite === 'baby' ? '*wails*' : '*whimpers*') : U.pick(Math.random, G.mentioned ? REACTIONS_POST : REACTIONS_PRE), 2.6, 'thought');
         for (const o of G.npcs) if (o !== n && o.present && U.dist(o, n) < L.ranges.gossip * 0.85) suspect(n, o.id, 12);
+        if (G.cs.reverse && U.dist(G.player, n) < L.ranges.gossip * 0.85) suspect(n, 'player', 12);
         if (RULES.aura && U.dist(G.player, n) < L.ranges.gossip * 0.85) n.sus = Math.min(100, n.sus + 4);
         G.onReaction(n);
       } else if (n.reacted && c > 0.35 && Math.random() < dt * 0.08 && !n.bubble) {
@@ -158,7 +159,8 @@ const NPC = (() => {
     }
     // ---- whispering what they know (overheard if you are close) ----
     const fact = G.cs.facts[n.id];
-    if (RULES.whispers && fact && !n.def.dog && t >= n.nextWhisper && !n.bubble && !n.anim && !L.quiet(t) && !G.know.facts[n.id]) {
+    const done = G.cs.reverse ? n.hushed || !G.flags.fart : G.know.facts[n.id]; // in the bonus case they keep at it until hushed
+    if (RULES.whispers && fact && !n.def.dog && t >= n.nextWhisper && !n.bubble && !n.anim && !L.quiet(t) && !done) {
       const buddy = nearestOther(n, G);
       if (buddy && U.dist(buddy, n) < L.ranges.gossip * 1.1) {
         n.nextWhisper = t + 24 + Math.random() * 14;

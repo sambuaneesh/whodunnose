@@ -171,6 +171,37 @@ const STORY = {
     next: 'In the lobby, Mr. Thornbury clears his throat and announces that the Monday potluck is back, effective immediately. Josh gets a desk. Dana leaves for her honeymoon. And you get a new job title, printed on a laminated card: Head of Air Quality.',
     finale: true,
   },
+
+  // Bonus: the season's last joke is on you.
+  c7: {
+    when: 'Tuesday', time: '8:58 AM',
+    previously: 'Your first morning as Head of Air Quality. Before flying off on her honeymoon, Dana left the last of Gary\'s chili in the office fridge with a note: PLEASE FINISH THIS. PLEASE. You finished it. All of it. For breakfast. Now you are riding down to the lobby with everyone, the chili is on its way, and the most famous nose in the building is about to become its own case.',
+    intro: "Tuesday, 8:58 AM. Floor 30. It's coming, and everyone knows who you are.",
+    roles: { thornbury: 'CEO. Off chili for life.', josh: 'Intern. Was at the fridge at eight.', chad: 'Sales. Bulking season, day two.', sal: 'Pizza delivery. Gets on at twenty-two.', priya: 'Accounts. Leo is still teething.', leo: "Priya's son." },
+    fix: {
+      food: 'chili', patsy: 'chad', witness: 'josh', meals: { thornbury: 'tuna', josh: 'garlic', sal: 'garlic', priya: 'eggs' }, pins: { thornbury: 'backright' },
+      witnessText: 'The new Head of Air Quality ate a whole tub of chili out of the fridge at eight this morning. With a ladle. I saw it.',
+    },
+    say: {
+      thornbury: { hello: 'Ah. My Head of Air Quality. I expect great things. Mostly, I expect this elevator to smell of nothing.', breakfast: '{food}. I am never eating chili again. Never.' },
+      josh: { hello: "Hey, boss! Head of Air Quality! I saw you at the fridge this morning. Big breakfast!", breakfast: '{food}! My own! Paid for!', hushYes: 'Say no more. Interns are invisible, and so is everything interns see.', hushNo: "Keep WHAT quiet? The chili? ...Oh. OH. Oh no. Everybody, it was-- I mean. Nothing. Forget it." },
+      chad: { hello: "Bro! Head of Air Quality! Chili gang, bro. I had Gary's chili yesterday AND today.", breakfast: "{food}, bro. Bulking season, day two. Beans are nature's protein." },
+      sal: { hello: "Morning, Nose! Pizza for the lobby. Yeah, at nine in the morning. Don't ask." },
+      priya: { hello: 'Hi. Leo is still teething. If anything happens in this elevator, please let it not be him.' },
+    },
+    verdict: {
+      judge: 'thornbury',
+      player: 'It was YOU. My own Head of Air Quality. Hand me back the laminated card.',
+      other: 'It was {name}. Obviously. I will be speaking to HR, the moment HR is back from her honeymoon.',
+      nobody: 'Nobody? NOBODY? ...Fine. But I am installing a camera that can smell.',
+    },
+    endings: {
+      framed: "It was you: Gary's chili, all of it, for breakfast. By the time the doors opened, the whole car was sure it was {name}. Nobody will ever know. Except you. And possibly Josh.",
+      nobody: 'It was you. Nobody could agree on who it was, so nobody was named. The perfect crime is the one nobody can prove.',
+      caught: 'It was you, and now everyone knows it. By lunch the video has a sequel. Dana sends a single message from her honeymoon: "Really?"',
+    },
+    next: 'Dana comes back from her honeymoon to find a new rule in the handbook, written by Mr. Thornbury: no chili in the office fridge, ever. Nobody knows why. You know why.',
+  },
 };
 
 CASES.forEach((c) => { c.story = STORY[c.id] || null; });

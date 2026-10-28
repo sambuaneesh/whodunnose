@@ -62,6 +62,8 @@ const R3 = { ...R2, questions: ['food', 'where', 'gossip', 'smell'], smellVision
 const R4 = { ...R3, badges: false, whispers: true, gossip: true, tells: true, sweat: true, deflect: true, tummy: true };
 const R5 = { ...R4, clench: true, photo: true, accuse: 'cross' };
 const R6 = { ...RULES_ALL, badges: false };
+// The bonus case turns everything around: you did it. Bags are for planting, Q is for faking it, and the room decides.
+const R7 = { ...RULES_ALL, questions: ['food', 'where', 'smell', 'rumor', 'hush'], lies: false, tells: false, deflect: false, photo: false, board: false, accuse: 'room', reverse: true };
 
 // Objectives: what the Case File shows. check(G) ticks them; hint explains how.
 const OBJECTIVES = {
@@ -77,6 +79,14 @@ const OBJECTIVES = {
     hint: 'Someone lied about what they ate. Compare their answer with what is in their bag, or with what a witness saw.' },
   law: { label: 'Let someone else mention the smell', check: (G) => G.mentioned && G.mentionBy !== 'player', fail: (G) => G.mentionBy === 'player',
     hint: 'Playground law: whoever smelt it, dealt it. Do not be the first to bring up the smell. Someone else will.' },
+  letGo: { label: 'Let it go under something loud', check: (G) => !!G.flags.releasedLoud, fail: (G) => !!G.flags.releasedBadly,
+    hint: 'Watch the top of the screen. The moment something LOUD happens (a phone, the doors, the muzak), press F.' },
+  hush: { label: 'Keep the witness quiet', check: (G) => G.npcs.some((n) => n.hushed), fail: (G) => !!G.flags.hushFailed,
+    hint: 'Someone saw you eat this morning and keeps whispering about it. Stand close to hear who, then talk to them before it spreads.' },
+  frame: { label: 'Get the room to suspect someone else', check: (G) => { const p = Game.primeSuspect(); return !!p && p !== 'player'; },
+    hint: 'Ask people what they ate: whoever else had chili is the obvious suspect. Plant a rumour, or slip your empty cup into their bag.' },
+  survive: { label: 'Reach the lobby without being named', check: (G) => !!G.flags.survived, fail: (G) => !!G.flags.named,
+    hint: 'At the lobby the room decides. Keep your Aura up and make sure somebody else is the one they suspect most.' },
   where: { label: 'Work out where it started', check: (G) => G.clues.some((c) => c.zone === G.cs.origin.id && (c.implicates || []).length),
     hint: 'Ask people "Where were you standing?" and compare with who reacted first. Smell Vision (V) shows where the cloud is thickest.' },
   overhear: { label: 'Overhear a whisper', check: (G) => G.clues.some((c) => /^Overheard/.test(c.text)),
@@ -114,6 +124,10 @@ const TIPS = {
   vows: { title: 'Silence', text: 'The vows. Talking now gets noticed. Seated guests face the altar, so the aisles behind them are a blind spot.' },
   cross: { title: 'Cross-examination', text: 'The accused makes three statements. Press one to hear more. Present the clue that breaks it. Wrong evidence costs you.' },
   rumor: { title: 'Rumours', text: 'New: plant a rumour. Who the room already suspects decides how much they believe you at the end. The culprit is doing it too.' },
+  reverse: { title: 'You dealt it', text: 'This time it was you, and it is coming whether you like it or not. Wait for something LOUD at the top of the screen, then press F. Then make sure the room decides it was somebody else.' },
+  gag: { title: 'Act natural', text: 'Innocent people react to the smell. Press Q to gag once it reaches you, and anyone watching will think you are a victim. Gag before anyone else has noticed, and they will wonder how you knew.' },
+  plant: { title: 'Plant evidence', text: 'HOLD E next to someone else\'s bag to slip your empty chili cup into it. When the room decides, a chili cup in a bag counts against its owner. Just do not get seen.' },
+  hush: { title: 'Someone saw your breakfast', text: 'That whisper was about you. Talk to them and ask them to keep it quiet before the whole car hears. It only works if they do not already suspect you.' },
   confront: { title: 'Confronted', text: 'Someone is onto you. Stay calm. Denying it too hard, or quoting the rhyme, only makes it worse.' },
 };
 
@@ -150,6 +164,15 @@ const CASES = [
     goal: 'Everything you have learned, in thirty floors. The culprit knows who you are and is telling everyone it was you. Spread some rumours of your own.',
     learn: [['E', 'Rumours', 'Tell people who you think did it.'], ['!!', 'Confrontations', 'Stay calm when someone accuses you.'], ['N', 'Smell Board', 'Lock in your full theory for a bonus.']],
     objectives: ['smell', 'law', 'where', 'liar', 'cover', 'call'], tips: ['rumor', 'confront'] },
+  { id: 'c7', setting: 'elevator', num: 7, bonus: true, reverse: true, pressure: 62, title: 'You Dealt It', seed: 7707, cast: ['thornbury', 'josh', 'chad', 'sal', 'priya', 'leo'], rules: R7,
+    timeline: { fart: Infinity, mention: Infinity }, callWhen: 'before the lobby',
+    loud: [ // Dana is on her honeymoon, so it is someone else's phone
+      { t: 22, dur: 3.5, label: "Josh's phone rings. It's his mum." }, { t: 34, dur: 2.5, label: 'DING. The doors open.' },
+      { t: 66, dur: 3, label: 'The muzak hits a key change' }, { t: 88, dur: 2.5, label: 'DING. Nobody there.' }, { t: 110, dur: 2.5, label: "Chad's shaker hits the floor" }],
+    mention: { who: 'thornbury', line: 'Good God. Who is responsible for this?', caption: 'Mr. Thornbury said it first. Playground law says that makes him a suspect. Now everyone can talk about it.' },
+    goal: 'This time it was you. Let it go under something loud, never be the first to mention it, keep the witness quiet, and make sure the room blames somebody else before the doors open.',
+    learn: [['F', 'Let it go', 'Under something LOUD, nobody can tell where it came from.'], ['Q', 'Gag', 'Act like a victim, but only once it reaches you.'], ['Hold E', 'Plant', 'Slip your empty chili cup into someone else\'s bag.'], ['E', 'Hush', 'Someone saw you eat. Ask them to keep quiet.']],
+    objectives: ['letGo', 'law', 'hush', 'frame', 'survive'], tips: ['reverse', 'law', 'gag', 'plant', 'hush', 'rumor', 'rumble', 'confront'] },
 ];
 const FREE_PLAY = (setting, seed) => ({ id: 'free-' + setting, setting, num: 0, title: 'Free Play', seed, cast: null, rules: R6, timeline: {}, loud: null,
   callWhen: setting === 'elevator' ? 'before the lobby' : 'at "speak now"', free: true,
@@ -198,6 +221,7 @@ function buildLevel(caseDef) {
   lv.loud = caseDef.loud || base.loud;
   lv.callWhen = caseDef.callWhen;
   if (caseDef.speakNow) lv.speakNow = caseDef.speakNow;
+  if (caseDef.mention) lv.mention = caseDef.mention;
   lv.lateArrivals = (base.lateArrivals || []).filter((id) => lv.cast.some((c) => c.id === id));
   // an authored case rewrites roles, voice lines and the opening caption for this case only
   const st = caseDef.story;

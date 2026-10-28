@@ -6,7 +6,7 @@ then call them out in front of everyone, without anyone deciding it was you.
 Open `index.html` in a browser. Works fully offline: no build step, no network. Art and audio are generated in code;
 the only bundled assets are three fonts in `fonts/` (SIL Open Font License).
 
-A six-case campaign that introduces one to three mechanics per case, then Free Play with every mechanic and three difficulties.
+A written six-case season (one week in an office tower, with a wedding in the middle) that introduces one to three mechanics per case, a bonus case played from the other side, then Free Play with every mechanic and three difficulties.
 Progress and settings are saved in the browser. Design notes: [`docs/DESIGN.md`](docs/DESIGN.md) · audit and redesign: [`docs/AUDIT.md`](docs/AUDIT.md).
 
 ## Controls
@@ -17,9 +17,11 @@ N notebook · O call it · H hint · Esc pause · M mute. Presenter mode (Settin
 | File | What it does |
 |---|---|
 | `js/data.js` | Foods, the Aura cost table, difficulty, campaign cases, rules, objectives, tips, and the level builder |
+| `js/story.js` | The season: each case's fixed mystery, motives, per-case lines, briefings and endings |
 | `js/save.js` | Settings and campaign progress in local storage |
 | `js/levels/*.js` | One file per episode: zones, cast, voices, timeline, airflow, art, set pieces |
-| `js/case.js` | Generates a solvable mystery from a case number |
+| `js/case.js` | Builds a solvable mystery: authored for the season, generated from a case number in Free Play, reversed for the bonus case |
+| `js/playtest.js` | Playtest tools (god view, time controls, cheats, case launcher), unlocked by a URL code |
 | `js/gas.js` | Grid simulation: diffusion, air currents, vents, doors |
 | `js/npc.js` | NPC AI: vision, reactions, opinions, whispers, tells, confrontations |
 | `js/game.js` | Engine: timeline, player actions, evidence, cross-examination, scoring, rendering |
