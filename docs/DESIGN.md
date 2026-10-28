@@ -1,0 +1,60 @@
+# Who Farted? — design notes and research
+
+A comedy deduction game. Someone farted at the worst possible moment. You work out who, then call it out in front of everyone, without anyone deciding it was you.
+
+## Pillars
+
+1. **Investigate.** The fart is a physical gas cloud. What someone ate decides how loud it was and how it smells. Everyone tells the truth except the culprit.
+2. **Keep your aura.** Your reputation is the fail state. People see slices of the room, gossip about you, and apply playground law. You also need to go.
+3. **Prove it.** Plant rumours to steer who the room suspects, then cross-examine the accused and break their testimony with evidence.
+
+## Systems in the demo (v2)
+
+| System | What it does | Where |
+|---|---|---|
+| Episodes | Each setting is a level module with its own rules, cast, timeline, art and set pieces | `js/levels/*.js` |
+| Procedural cases | Culprit, meal, origin, lie, cover-up, decoys and witnesses from a case number; always solvable by three independent chains | `js/case.js` |
+| Gas simulation | Diffusion + air currents + vents + doors on a 64×36 grid; level supplies walls and airflow | `js/gas.js` |
+| Fart science | Food sets stink (gas amount) and loudness (fart type probabilities) | `FOODS` in `js/data.js` |
+| Noses | Nose height and tolerance per character; reaction order points to the origin | `js/npc.js` |
+| Vision cones + traits | Per-character perception (enforcers see further, notice more) and gossip rate (blabbermouths) | `CAST` entries |
+| Aura + gossip | Witnessed actions raise suspicion; suspicion and opinions spread between people standing together | `js/game.js` |
+| Room opinion + rumours | Every NPC keeps a theory; reactions, tells, mentions and your rumours feed it; it sets starting belief in the trial | `js/npc.js`, `js/game.js` |
+| Eavesdropping | NPCs whisper what they know; stand close and you overhear it for free | `js/npc.js` |
+| Photo evidence | A capture of the scene at the moment it happened (Kevin's camera / the elevator's security camera) | `takePhoto` in `js/game.js` |
+| Pressure + clench | Your own need to go; release under loud moments; hold C during rumbles | `js/game.js` |
+| Smell Board | Golden Idol-style fill-in-the-blanks with "one away" feedback | `js/ui.js` |
+| Cross-examination | Three statements; press for more, present the clue that breaks each; wrong evidence costs belief and aura; one withdrawal allowed | `testimony` in `js/game.js` |
+| Comic recap | Results show the fart-moment snapshot, the call-out snapshot and the final line | `js/ui.js` |
+
+## Episodes
+
+- **S1E1 Going Down (elevator, ~2.5 min).** Everyone faces the doors, so the back of the car is a blind spot. Talking and shuffling are noticed. Sal the pizza guy boards halfway: he cannot be the culprit, but he is the preferred witness. The doors open twice, venting gas. Call it before the lobby doors open.
+- **S1E2 Til Death Do Us Fart (wedding, ~5 min).** Mingling, then places, the procession (the organ is the safest moment to let one go), silent vows, and "speak now or forever hold your peace" as the courtroom.
+
+## Research that shaped the design
+
+**Competitors (all fart-themed, none a detective game):** [Who Fart? on Steam](https://store.steampowered.com/app/3750310/Who_Fart/) (multiplayer hidden role, coming soon), [PRRRT...](https://boardgamematcher.com/game/prrrt) (board game with "shame values", which became our accusation stakes), [Bad Air Day](https://toucharcade.com/2011/02/21/bad-air-day-review/) (gas as physics, guests with different tolerances and nose heights), [Pizhe Xianzhi](https://boardgamematcher.com/game/pizhe-xianzhi).
+
+**Deduction:** [The Case of the Golden Idol](https://www.gamedeveloper.com/design/case-of-the-golden-idol): judge partial progress, keep scenes minimal, give every suspect a plausible motive. [Return of the Obra Dinn](https://en.wikipedia.org/wiki/Return_of_the_Obra_Dinn) validates in groups of three to stop guessing. [Duck Detective](https://www.nintendoworldreport.com/review/66994) shows silly tone and real deduction can coexist.
+
+**Courtroom:** Ace Attorney's press/present and the Perceive system; [Danganronpa](https://en.wikipedia.org/wiki/Danganronpa:_Trigger_Happy_Havoc) breaks statements with "truth bullets". Critics note cluttered debates make contradictions hard to find, so we keep testimony to three clear statements.
+
+**Social stealth:** [SpyParty](https://spyparty.fandom.com/wiki/Behaviorism) (act like an NPC), [Untitled Goose Game](https://www.gamedeveloper.com/game-platforms/road-to-the-igf-house-house-s-i-untitled-goose-game-i-) (jokes land when nobody is watching; readable NPC states), Hitman (overheard conversations, enforcers who see through you).
+
+**Procedural mysteries:** [Shadows of Doubt](https://www.startmenu.co.uk/home/review-shadows-of-doubt) is criticised for clues that feel the same every run, so cases here mix clue types (bags, witnesses, overheard whispers, photos, tells, reactions, sound).
+
+**Elevator behaviour:** riders face the doors, spread to the corners and stop talking ([NPR, "Why we behave so oddly in elevators"](https://www.npr.org/2012/12/24/167977420/why-we-behave-so-oddly-in-elevators)). That became the elevator's stealth rules.
+
+**Fart science:** most fart gas is odourless; the smell is sulfur, mainly hydrogen sulfide, from sulfur-rich protein such as eggs, fish and meat; garlic produces methanethiol and dimethyl sulfide; beans produce lots of mostly odourless gas ([Mental Floss summary of the Minneapolis VA *Gut* study](https://www.mentalfloss.com/article/87818/foods-responsible-smelliest-farts), [ScienceNorway](https://www.sciencenorway.no/bacteria-digestive-tract-food-and-nutrition/why-do-farts-stink/2366392)). The in-game Field Guide keeps this simple and avoids numbers.
+
+**Comedy:** [Thank Goodness You're Here!](https://www.gamedeveloper.com/design/-humor-is-all-we-ve-really-got-championing-absurdity-in-thank-goodness-you-re-here-) put comedy before mechanics. Here, comic beats are scripted on the timeline (the mention, the organ, the vows) so timing stays in the designer's hands.
+
+**Art:** South Park's look comes from cut construction paper, later emulated digitally, with separate mouth shapes. We use jagged paper polygons with drop shadows, 8 fps pose-hopping, three mouth shapes for talking, and eyebrows for expression.
+
+## Next steps
+
+- Playtest with people who have not seen it: is the elevator readable in one run, and is the wedding too long?
+- A "You dealt it" reverse episode: you farted, now frame someone.
+- More episodes: job interview, funeral, yoga class, Zoom call with your mic on.
+- Controller support and a proper settings menu.
