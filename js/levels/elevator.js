@@ -151,12 +151,9 @@
       return [{ y: CAR.y1 + 40, draw: (ctx) => drawDoors(ctx, open) }];
     },
     overlay(ctx, t, api) {
-      // the shaft slides past: a floor every 120 units, moving up as the car goes down, still while the doors are open
-      const gt = api.time(), rate = 30 / (this.timeline.speakNow || 126), open = api.doorOpen('main') > 0.05;
-      const last = api.get('shaftT'), was = last === undefined ? gt * rate : api.get('shaftPos'); // (a run that starts mid-way catches up)
-      const pos = Math.min(30, was + (open || last === undefined ? 0 : Math.max(0, gt - last) * rate));
-      api.set('shaftT', gt); api.set('shaftPos', pos);
-      drawShaft(ctx, 30 - pos);
+      // the shaft slides past: a floor every 120 units, moving up as the car goes down, in step with the floor display
+      const gt = api.time();
+      drawShaft(ctx, Math.max(0, 30 - gt * 30 / (this.timeline.speakNow || 126)));
       const label = this.clockLabel(gt);
       Art.paperRect(ctx, 781, 280, 84, 30, '#1b1b1f', 901, { amp: 0.4, stroke: '#555', lw: 1 });
       ctx.save(); ctx.font = '400 17px "Bowlby One SC", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
