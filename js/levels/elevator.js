@@ -25,6 +25,7 @@
     view: { x: 344, y: 172, w: 592, h: 333 },
     ranges: { notice: 34, overhear: 80, gossip: 75, talk: 62, search: 30, personal: 20, spacing: 40, depth: 0.45, itemOffset: { x: 15, y: 3 } },
     bounds: { x0: CAR.x0 + 10, x1: CAR.x1 - 10, y0: CAR.y0 + 14, y1: CAR.y1 - 4 },
+    floor: { x: CAR.x0, y: CAR.y0, w: CAR.x1 - CAR.x0, h: CAR.y1 - CAR.y0 },
     player: { start: { x: 612, y: 446 }, seat: { x: 612, y: 446, face: Math.PI / 2 }, look: { body: '#f08a24', outfit: 'hoodie', pants: '#3a4a6a', shoes: '#f6efdf', skin: '#f3cfae', hair: '#2d1d10', hairStyle: 'messy', acc: 'none', scale: 1.0, voice: 300 } },
     itemsAtFeet: true,
     nervous: ['josh'],

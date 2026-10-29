@@ -59,6 +59,19 @@ const Game = (() => {
     G.cam.tx = p.x + 300 / z; G.cam.ty = p.y - 50 / mult; G.cam.tz = z;
   }
   function unfocus() { if (!G.cam || !L) return; const c = viewCenter(); G.cam.tx = c.x; G.cam.ty = c.y; G.cam.tz = baseZoom(); }
+  // In a big room (the chapel) the camera follows you, close enough to read faces, and cuts to the wide shot for
+  // the moments everyone needs to see: when it happens, and the call to speak now.
+  function followCam() {
+    if (!L.follow || !G.cs || !G.player || !['play', 'tip', 'dialogue', 'notebook', 'paused'].includes(G.state)) return;
+    const cam = G.cam;
+    if ((G.overviewT || 0) > G.t) unfocus();
+    else {
+      const z = baseZoom() * L.follow, v = L.view, hw = W / 2 / z, hh = (H - barH) / 2 / z, p = G.player;
+      cam.tz = z; cam.tx = U.clamp(p.x, v.x + hw, v.x + v.w - hw); cam.ty = U.clamp(p.y - 40, v.y + hh, v.y + v.h - hh) + barH / 2 / z;
+    }
+    if (G.camSnap) { cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; G.camSnap = false; }
+  }
+  const wide = (secs, snap = false) => { G.overviewT = G.t + secs; if (snap) G.camSnap = true; };
   function shake(amount) { if (G.cam && Store.settings().shake) G.cam.shake = Math.max(G.cam.shake, amount); }
 
   // ---------------- setup ----------------
@@ -88,7 +101,7 @@ const Game = (() => {
       sniffCd: 0, sniffArrow: null, nextConfrontT: 0, gossipT: 1, objected: false, result: null,
       rumble: null, nextRumble: 0, photo: null, photoPending: false, snaps: {}, snapPending: null, trial: null,
       doors: {}, watchers: 0, lastOddSeenT: -99, squeezeT: {}, beltT: -99, eDown: null, searching: null,
-      objState: {}, tipsShown: {}, tipQueue: [], hintsUsed: 0, beatT: 0, unseenClues: 0,
+      objState: {}, tipsShown: {}, tipQueue: [], hintsUsed: 0, beatT: 0, unseenClues: 0, overviewT: 2.5, camSnap: false, // an establishing shot, then the camera finds you
       player: { x: L.player.start.x, y: L.player.start.y, face: -Math.PI / 2, target: null, path: [], walking: false, bubble: null, expr: 'neutral', exprT: 0, pending: null },
     });
     G.npcs = CAST.map((c) => NPC.create(c, G.cs));
@@ -220,7 +233,7 @@ const Game = (() => {
       const n = npcById(id); if (!n) return;
       n.present = true; n.x = from.x; n.y = from.y;
       const spot = L.arrivalSpot ? L.arrivalSpot(n, G) : freeSpot(['frontleft', 'buttons', 'middle'], n);
-      n.seat = { x: spot.x, y: spot.y, face: Math.PI / 2 };
+      n.seat = { x: spot.x, y: spot.y, face: L.seatFace ?? Math.PI / 2 };
       const path = L.route ? L.route(n, spot) : [{ ...spot }]; n.target = path.shift(); n.path = path;
       const off = L.ranges.itemOffset || { x: 20, y: 4 };
       G.items[id] = { ...G.items[id], ...(L.itemAt ? L.itemAt(spot, castById(id)) : { x: spot.x + off.x, y: spot.y + off.y }), present: true };
@@ -244,6 +257,7 @@ const Game = (() => {
       const s = cs.spots[cs.culprit];
       Gas.emit(s.x, s.y, L.gas.amount * (0.7 + 0.6 * cs.food.stink), 1.4);
       logEvent('Something happened.');
+      wide(4.5, true);
       G.beatT = 1.1; shake(4);
       if (cs.fartType !== 'sbd') {
         Sfx.fart(cs.fartType, s.x, 1, { size: 0.8 + cs.food.loud * 0.5 });
@@ -279,6 +293,7 @@ const Game = (() => {
     if (G.finishAt && t >= G.finishAt) return finish('reverse', G.roomVerdict);
     if (t >= T.speakNow && !cs.reverse) once('speakNow', () => {
       api.say(L.speakNow.who, L.speakNow.line, 9, 'shout');
+      wide(3.5);
       UI.speakNow(true);
       UI.caption(L.speakNow.caption, 8);
       logEvent(`"${L.speakNow.line}"`);
@@ -1180,6 +1195,7 @@ const Game = (() => {
     if (!G.cam || !L) return;
     if ((G.anim * 60 | 0) % 20 === 0) measureBar();
     const cam = G.cam;
+    followCam();
     cam.x += (cam.tx - cam.x) * 0.08; cam.y += (cam.ty - cam.y) * 0.08; cam.z += (cam.tz - cam.z) * 0.08; cam.shake *= 0.88;
     const sx = (Math.random() - 0.5) * cam.shake, sy = (Math.random() - 0.5) * cam.shake;
     const photoFrame = G.photoPending && G.state === 'play';
@@ -1199,15 +1215,20 @@ const Game = (() => {
       ctx.beginPath(); ctx.ellipse(PLAYER_SEAT.x, PLAYER_SEAT.y, 24 + Math.sin(t * 5) * 3, 9, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     }
     if (RULES.aura && Store.settings().cones && inPlay && !photoFrame) {
-      const bd = L.bounds; ctx.save(); ctx.beginPath(); ctx.rect(bd.x0 - 12, bd.y0 - 40, bd.x1 - bd.x0 + 24, bd.y1 - bd.y0 + 52); ctx.clip(); // sight stops at the walls
+      // sight is painted on the floor, from each person's feet, and stops at the walls
+      const bd = L.bounds, fl = L.floor || { x: bd.x0 - 14, y: bd.y0 - 14, w: bd.x1 - bd.x0 + 28, h: bd.y1 - bd.y0 + 22 };
+      ctx.save(); ctx.beginPath(); ctx.rect(fl.x, fl.y, fl.w, fl.h); ctx.clip();
+      const SQ = 0.55, flat = (a) => Math.atan2(Math.sin(a) / SQ, Math.cos(a)); // a direction on the floor, seen at an angle
       for (const n of G.npcs) {
         if (n.def.dog || !n.present) continue;
         const seeing = NPC.sees(n, G.player), rng = NPC.range(n);
-        const grd = ctx.createRadialGradient(n.x, n.y - 30, 6, n.x, n.y - 30, rng);
-        const col = seeing ? '255,120,60' : '255,236,150';
-        grd.addColorStop(0, `rgba(${col},${seeing ? 0.28 : 0.12})`); grd.addColorStop(1, `rgba(${col},0)`);
+        ctx.save(); ctx.translate(n.x, n.y); ctx.scale(1, SQ);
+        const grd = ctx.createRadialGradient(0, 0, 4, 0, 0, rng);
+        const col = seeing ? '255,110,50' : '255,236,150';
+        grd.addColorStop(0, `rgba(${col},${seeing ? 0.26 : 0.09})`); grd.addColorStop(0.7, `rgba(${col},${seeing ? 0.1 : 0.03})`); grd.addColorStop(1, `rgba(${col},0)`);
         ctx.fillStyle = grd;
-        ctx.beginPath(); ctx.moveTo(n.x, n.y - 30); ctx.arc(n.x, n.y - 30, rng, n.face - NPC.VIEW_HALF, n.face + NPC.VIEW_HALF); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, rng, flat(n.face - NPC.VIEW_HALF), flat(n.face + NPC.VIEW_HALF)); ctx.closePath(); ctx.fill();
+        ctx.restore();
       }
       ctx.restore();
     }
@@ -1273,7 +1294,8 @@ const Game = (() => {
       // speech first (most important), then thoughts; each bubble moves out of the way of the ones already placed
       const bubbles = [];
       if (G.player.bubble) { const hp = head({ x: G.player.x, y: G.player.y, def: { look: PLAYER_LOOK } }); bubbles.push([hp.x, hp.y - 26, G.player.bubble, null]); }
-      for (const n of G.npcs) if (n.present && n.bubble) { const hp = head(n); bubbles.push([hp.x, hp.y - 6, n.bubble, toScreen(n.x, n.y).y]); }
+      const onScreen = (q) => q.x > -20 && q.x < W + 20 && q.y > -40 && q.y < H + 60;
+      for (const n of G.npcs) if (n.present && n.bubble) { const hp = head(n); if (onScreen(hp) || n.bubble.tone === 'shout') bubbles.push([hp.x, hp.y - 6, n.bubble, toScreen(n.x, n.y).y]); }
       for (const id in G.actors) { const a = G.actors[id]; if (a.bubble) { const hp = toScreen(a.x, a.y - (a.look ? 95 : 0)); bubbles.push([hp.x, hp.y, a.bubble, toScreen(a.x, a.y).y]); } }
       const rankB = (b) => ({ shout: 0, speech: 1, whisper: 2, thought: 3 }[b.tone] ?? 1);
       bubbles.sort((a, b) => rankB(a[2]) - rankB(b[2]));
@@ -1324,7 +1346,7 @@ const Game = (() => {
 
   function drawNPC(n, t) {
     const lookX = Math.cos(n.face), lookY = Math.sin(n.face);
-    const back = n.seated && Math.sin(n.face) < -0.6 && !n.anim && G.state !== 'accuse';
+    const back = n.seated && Math.sin(n.face) < -0.6 && Math.sin(n.baseFace) < -0.6 && !n.anim && G.state !== 'accuse'; // only people seated facing away
     const faceDir = Math.cos(n.face) < -0.15 ? -1 : 1;
     const o = { t, walking: n.walking, faceDir, expr: n.expr, anim: n.anim, animT: n.animT };
     if (n.def.sprite === 'dog') return Art.drawDog(ctx, n.def.look, n.x, n.y, o);

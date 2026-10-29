@@ -66,7 +66,7 @@ const Case = (() => {
     if (L.caseDef && L.caseDef.reverse) return generateReverse(seed);
     const r = U.rng(seed);
     const fix = (L.caseDef && L.caseDef.story && L.caseDef.story.fix) || {};
-    const pin = fix.pins || {};
+    const pin = { ...(L.pins || {}), ...(fix.pins || {}) }; // a level can keep someone at their post (the crew in the galley)
     const late = new Set(L.lateArrivals || []);
     const sg = L.scapegoat;
     const candidates = CAST.filter((c) => !late.has(c.id));
@@ -78,7 +78,7 @@ const Case = (() => {
     const food = fix.food ? foodById(fix.food) : isDog ? foodById(sg.food) : U.pick(r, HUMAN_FOODS());
     const fartType = fix.fartType || fartTypeFor(food, r);
     const cover = fix.cover ? COVERS.find((c) => c.id === fix.cover) : isDog ? sg.cover : U.pick(r, COVERS);
-    const rolledOrigin = U.pick(r, spawnZones()), origin = fix.origin ? zoneById(fix.origin) : rolledOrigin;
+    const rolledOrigin = U.pick(r, spawnZones()), origin = fix.origin ? zoneById(fix.origin) : L.pins && L.pins[culprit] ? zoneById(L.pins[culprit]) : rolledOrigin;
     const companion = CAST.find((c) => c.stayNear === culprit) || (castById(culprit).stayNear ? castById(castById(culprit).stayNear) : null);
 
     const present = HUMANS.filter((id) => !late.has(id));

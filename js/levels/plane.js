@@ -2,73 +2,85 @@
 // Season two opener: the flight home. Everyone is strapped into a seat facing the front of the plane, so the
 // rows behind you are a blind spot and the seatbelt sign decides when anyone can move. Call it before landing.
 (() => {
-  // Seen from the front of the cabin looking back: rows run up the screen, everyone faces us.
-  // Two seats, an aisle, two seats. People are ~40 units wide, so seats are ~46 apart.
-  const SX = [548, 594, 686, 732]; // left window, left aisle, right aisle, right window
-  const ROWS = [372, 428, 484, 540, 596]; // feet of whoever sits there; row 1 is at the back
-  const AISLE = 640;
-  const CAB = { x0: 524, x1: 756, y0: 250, y1: 640 };
-  const JUMP_SEAT = { x: 704, y: 296 }; // the crew seat in the rear galley
-  const LAV = { x: 554, y: 262 };
-  const SEAT_DEPTH = 84; // how tall a seat back looks: enough to hide the lap of whoever sits behind it, not their shoulders
+  // A cutaway of the cabin from the side: the nose is off to the left, so everyone faces left, and the rows
+  // behind them (to the right) are their blind spot. Far wall at the top with the windows, near side cut away.
+  // Four lanes of seats run left to right: two on the far side, the aisle, two on the near side. Each lane
+  // further away sits a little to the right, so heads in the same row do not hide each other.
+  const FRONT = 404, REAR = 1004; // the front bulkhead and the rear wall
+  const ROW_X = [474, 558, 642, 726, 810]; // row 1 (front) to row 5 (back)
+  const LANES = [376, 422, 512, 558]; // far window, far aisle, near aisle, near window (feet)
+  const AISLE = 467, GALLEY_X = 870;
+  const skew = (y) => (558 - y) * 0.3; // how far right a seat sits for being further away
+  const JUMP_SEAT = { x: 930, y: 420 }; // the crew seat in the rear galley
+  const LAV = { x: 972, y: 452 }; // just outside the lavatory door
   const BELT_OFF = 22, TURBULENCE = 96, BUMPS = 106;
-  const SEATS = ROWS.flatMap((y, r) => SX.map((x, i) => ({ x, y, row: r + 1, side: i < 2 ? 'left' : 'right', window: i === 0 || i === 3 })));
-  const PLAYER_SEAT = { x: SX[2], y: ROWS[2], face: Math.PI / 2 };
+  const SEATS = ROW_X.flatMap((x, r) => LANES.map((y, i) => ({ x: Math.round(x + skew(y)), y, row: r + 1, lane: i, side: i < 2 ? 'right' : 'left', window: i === 0 || i === 3 })));
+  const PLAYER_SEAT = { x: SEATS[2 * 4 + 2].x, y: LANES[2], face: Math.PI };
   const DOG_COVER = { id: 'scoot', label: 'scooting around in the carrier', anim: 'scoot', bubble: null };
   const seatbeltOn = (t) => t < BELT_OFF || t >= TURBULENCE;
-  const nearestSeat = (p) => SEATS.reduce((a, s) => (Math.hypot(s.x - p.x, (s.y - p.y) * 1.3) < Math.hypot(a.x - p.x, (a.y - p.y) * 1.3) ? s : a), SEATS[0]);
-  const inAisle = (p) => Math.abs(p.x - AISLE) < 24;
+  const nearestSeat = (p) => SEATS.reduce((a, s) => (Math.hypot(s.x - p.x, (s.y - p.y) * 1.6) < Math.hypot(a.x - p.x, (a.y - p.y) * 1.6) ? s : a), SEATS[0]);
+  const inAisle = (p) => Math.abs(p.y - AISLE) < 22;
+  const inGalley = (p) => p.x > GALLEY_X - 10;
+  const FAR_TOP = 360, NEAR_BOT = 572; // the far wall's foot, and the near edge of the floor
 
   LEVELS.plane = {
     id: 'plane', episode: 'Season 2 · Episode 1', title: 'Cruising Altitude', length: '~2.5 min',
     blurb: 'Five rows. One aisle. A seatbelt sign that decides when anyone can move. Somebody in economy has done something unforgivable.',
-    mode: 'seated', npcPace: 0.7, walkSpeed: 80, stepLen: 15, gossipRate: 0.8, closeCamera: true, decals: false,
+    mode: 'seated', seatFace: Math.PI, npcPace: 0.7, walkSpeed: 80, stepLen: 15, gossipRate: 0.8, closeCamera: true, decals: false,
     short: 'Plane', place: 'Flight 404, economy', callWhen: 'before landing', failTitle: 'Banned from the airline', airText: 'Recycled air and coffee.',
     crew: 'marguerite', beltLine: 'Sir. SIR. The seatbelt sign is ON.',
     lateWhere: 'was in the lavatory when it happened', latePress: 'I was in the can! Ask anyone! Everyone heard!',
     tips: { late: { title: 'Out of the lavatory', text: 'Someone was in the lavatory when it happened, so they cannot be the culprit. But they might have seen something before take-off. Ask "Seen anything weird?"' } },
+    // seat zones are named the way passengers say it, facing the front: the far side is their right
     zones: [
-      { id: 'galley', name: 'Rear Galley', x: 524, y: 250, w: 232, h: 70, noSpawn: true },
-      { id: 'backleft', name: 'Back Left Seats', x: 524, y: 320, w: 93, h: 136 },
-      { id: 'backright', name: 'Back Right Seats', x: 663, y: 320, w: 93, h: 136 },
-      { id: 'frontleft', name: 'Front Left Seats', x: 524, y: 456, w: 93, h: 176 },
-      { id: 'frontright', name: 'Front Right Seats', x: 663, y: 456, w: 93, h: 176 },
-      { id: 'aisle', name: 'Aisle', x: 617, y: 320, w: 46, h: 312, noSpawn: true },
+      { id: 'frontright', name: 'Front Right Seats', x: FRONT, y: FAR_TOP, w: 280, h: 86 },
+      { id: 'backright', name: 'Back Right Seats', x: FRONT + 280, y: FAR_TOP, w: GALLEY_X - FRONT - 280, h: 86 },
+      { id: 'aisle', name: 'Aisle', x: FRONT, y: 446, w: GALLEY_X - FRONT, h: 42, noSpawn: true },
+      { id: 'frontleft', name: 'Front Left Seats', x: FRONT, y: 488, w: 280, h: NEAR_BOT - 488 },
+      { id: 'backleft', name: 'Back Left Seats', x: FRONT + 280, y: 488, w: GALLEY_X - FRONT - 280, h: NEAR_BOT - 488 },
+      { id: 'galley', name: 'Rear Galley', x: GALLEY_X, y: FAR_TOP, w: REAR - GALLEY_X, h: NEAR_BOT - FAR_TOP, noSpawn: true },
     ],
-    view: { x: 150, y: 110, w: 980, h: 551 },
-    ranges: { notice: 40, overhear: 96, gossip: 100, talk: 110, search: 44, personal: 20, spacing: 50, depth: 0.45, itemOffset: null },
-    bounds: { x0: 532, x1: 748, y0: 270, y1: 628 },
-    // the seat rows are solid; you walk the aisle, and your own seat is open to you
-    obstacles: ROWS.flatMap((y, r) => [
-      { x: CAB.x0, y: y - 22, w: 93, h: 34 },
-      r === 2 ? { x: SX[3] - 23, y: y - 22, w: CAB.x1 - SX[3] + 23, h: 34 } : { x: 663, y: y - 22, w: 93, h: 34 },
-    ]),
+    view: { x: 330, y: 214, w: 752, h: 423 },
+    ranges: { notice: 40, overhear: 96, gossip: 100, talk: 104, search: 44, personal: 20, spacing: 40, depth: 0.45, itemOffset: null },
+    bounds: { x0: FRONT + 12, x1: REAR - 14, y0: 372, y1: 566 },
+    floor: { x: FRONT, y: FAR_TOP, w: REAR - FRONT, h: NEAR_BOT - FAR_TOP },
+    // only the aisle, the galley and your own seat are open floor: the rows are solid
+    obstacles: [
+      { x: FRONT, y: FAR_TOP, w: GALLEY_X - FRONT - 6, h: 446 - FAR_TOP },
+      { x: FRONT, y: 488, w: PLAYER_SEAT.x - 22 - FRONT, h: NEAR_BOT - 488 },
+      { x: PLAYER_SEAT.x + 22, y: 488, w: GALLEY_X - 6 - PLAYER_SEAT.x - 22, h: NEAR_BOT - 488 },
+      { x: PLAYER_SEAT.x - 22, y: PLAYER_SEAT.y + 14, w: 44, h: NEAR_BOT - PLAYER_SEAT.y - 14 },
+    ],
     // anyone getting up goes by way of the aisle
     route(a, b) {
-      if (Math.abs(a.y - b.y) < 20 || (inAisle(a) && inAisle(b))) return [b];
-      const top = (p) => p.y < 320; // the galley is open floor
-      if (top(a) && top(b)) return [b];
-      return [{ x: AISLE, y: a.y }, { x: AISLE, y: b.y }, b];
+      if ((inAisle(a) || inGalley(a)) && (inAisle(b) || inGalley(b))) return [b];
+      if (Math.abs(a.x - b.x) < 14) return [b];
+      return [{ x: a.x, y: AISLE }, { x: b.x, y: AISLE }, b];
     },
     // everyone is in a seat (the crew in the galley)
-    fixSpot(p) { return p.y < 320 ? { ...JUMP_SEAT } : (({ x, y }) => ({ x, y }))(nearestSeat(p)); },
-    companionSpot: (o) => ({ x: o.x < AISLE ? AISLE - 19 : AISLE + 19, y: o.y + 6 }), // the dog carrier pokes into the aisle
+    // (anyone else in the galley is standing in the queue for the lavatory)
+    fixSpot(p) {
+      if (!inGalley(p)) return (({ x, y }) => ({ x, y }))(nearestSeat(p));
+      return Math.hypot(p.x - JUMP_SEAT.x, p.y - JUMP_SEAT.y) < 24 ? { ...JUMP_SEAT } : { x: U.clamp(p.x, GALLEY_X + 22, REAR - 26), y: U.clamp(p.y, 410, 556) };
+    },
+    pins: { marguerite: 'galley' },
+    companionSpot: (o) => ({ x: o.x - 30, y: o.y < AISLE ? AISLE - 10 : AISLE + 14 }), // the dog carrier sits in the footwell, poking into the aisle
     itemAt(spot, c) {
-      if (c.dog) return { x: spot.x, y: spot.y + 15 };
-      if (spot.y < 320) return { x: spot.x + 26, y: spot.y + 4 };
+      if (c.dog) return { x: spot.x, y: spot.y + 12 };
+      if (inGalley(spot)) return { x: spot.x - 26, y: spot.y + 6 };
       const s = nearestSeat(spot);
-      return { x: s.side === 'left' ? AISLE - 21 : AISLE + 21, y: s.y + (s.window ? 8 : 18) }; // carry-ons stuffed under the seat, poking into the aisle
+      return { x: s.x - 28, y: s.y + 8 }; // carry-ons stuffed under the seat in front
     },
     arrivalSpot(n, G) {
       const used = (s) => G.npcs.some((o) => o !== n && o.present && o.seat && Math.hypot(o.seat.x - s.x, o.seat.y - s.y) < 10) || (s.x === PLAYER_SEAT.x && s.y === PLAYER_SEAT.y);
-      const free = SEATS.filter((s) => !used(s) && !SEATS.some((q) => q !== s && Math.abs(q.y - s.y) < 2 && q.side === s.side && used(q)));
-      return { ...(free.find((s) => s.row === 1) || free[0] || SEATS[0]) };
+      const free = SEATS.filter((s) => !used(s));
+      return { ...(free.find((s) => s.row === 5 && !s.window) || free.find((s) => s.row === 5) || free[0] || SEATS[0]) };
     },
     // the crew walks the aisle while the sign is off; everyone else stays put
     roam(n, t) {
       if (n.id !== 'marguerite' || seatbeltOn(t) || t >= this.timeline.speakNow) return null;
       const leg = Math.floor((t - BELT_OFF) / 13) % 4;
-      return leg === 1 ? { x: AISLE, y: ROWS[4] + 10 } : leg === 3 ? { x: AISLE, y: ROWS[1] + 10 } : null;
+      return leg === 1 ? { x: ROW_X[0] + 10, y: AISLE } : leg === 3 ? { x: ROW_X[3], y: AISLE } : null;
     },
     mustSit: seatbeltOn,
     player: { start: { x: PLAYER_SEAT.x, y: PLAYER_SEAT.y }, seat: PLAYER_SEAT, look: { body: '#f08a24', outfit: 'hoodie', pants: '#3a4a6a', shoes: '#f6efdf', skin: '#f3cfae', hair: '#2d1d10', hairStyle: 'messy', acc: 'none', scale: 1.0, voice: 300 } },
@@ -130,12 +142,12 @@
     photo: { source: 'item', owner: 'rosa', label: "Rosa's phone", caption: "Rosa's phone. She was filming the clouds when it happened." },
 
     gas: {
-      rect: { x: 150, y: 110, w: 980, h: 551 }, amount: 170, diffusion: 900, swirl: 0.7,
+      rect: { x: 330, y: 214, w: 752, h: 423 }, amount: 150, diffusion: 820, swirl: 0.7,
       // cabin air comes in at the front and leaves at the back
-      pushers: [{ x: AISLE, y: 640, strength: 3, falloff: 260, bias: { x: 0, y: -0.5 } }],
-      vents: [{ x: 730, y: 236, pull: 4, falloff: 90, drain: 0.06, r: 26 }],
-      doors: { lav: { x: LAV.x, y: LAV.y, push: 4, falloff: 50, drain: 0.25, r: 22 }, main: { x: CAB.x0 + 10, y: 650, push: 10, falloff: 70, drain: 0.6, r: 30 } },
-      wall: (px, py) => px < CAB.x0 || px > CAB.x1 || py < CAB.y0 - 6 || py > 668,
+      pushers: [{ x: FRONT + 6, y: AISLE, strength: 3, falloff: 260, bias: { x: 0.5, y: 0 } }],
+      vents: [{ x: GALLEY_X + 40, y: FAR_TOP + 4, pull: 4, falloff: 90, drain: 0.06, r: 26 }],
+      doors: { lav: { x: LAV.x + 10, y: LAV.y - 30, push: 4, falloff: 50, drain: 0.25, r: 22 }, main: { x: FRONT - 10, y: NEAR_BOT - 20, push: 10, falloff: 70, drain: 0.6, r: 30 } },
+      wall: (px, py) => px < FRONT - 2 || px > REAR || py < FAR_TOP - 40 || py > NEAR_BOT + 6,
     },
     pressureRate: 0.55,
     objectLabel: 'CALL IT!',
@@ -171,9 +183,10 @@
     clockLabel(t) { const a = this.altitude(t); return a ? `${a.toLocaleString('en-US')} ft` : 'Landing'; },
     stampTime(t) { return `${this.altitude(t).toLocaleString('en-US')} ft`; },
 
+
     script(t, api) {
       const T = this.timeline;
-      if (t >= 0) api.once('speakerActor', () => api.actor('speaker', { look: null, x: AISLE, y: 650 }));
+      if (t >= 0) api.once('speakerActor', () => api.actor('speaker', { look: null, x: FRONT + 20, y: FAR_TOP }));
       if (t >= 1.5) api.once('beltTip', () => api.tip('belt'));
       if (t >= BELT_OFF) api.once('beltOff', () => {
         api.caption('DING. The seatbelt sign is off. You can walk the aisle until the next bump.', 4);
@@ -201,26 +214,29 @@
 
     buildBackground: (ctx) => buildCabin(ctx),
     props(api) {
-      const out = [];
-      for (const s of SEATS) out.push({ y: s.y - 3, draw: (ctx) => drawSeat(ctx, s) });
-      // the bulkhead in front of row five hides their knees, with the seatbelt sign on it
-      const lit = seatbeltOn(api.time());
-      out.push({ y: 652, draw: (ctx) => drawBulkhead(ctx, lit) });
+      const out = [], t = api.time();
+      // a seat is a back behind its passenger and a cushion in front of their knees
+      for (const s of SEATS) {
+        out.push({ y: s.y - 2, draw: (ctx) => drawSeatBack(ctx, s) });
+        out.push({ y: s.y + 1, draw: (ctx) => drawSeatFront(ctx, s) });
+      }
+      const lit = seatbeltOn(t);
+      out.push({ y: FAR_TOP - 60, draw: (ctx) => drawSigns(ctx, lit) });
+      out.push({ y: FAR_TOP - 59, draw: (ctx) => drawLavLight(ctx, api.get('lavT') === undefined || api.doorOpen('lav') > 0.1) });
       return out;
     },
-    overlay(ctx, t, api) {
-      // clouds slide past outside, the far side of the windows
-      ctx.save();
-      for (let i = 0; i < 9; i++) {
-        const side = i % 2 ? 1 : -1, x = AISLE + side * (230 + ((i * 97) % 220)), sp = 22 + (i % 3) * 9;
-        const y = 700 - (((t * sp) + i * 133) % 700);
-        ctx.globalAlpha = 0.55; Art.paperEllipse(ctx, x, y, 46 + (i % 3) * 14, 16 + (i % 2) * 6, '#ffffff', 950 + i, { shadow: false, amp: 2 });
+    // clouds slide past the far windows
+    overlay(ctx, t) {
+      for (const [i, x] of ROW_X.entries()) {
+        const wx = x + skew(LANES[0]) + 6, wy = 292;
+        ctx.save(); ctx.beginPath(); ctx.ellipse(wx, wy, 13, 19, 0, 0, Math.PI * 2); ctx.clip();
+        ctx.fillStyle = '#9fd0f2'; ctx.fillRect(wx - 14, wy - 20, 28, 40);
+        for (let k = 0; k < 2; k++) {
+          const cx = wx + 30 - (((t * 26) + i * 37 + k * 41) % 60), cy = wy - 6 + k * 13;
+          Art.paperEllipse(ctx, cx, cy, 11, 5, '#ffffff', 950 + i * 3 + k, { shadow: false, amp: 1 });
+        }
+        ctx.restore();
       }
-      ctx.restore();
-      // the lavatory sign: red while it is occupied
-      const busy = api.get('lavT') === undefined;
-      ctx.save(); ctx.fillStyle = busy ? '#ff4b3a' : '#4fd06a'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 6;
-      ctx.fillRect(LAV.x - 12, 178, 24, 6); ctx.restore();
     },
 
     idles: {
@@ -317,64 +333,70 @@
   // ---------------- art ----------------
   function buildCabin(ctx) {
     const { paper, paperRect, paperEllipse, INK } = Art;
-    // sky below the plane, and the wings
-    const sky = ctx.createLinearGradient(0, 110, 0, 661); sky.addColorStop(0, '#8cc3ea'); sky.addColorStop(1, '#bfe0f6');
-    ctx.fillStyle = sky; ctx.fillRect(150, 110, 980, 551);
-    for (let i = 0; i < 14; i++) paperEllipse(ctx, 170 + ((i * 173) % 940), 130 + ((i * 89) % 520), 40 + (i % 4) * 12, 12 + (i % 3) * 4, 'rgba(255,255,255,0.55)', 900 + i, { shadow: false, amp: 2 });
-    for (const side of [-1, 1]) {
-      const root = side < 0 ? CAB.x0 - 14 : CAB.x1 + 14, tip = AISLE + side * 470;
-      paper(ctx, [[root, 430], [tip, 520], [tip, 548], [root, 600]], '#c9ced8', 930 + side, { stroke: INK, lw: 1.5, amp: 2 });
-      paperRect(ctx, (root + tip) / 2 - 24, 548, 48, 34, '#9aa1ae', 935 + side, { stroke: INK, lw: 1.2, amp: 1 }); // engine
-    }
-    // the fuselage, cut away to show the cabin
-    paperRect(ctx, CAB.x0 - 22, 134, CAB.x1 - CAB.x0 + 44, 570, '#eef0f4', 940, { stroke: INK, lw: 2, amp: 1.5 });
-    // back wall of the cabin: the lavatory and the galley
-    paperRect(ctx, CAB.x0, 150, CAB.x1 - CAB.x0, CAB.y0 - 150, '#d9cfbd', 941, { stroke: INK, lw: 1.2, amp: 1 });
-    paperRect(ctx, LAV.x - 22, 168, 44, CAB.y0 - 170, '#b9ad97', 942, { stroke: INK, lw: 1.2, amp: 0.8 });
-    ctx.fillStyle = INK; ctx.font = '700 7px "Lexend", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('LAVATORY', LAV.x, 196);
-    paperEllipse(ctx, LAV.x + 14, 222, 2.5, 2.5, '#8a7f6a', 943, { shadow: false });
-    paperRect(ctx, 600, 190, 150, 50, '#c4c8d0', 944, { stroke: INK, lw: 1.2, amp: 0.8 }); // galley counter
-    for (let i = 0; i < 5; i++) paperRect(ctx, 606 + i * 29, 164, 24, 22, i % 2 ? '#aeb4bf' : '#9aa1ae', 945 + i, { stroke: INK, lw: 0.8, amp: 0.4 });
-    paperRect(ctx, 612, 208, 34, 30, '#5f6878', 951, { stroke: INK, lw: 1, amp: 0.5 }); // the drinks cart, parked
-    paperRect(ctx, 662, 206, 14, 18, '#7b4a2a', 952, { amp: 0.3, shadow: false }); // coffee pot
-    // floor: carpet, and the lights down the aisle
-    paperRect(ctx, CAB.x0, CAB.y0, CAB.x1 - CAB.x0, 420, '#4b5a7a', 953, { amp: 1 });
-    ctx.save(); ctx.beginPath(); ctx.rect(CAB.x0, CAB.y0, CAB.x1 - CAB.x0, 420); ctx.clip();
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
-    for (let k = 0; k < 40; k++) { ctx.beginPath(); ctx.moveTo(CAB.x0, CAB.y0 + k * 12); ctx.lineTo(CAB.x1, CAB.y0 + k * 12 + 30); ctx.stroke(); }
-    ctx.restore();
-    paperRect(ctx, AISLE - 22, 320, 44, 340, '#55658a', 954, { amp: 0.6, shadow: false });
-    for (let y = 330; y < 650; y += 22) for (const dx of [-19, 19]) { ctx.fillStyle = 'rgba(255,236,160,0.75)'; ctx.fillRect(AISLE + dx - 1, y, 2, 4); }
-    // side walls with a window beside every row, and the row numbers above the aisle seats
-    for (const [x0, x1] of [[CAB.x0 - 10, CAB.x0], [CAB.x1, CAB.x1 + 10]]) paperRect(ctx, x0, CAB.y0, x1 - x0, 410, '#cfd3db', 955 + x0, { amp: 0.4, stroke: INK, lw: 1 });
-    ROWS.forEach((y, r) => {
-      for (const x of [CAB.x0 - 16, CAB.x1 + 16]) { paperEllipse(ctx, x, y - 44, 6, 11, '#9cc9ec', 960 + r * 2 + (x > AISLE ? 1 : 0), { stroke: INK, lw: 1, amp: 0.4 }); }
-      ctx.fillStyle = 'rgba(28,26,31,0.75)'; ctx.font = '700 9px "Lexend", sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(String(r + 1), CAB.x0 - 16, y - 62); ctx.fillText(String(r + 1), CAB.x1 + 16, y - 62);
+    // sky all round, then the fuselage
+    const sky = ctx.createLinearGradient(0, 214, 0, 637); sky.addColorStop(0, '#8cc3ea'); sky.addColorStop(1, '#c8e6f8');
+    ctx.fillStyle = sky; ctx.fillRect(330, 214, 752, 423);
+    for (let i = 0; i < 8; i++) paperEllipse(ctx, 350 + ((i * 173) % 720), 228 + ((i * 89) % 400), 36 + (i % 4) * 10, 10 + (i % 3) * 4, 'rgba(255,255,255,0.6)', 900 + i, { shadow: false, amp: 2 });
+    // the fuselage: rounded roof, the far wall, the floor, and the skin below the cutaway
+    paper(ctx, [[FRONT - 60, 250], [REAR + 40, 250], [REAR + 70, 300], [REAR + 70, 600], [REAR + 40, 640], [FRONT - 60, 640], [FRONT - 90, 600], [FRONT - 90, 300]], '#e9ecf2', 940, { stroke: INK, lw: 2, amp: 1.2 });
+    // overhead bins along the far wall, then the wall itself with a window beside every row
+    paperRect(ctx, FRONT, 238, REAR - FRONT - 30, 30, '#d7dbe4', 941, { stroke: INK, lw: 1.2, amp: 0.6 });
+    ROW_X.forEach((x, i) => { ctx.strokeStyle = 'rgba(28,26,31,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + 50, 242); ctx.lineTo(x + 50, 264); ctx.stroke(); paperRect(ctx, x + 14, 258, 14, 4, '#9aa1ae', 942 + i, { amp: 0.2, shadow: false }); });
+    paperRect(ctx, FRONT, 268, GALLEY_X - FRONT, FAR_TOP - 268, '#cfd5df', 945, { stroke: INK, lw: 1, amp: 0.5 });
+    ROW_X.forEach((x, i) => {
+      const wx = x + skew(LANES[0]) + 6;
+      paperEllipse(ctx, wx, 292, 16, 22, '#b9c1cf', 946 + i, { stroke: INK, lw: 1.2, amp: 0.3 });
+      ctx.fillStyle = 'rgba(28,26,31,0.7)'; ctx.font = '700 9px "Lexend", sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(String(i + 1), wx, 330);
     });
-    // front galley floor past the bulkhead, and the forward door
-    paperRect(ctx, CAB.x0, 640, CAB.x1 - CAB.x0, 30, '#9aa1ae', 970, { amp: 0.6 });
-    paperRect(ctx, CAB.x0 - 22, 630, 16, 46, '#c9ced8', 971, { stroke: INK, lw: 1.2, amp: 0.4 });
+    // floor: carpet with the aisle runner and its floor lights
+    paper(ctx, [[FRONT, FAR_TOP], [GALLEY_X, FAR_TOP], [GALLEY_X, NEAR_BOT], [FRONT, NEAR_BOT]], '#4b5a7a', 953, { amp: 0.8 });
+    paperRect(ctx, FRONT, AISLE - 16, GALLEY_X - FRONT, 34, '#5b6c92', 954, { amp: 0.5, shadow: false });
+    for (let x = FRONT + 14; x < GALLEY_X; x += 24) for (const dy of [-15, 16]) { ctx.fillStyle = 'rgba(255,236,160,0.8)'; ctx.fillRect(x, AISLE + dy - 1, 5, 2); }
+    // the rear galley: counter, ovens, the drinks cart, and the lavatory door
+    paperRect(ctx, GALLEY_X, 268, REAR - GALLEY_X, NEAR_BOT - 268, '#d9cfbd', 960, { stroke: INK, lw: 1.2, amp: 0.6 });
+    paperRect(ctx, GALLEY_X + 4, 270, 64, 92, '#c4c8d0', 961, { stroke: INK, lw: 1, amp: 0.5 });
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) paperRect(ctx, GALLEY_X + 9 + i * 30, 276 + j * 26, 24, 20, (i + j) % 2 ? '#aeb4bf' : '#9aa1ae', 962 + i * 2 + j, { stroke: INK, lw: 0.8, amp: 0.3 });
+    paperRect(ctx, GALLEY_X + 10, 330, 22, 14, '#7b4a2a', 967, { amp: 0.3, shadow: false }); // coffee pot
+    paperRect(ctx, LAV.x - 26, 274, 52, 150, '#b9ad97', 968, { stroke: INK, lw: 1.2, amp: 0.6 });
+    ctx.fillStyle = INK; ctx.font = '700 7px "Lexend", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('LAVATORY', LAV.x, 300);
+    paperEllipse(ctx, LAV.x + 16, 360, 3, 3, '#8a7f6a', 969, { shadow: false });
+    paperRect(ctx, GALLEY_X + 6, 470, 40, 56, '#5f6878', 970, { stroke: INK, lw: 1, amp: 0.5 }); // the drinks cart, parked
+    paper(ctx, [[GALLEY_X, NEAR_BOT - 70], [REAR, NEAR_BOT - 70], [REAR, NEAR_BOT], [GALLEY_X, NEAR_BOT]], 'rgba(0,0,0,0.06)', 971, { amp: 0.4, shadow: false });
+    // the front bulkhead (with the curtain to business class) and the forward door
+    paperRect(ctx, FRONT - 34, 238, 34, NEAR_BOT - 238, '#d9cfbd', 975, { stroke: INK, lw: 1.5, amp: 0.6 });
+    paperRect(ctx, FRONT - 28, 380, 22, 150, '#8a2f3a', 976, { stroke: INK, lw: 1, amp: 0.8 });
+    for (let k = 0; k < 4; k++) { ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.moveTo(FRONT - 24 + k * 5, 384); ctx.lineTo(FRONT - 24 + k * 5, 526); ctx.stroke(); }
+    // the cut edge of the near wall and the skin below it
+    paperRect(ctx, FRONT - 90, NEAR_BOT, REAR - FRONT + 160, 14, '#c3c9d4', 978, { stroke: INK, lw: 1.5, amp: 0.5 });
   }
 
-  function drawSeat(ctx, s) {
-    const { paper, paperRect, INK } = Art, x = s.x, y = s.y, top = y - SEAT_DEPTH, seed = 1000 + s.row * 10 + SX.indexOf(x);
-    const hw = 18, r = 7; // a slim back with rounded shoulders, so the person in it reads first
-    const back = [[x - hw, y - 12], [x - hw, top + r], [x - hw + r * 0.3, top + r * 0.3], [x - hw + r, top], [x + hw - r, top], [x + hw - r * 0.3, top + r * 0.3], [x + hw, top + r], [x + hw, y - 12]];
-    paper(ctx, back, '#5d73a3', seed, { stroke: INK, lw: 1.2, amp: 0.5 });
-    paperRect(ctx, x - 13, top + 3, 26, 10, '#efe9dc', seed + 1, { amp: 0.3, shadow: false }); // headrest cover
-    paperRect(ctx, x - 20, y - 16, 40, 18, '#4d6293', seed + 2, { stroke: INK, lw: 1, amp: 0.4 }); // the cushion
+  // A seat seen from the front: a padded back with a white headrest cover behind the passenger, then the
+  // cushion edge and two armrests in front of their knees, so they read as sitting.
+  function drawSeatBack(ctx, s) {
+    const { paperRect, paper, INK } = Art, x = s.x + 3, y = s.y, seed = 1000 + s.row * 10 + s.lane, top = y - 66;
+    paper(ctx, [[x - 19, y - 12], [x - 19, top + 8], [x - 15, top + 2], [x - 8, top], [x + 8, top], [x + 15, top + 2], [x + 19, top + 8], [x + 19, y - 12]], '#5d73a3', seed, { stroke: INK, lw: 1.2, amp: 0.4 });
+    paperRect(ctx, x - 12, top + 3, 24, 10, '#efe9dc', seed + 1, { amp: 0.3, shadow: false });
   }
-
-  function drawBulkhead(ctx, lit) {
-    const { paperRect, INK } = Art, top = 652 - SEAT_DEPTH;
-    for (const [x0, x1] of [[CAB.x0, AISLE - 23], [AISLE + 23, CAB.x1]]) paperRect(ctx, x0, top, x1 - x0, SEAT_DEPTH - 4, '#d9cfbd', 980 + x0, { stroke: INK, lw: 1.5, amp: 0.8 });
-    // the seatbelt sign
-    for (const cx of [CAB.x0 + 46, CAB.x1 - 46]) {
-      paperRect(ctx, cx - 16, top + 10, 32, 18, '#26262c', 990 + cx, { amp: 0.3, stroke: INK, lw: 1 });
-      ctx.save(); ctx.strokeStyle = lit ? '#ffcf4a' : '#55555c'; ctx.lineWidth = 2; if (lit) { ctx.shadowColor = '#ffcf4a'; ctx.shadowBlur = 6; }
-      ctx.beginPath(); ctx.moveTo(cx - 9, top + 19); ctx.lineTo(cx - 3, top + 19); ctx.moveTo(cx + 3, top + 19); ctx.lineTo(cx + 9, top + 19);
-      ctx.moveTo(cx - 3, top + 15); ctx.lineTo(cx + 3, top + 23); ctx.moveTo(cx - 3, top + 23); ctx.lineTo(cx + 3, top + 15); ctx.stroke(); ctx.restore();
-    }
+  function drawSeatFront(ctx, s) {
+    const { paperRect, INK } = Art, x = s.x + 3, y = s.y, seed = 1200 + s.row * 10 + s.lane;
+    paperRect(ctx, x - 20, y - 24, 40, 14, '#4d6293', seed, { stroke: INK, lw: 1, amp: 0.4 });
+    for (const dx of [-24, 18]) paperRect(ctx, x + dx, y - 38, 7, 26, '#41557f', seed + 2 + dx, { stroke: INK, lw: 0.8, amp: 0.3 });
+  }
+  function drawSigns(ctx, lit) {
+    const { paperRect, INK } = Art;
+    // one seatbelt sign under the bins per row, and a big one on the bulkhead
+    const sign = (cx, cy, k) => {
+      paperRect(ctx, cx - 11 * k, cy - 6 * k, 22 * k, 12 * k, '#26262c', 990 + cx, { amp: 0.2, stroke: INK, lw: 1 });
+      ctx.save(); ctx.strokeStyle = lit ? '#ffcf4a' : '#55555c'; ctx.lineWidth = 1.6 * k; if (lit) { ctx.shadowColor = '#ffcf4a'; ctx.shadowBlur = 6; }
+      ctx.beginPath(); ctx.moveTo(cx - 7 * k, cy); ctx.lineTo(cx - 2 * k, cy); ctx.moveTo(cx + 2 * k, cy); ctx.lineTo(cx + 7 * k, cy);
+      ctx.moveTo(cx - 2 * k, cy - 3 * k); ctx.lineTo(cx + 2 * k, cy + 3 * k); ctx.moveTo(cx - 2 * k, cy + 3 * k); ctx.lineTo(cx + 2 * k, cy - 3 * k); ctx.stroke(); ctx.restore();
+    };
+    for (const x of ROW_X) sign(x + 34, 274, 0.8);
+    sign(FRONT - 17, 300, 1.2);
+  }
+  function drawLavLight(ctx, busy) {
+    ctx.save(); ctx.fillStyle = busy ? '#ff4b3a' : '#4fd06a'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 6;
+    ctx.fillRect(LAV.x - 10, 282, 20, 5); ctx.restore();
   }
 })();

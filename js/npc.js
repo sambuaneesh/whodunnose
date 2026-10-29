@@ -20,9 +20,9 @@ const NPC = (() => {
       nextWhisper: TIMELINE.fart + 18 + Math.random() * 20, nextDeflect: TIMELINE.fart + 16 + Math.random() * 8,
       confronted: false, confronting: false, asked: {}, seated: elevator, glanceT: 4 + Math.random() * 8, glancing: 0,
       walking: false, isCulprit: def.id === cs.culprit, present: !(L.lateArrivals || []).includes(def.id),
-      seat: elevator ? { x: p.x, y: p.y, face: Math.PI / 2 } : def.seat,
+      seat: elevator ? { x: p.x, y: p.y, face: L.seatFace ?? Math.PI / 2 } : def.seat,
     };
-    if (elevator) n.face = n.baseFace = Math.PI / 2 + (Math.random() - 0.5) * 0.3;
+    if (elevator) n.face = n.baseFace = (L.seatFace ?? Math.PI / 2) + (Math.random() - 0.5) * 0.3;
     return n;
   }
 
