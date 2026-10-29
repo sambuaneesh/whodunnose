@@ -15,11 +15,11 @@
     mode: 'elevator', npcPace: 0.5, walkSpeed: 60, stepLen: 13, gossipRate: 0.6, closeCamera: true,
     short: 'Elevator', place: 'Thornbury Tower, the elevator', callWhen: 'before the lobby', failTitle: 'Socially fired', airText: 'Carpet cleaner and coffee.',
     zones: [
-      { id: 'backleft', name: 'Back Left Corner', x: 530, y: 300, w: 110, h: 55 },
-      { id: 'backright', name: 'Back Right Corner', x: 640, y: 300, w: 110, h: 55 },
-      { id: 'middle', name: 'Center', x: 572, y: 355, w: 136, h: 50 },
-      { id: 'frontleft', name: 'Front Left Corner', x: 530, y: 405, w: 110, h: 50 },
-      { id: 'buttons', name: 'Button Panel', x: 640, y: 405, w: 110, h: 50 },
+      { id: 'backleft', name: 'Back Left Corner', at: 'in the back left corner', x: 530, y: 300, w: 110, h: 55 },
+      { id: 'backright', name: 'Back Right Corner', at: 'in the back right corner', x: 640, y: 300, w: 110, h: 55 },
+      { id: 'middle', name: 'Center', at: 'in the middle', x: 572, y: 355, w: 136, h: 50 },
+      { id: 'frontleft', name: 'Front Left Corner', at: 'in the front left corner', x: 530, y: 405, w: 110, h: 50 },
+      { id: 'buttons', name: 'Button Panel', at: 'by the buttons', x: 640, y: 405, w: 110, h: 50 },
     ],
     // the camera frames the car tightly: it should feel cramped
     view: { x: 344, y: 172, w: 592, h: 333 },
@@ -29,6 +29,13 @@
     player: { start: { x: 612, y: 446 }, seat: { x: 612, y: 446, face: Math.PI / 2 }, look: { body: '#f08a24', outfit: 'hoodie', pants: '#3a4a6a', shoes: '#f6efdf', skin: '#f3cfae', hair: '#2d1d10', hairStyle: 'messy', acc: 'none', scale: 1.0, voice: 300 } },
     itemsAtFeet: true,
     nervous: ['josh'],
+    // people chatting, in Free Play (campaign cases have their own in js/story.js)
+    banter: [
+      ["josh", "chad", "Chad, do you want a coffee? They're for marketing.", "Bro. Caffeine is a pre-workout. Obviously yes."],
+      ["thornbury", "dana", "Dana, why does this elevator stop at floor nine every single day?", "Accounting, sir. They call it, lose patience and take the stairs."],
+      ["priya", "josh", "Could you hold the stroller for one second?", "Sure! I've never held a stroller. Is this the front?"],
+      ["chad", "thornbury", "Sir, have you considered standing desks? For the core?", "Chad, I have considered nothing you have ever said."],
+    ],
     cast: [
       { id: 'thornbury', name: 'Mr. Thornbury', role: 'CEO. Owns the building.', shame: 10, nose: 0.9, tol: 1.3, perception: 1.0, gossip: 0.4, trait: 'Nobody contradicts him',
         look: { body: '#3d4250', outfit: 'suit', pants: '#2c2f3a', shoes: '#4a2c1a', skin: '#f0c8a8', hair: '#d9d9d9', hairStyle: 'combed', acc: 'tie', features: ['bushybrows', 'wrinkles'], scale: 1.06, voice: 180 },
@@ -169,8 +176,9 @@
     voices: {
       thornbury: {
         hello: '...Yes? Is this about the merger? It is always about the merger.',
+        react: 'Good Lord. Not in MY elevator',
         breakfast: 'A working breakfast. {food}. In the boardroom. With the board.',
-        where: 'I was in the {zone}. I always stand there. It is my corner.',
+        where: 'I was {at}. Wherever I stand is my corner.',
         smell: '{Smell}. Unacceptable. Someone is going to be restructured.',
         gossip: 'I make it my business to know things. {fact}',
         gossipNone: 'This elevator cost four million dollars. It should not smell like this.',
@@ -182,8 +190,9 @@
       },
       dana: {
         hello: "Hi! Dana, HR. Just so you know, this conversation may be documented.",
+        react: 'That is a violation of the odour policy. Section four',
         breakfast: 'I had {food}. At my desk. As per the break policy.',
-        where: 'By the {zone}. I noted the time, too.',
+        where: '{at}. I noted the time, too.',
         smell: '{Smell}. I am opening an incident report as we speak.',
         gossip: "Off the record? Nothing is off the record. But: {fact}",
         gossipNone: 'Three people in this elevator have open complaints against them. I will not say who.',
@@ -195,8 +204,9 @@
       },
       josh: {
         hello: "Oh hey! Sorry! Do you want a coffee? These are for the marketing team but they won't notice.",
+        react: "Oh no. Was that me? That wasn't me. Was it?",
         breakfast: 'I had {food}! Free leftovers from the 30th floor meeting! Best perk of the internship.',
-        where: 'Uh, the {zone}? I think? I was balancing six coffees.',
+        where: 'Uh, {at}? I think? I was balancing six coffees.',
         smell: 'Oh no, yeah. {Smell}. I nearly dropped everything.',
         gossip: "Oh, I hear EVERYTHING. Interns are invisible. {fact}",
         gossipNone: 'Mr. Thornbury called me Jeff this morning. My name is Josh.',
@@ -208,11 +218,12 @@
       },
       chad: {
         hello: 'Sup. Leg day. Can\'t really bend my knees right now.',
+        react: 'Bro. My eyes are doing a drop set',
         breakfast: '{food}, bro. Forty grams of protein. Minimum.',
-        where: 'I was in the {zone}. Flexing. In the mirror. Like normal.',
+        where: 'I was {at}. Flexing. In the mirror. Like normal.',
         smell: 'Bro. {Smell}. That is NOT my gains.',
         gossip: "Bro, I'll be real with you. {fact}",
-        gossipNone: 'I did not even notice there was a baby in here until like a minute ago.',
+        gossipNone: 'Bro, I don\'t notice stuff. I notice reps.',
         confront: 'Bro. Was that you? Be honest, bro.',
         guilty: "Okay that was me, bro. It's the protein. It's science.",
         reluctant: 'Bro, I mean, it MIGHT have been the shake. The shake is strong.',
@@ -221,7 +232,8 @@
       },
       sal: {
         hello: "Pizza for the lobby! Well, for a guy in the lobby. He's gonna love it. Who ordered pizza to the lobby?",
-        breakfast: 'Me? Slice of {food} pizza. Off-menu. Do not ask.',
+        react: 'Whoa. Worse than the pizza oven',
+        breakfast: 'Me? {food}. In the van, at a red light. You learn to eat fast in this job.',
         where: "I wasn't even here, pal! I got on at twenty-two. Walked straight into it.",
         smell: '{Smell}. I deliver to a fish market and THIS is worse.',
         gossip: "I deliver to every floor. I see things. {fact}",
@@ -234,8 +246,9 @@
       },
       priya: {
         hello: "Hi. Sorry. I'm so tired. Is it still Tuesday?",
+        react: 'Please be Leo. Please, please be Leo',
         breakfast: 'I had {food}. Standing up. With one hand. Like a raccoon.',
-        where: 'I was in the {zone} with the stroller. I think. I may have been asleep standing up.',
+        where: 'I was {at} with the stroller. I think. I may have been asleep standing up.',
         smell: '{Smell}. Honestly, after the diapers, I barely noticed.',
         gossip: "I haven't slept since March, but I'm not blind. {fact}",
         gossipNone: 'If anyone wakes this baby I will lose my mind.',

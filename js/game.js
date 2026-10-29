@@ -61,14 +61,19 @@ const Game = (() => {
   function unfocus() { if (!G.cam || !L) return; const c = viewCenter(); G.cam.tx = c.x; G.cam.ty = c.y; G.cam.tz = baseZoom(); }
   // In a big room (the chapel) the camera follows you, close enough to read faces, and cuts to the wide shot for
   // the moments everyone needs to see: when it happens, and the call to speak now.
+  // While you talk to someone the camera frames them above the dialogue box, so you see who you are talking to.
+  function frameCam(p, z, dy) {
+    const cam = G.cam, v = L.view, hw = W / 2 / z, hh = (H - barH) / 2 / z;
+    cam.tz = z; cam.tx = U.clamp(p.x, v.x + hw, v.x + v.w - hw); cam.ty = U.clamp(p.y + dy, v.y + hh, v.y + v.h - hh) + barH / 2 / z;
+  }
   function followCam() {
-    if (!L.follow || !G.cs || !G.player || !['play', 'tip', 'dialogue', 'notebook', 'paused'].includes(G.state)) return;
-    const cam = G.cam;
+    if (!G.cs || !G.player) return;
+    const cam = G.cam, talk = G.talkWith && G.state === 'dialogue';
+    if (talk) { const z = baseZoom() * (L.follow ? L.follow * 1.15 : 1.15); frameCam(G.talkWith, z, 150 / z - 50); }
+    else if (G.talkWith && G.state !== 'dialogue') { G.talkWith = null; if (!L.follow) unfocus(); }
+    if (talk || !L.follow || !['play', 'tip', 'dialogue', 'notebook', 'paused'].includes(G.state)) return;
     if ((G.overviewT || 0) > G.t) unfocus();
-    else {
-      const z = baseZoom() * L.follow, v = L.view, hw = W / 2 / z, hh = (H - barH) / 2 / z, p = G.player;
-      cam.tz = z; cam.tx = U.clamp(p.x, v.x + hw, v.x + v.w - hw); cam.ty = U.clamp(p.y - 40, v.y + hh, v.y + v.h - hh) + barH / 2 / z;
-    }
+    else frameCam(G.player, baseZoom() * L.follow, -40);
     if (G.camSnap) { cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; G.camSnap = false; }
   }
   const wide = (secs, snap = false) => { G.overviewT = G.t + secs; if (snap) G.camSnap = true; };
@@ -101,7 +106,7 @@ const Game = (() => {
       sniffCd: 0, sniffArrow: null, nextConfrontT: 0, gossipT: 1, objected: false, result: null,
       rumble: null, nextRumble: 0, photo: null, photoPending: false, snaps: {}, snapPending: null, trial: null,
       doors: {}, watchers: 0, lastOddSeenT: -99, squeezeT: {}, beltT: -99, eDown: null, searching: null,
-      objState: {}, tipsShown: {}, tipQueue: [], hintsUsed: 0, beatT: 0, unseenClues: 0, overviewT: 2.5, camSnap: false, // an establishing shot, then the camera finds you
+      objState: {}, tipsShown: {}, tipQueue: [], hintsUsed: 0, beatT: 0, unseenClues: 0, overviewT: 2.5, camSnap: false, banterNext: 6, banterReply: null, banterDone: {}, // an establishing shot, then the camera finds you
       player: { x: L.player.start.x, y: L.player.start.y, face: -Math.PI / 2, target: null, path: [], walking: false, bubble: null, expr: 'neutral', exprT: 0, pending: null },
     });
     G.npcs = CAST.map((c) => NPC.create(c, G.cs));
@@ -357,6 +362,7 @@ const Game = (() => {
     for (const id in G.doors) { const d = G.doors[id]; d.open += U.clamp(d.target - d.open, -dt * 1.5, dt * 1.5); }
     Gas.step(dt);
     gossip(dt);
+    banter();
     // suspicion fades, faster once you have been acting normal for a while
     const fade = (G.t - G.lastOddSeenT > 15 ? 0.45 : 0.15) * dt;
     for (const n of humans()) n.sus = Math.max(0, n.sus - fade);
@@ -508,6 +514,26 @@ const Game = (() => {
     }
   }
 
+  // Banter: people who stand together talk about their lives, in character. Written per case (story.banter),
+  // or per setting for Free Play. Never about the smell, and never a clue; it is there so the room feels alive.
+  function banter() {
+    const list = L.banter, r = G.banterReply;
+    if (r && G.t >= r.t) { G.banterReply = null; const b = npcById(r.b); if (b && b.present && !b.anim) { NPC.say(b, r.line, 3.6); look(b, r.a); } }
+    if (!list || !list.length || G.t < G.banterNext || G.banterReply || quiet() || G.t >= TIMELINE.speakNow) return;
+    G.banterNext = G.t + 13 + Math.random() * 8;
+    if (G.npcs.filter((n) => n.present && n.bubble).length >= 2) return; // the room is busy enough
+    for (let i = 0; i < list.length; i++) {
+      if (G.banterDone[i]) continue;
+      const [aId, bId, la, lb] = list[i], a = npcById(aId), b = npcById(bId);
+      if (![a, b].every((n) => n && n.present && !n.bubble && !n.anim && !n.walking && !n.confronting) || U.dist(a, b) > L.ranges.gossip * 1.8) continue;
+      G.banterDone[i] = true;
+      NPC.say(a, la, 3.6); look(a, b);
+      G.banterReply = { a, b: bId, line: lb, t: G.t + 2.9 };
+      return;
+    }
+  }
+  function look(n, at) { n.face = Math.atan2(at.y - n.y, at.x - n.x); n.glancing = 2.4; n.lookT = 3; }
+
   // ---------------- evidence ----------------
   function identifySmell(how) {
     if (G.know.smell) return;
@@ -653,7 +679,7 @@ const Game = (() => {
 
   function talkTo(n) {
     if (quiet()) act('whispering during the vows', COSTS.silentTalk);
-    G.state = 'dialogue';
+    G.state = 'dialogue'; G.talkWith = n;
     if (n.def.trait) feature('traits');
     if (RULES.rumors) tip('rumor');
     UI.openDialogue(n, 'talk');
@@ -701,10 +727,47 @@ const Game = (() => {
       ? { id: 'smell', label: 'What did it smell like to you?', tag: 'safe now' }
       : { id: 'smell', label: 'Did... you smell that?', tag: 'risky' });
     if (q.includes('rumor') && after && !n.asked.rumor) o.push({ id: 'rumor', label: 'Plant a rumour: "I bet it was..."', tag: 'scheming' });
+    if (RULES.lies && !G.cs.reverse && after && !n.asked.show && showable(n).length) o.push({ id: 'show', label: 'Show them something you found', tag: 'bold' });
     if (q.includes('hush') && G.cs.facts[n.id] && !n.asked.hush) o.push({ id: 'hush', label: 'About this morning... can we keep that between us?', tag: 'risky' });
     o.push({ id: 'leave', label: 'Leave' });
     return o;
   }
+  // Evidence you can put in front of someone: things that are about them, strongest first.
+  const SHOW_KINDS = ['bag', 'witness', 'contradiction', 'zone', 'gossip', 'photo', 'tell', 'deflect'];
+  function showable(n) {
+    return G.clues.filter((c) => SHOW_KINDS.includes(c.kind) && c.weight >= 1 && about(c, n.id) && !(c.kind === 'zone' && c.who === n.id && !c.implicates.length))
+      .sort((a, b) => b.weight - a.weight).slice(0, 4);
+  }
+  const clip = (s, k = 70) => (s.length > k ? s.slice(0, k - 1) + '…' : s);
+  // Showing someone the evidence: the liar cracks, an innocent who ate it says where they were, anything else is just rude.
+  function showClue(n, key) {
+    n.asked.show = true;
+    const c = G.clues.find((k) => k.key === key), cs = G.cs, v = VOICES[n.id] || {}, nm = n.def.name;
+    const guilty = n.id === cs.culprit, ate = cs.meals[n.id], claim = cs.claims[n.id];
+    if (guilty && c.food && c.food === ate && claim !== ate) {
+      const truth = foodById(ate);
+      addClue({ key: 'admit-' + n.id, kind: 'contradiction', who: n.id, food: ate, text: `${nm} cracked when you showed them the evidence: they did have ${truth.name}.`, implicates: [n.id], weight: 2.5 });
+      for (const o of humans()) if (o !== n && U.dist(o, n) < L.ranges.overhear) NPC.suspect(o, n.id, 22); // everyone close heard that
+      n.expr = 'shock'; n.exprT = 3;
+      UI.stamp('GOTCHA!', 'gold'); shake(10); Sfx.sting('break');
+      logEvent(`${nm} cracked: they had ${truth.name} after all.`);
+      return { text: U.fill(v.crack || 'Okay! FINE! Maybe I had a little {food}. A small amount. That proves nothing!', { food: truth.name }), expr: 'worried' };
+    }
+    if (guilty && c.zone === cs.origin.id) {
+      for (const o of humans()) if (o !== n && U.dist(o, n) < L.ranges.overhear) NPC.suspect(o, n.id, 8);
+      return { text: v.flustered || 'I was... passing through. Briefly. Very briefly. Why are you writing this down?', expr: 'worried' };
+    }
+    const z = cs.fartZone[n.id];
+    if (!guilty && c.food && c.food === ate && ate === cs.food.id && z) {
+      // the innocent who really did eat it: yes, and here is where I was
+      G.know.zones[n.id] = z;
+      addClue({ key: 'zone-' + n.id, kind: 'zone', who: n.id, text: `${nm} admits the ${foodById(ate).name}, but was by the ${zoneById(z).name} when it happened.`, implicates: z === cs.origin.id ? [n.id] : [], weight: 1, zone: z });
+      return { text: `Yes, I had ${foodById(ate).name}. So did other people. I was by the ${zoneById(z).name} when it started${z === cs.origin.id ? '. ...Which, okay, I hear how that sounds' : ', nowhere near it'}.`, expr: 'angry' };
+    }
+    if (RULES.aura) { n.sus = Math.min(100, n.sus + COSTS.nosy * 2 * G.diff.aura); recomputeAura(); }
+    return { text: U.pick(Math.random, ['And? What is that supposed to prove?', 'Okay. And you are showing me this because...?', 'Wow. You have been busy. That proves nothing.']), expr: 'sus', bad: true };
+  }
+
   function rumorTargets(n) {
     return CAST.filter((c) => c.id !== n.id && npcById(c.id).present).map((c) => ({ id: 'rumor:' + c.id, label: c.name, tag: c.dog ? 'scapegoat' : null }))
       .concat([{ id: 'back', label: 'Never mind' }]);
@@ -722,6 +785,8 @@ const Game = (() => {
   function talkChoose(n, id) {
     const v = VOICES[n.id], cs = G.cs;
     if (id.startsWith('rumor:')) return plantRumor(n, id.slice(6));
+    if (id.startsWith('show:')) return showClue(n, id.slice(5));
+    if (id === 'show') return { text: null, subText: '(What do you show them?)', sub: showable(n).map((c) => ({ id: 'show:' + c.key, label: clip(c.text), tag: c.kind === 'contradiction' ? 'lie' : c.kind })).concat([{ id: 'back', label: 'Never mind' }]) };
     if (id === 'rumor') return { text: null, sub: rumorTargets(n) };
     if (id === 'back') return { text: null };
     n.asked[id] = true;
@@ -733,7 +798,8 @@ const Game = (() => {
         addClue({ key: 'claim-' + n.id, kind: 'claim', who: n.id, text: `${n.def.name} says they had ${f.name}.`, implicates: f.id === cs.food.id ? [n.id] : [], weight: 1, food: f.id });
         checkContradictions(n.id);
         if (G.know.smell && f.id === cs.food.id) tip('claim');
-        return { text: U.fill(v.breakfast, { food: f.name }) };
+        const squirm = RULES.lies && ((n.id === cs.culprit && f.id !== cs.meals[n.id]) || (L.nervous || []).includes(n.id));
+        return { text: U.fill(v.breakfast, { food: f.name }), expr: squirm ? 'worried' : undefined };
       }
       case 'where': {
         const zid = cs.fartZone[n.id];
@@ -744,7 +810,7 @@ const Game = (() => {
         const z = zoneById(zid);
         G.know.zones[n.id] = z.id;
         addClue({ key: 'zone-' + n.id, kind: 'zone', who: n.id, text: `${n.def.name} was by the ${z.name} when it happened.`, implicates: z.id === cs.origin.id ? [n.id] : [], weight: 1, zone: z.id });
-        return { text: U.fill(v.where, { zone: z.name }) };
+        return { text: U.fill(v.where, { zone: z.name, at: zoneAtPhrase(z) }) };
       }
       case 'gossip': {
         if (RULES.aura) { n.sus = Math.min(100, n.sus + COSTS.nosy * G.diff.aura); recomputeAura(); }
@@ -837,7 +903,7 @@ const Game = (() => {
   }
   function startConfront(n) {
     if (G.state !== 'play') { n.confronted = false; return; }
-    G.state = 'dialogue';
+    G.state = 'dialogue'; G.talkWith = n;
     tip('confront');
     UI.openDialogue(n, 'confront');
   }
@@ -1290,7 +1356,7 @@ const Game = (() => {
       const age = G.t - n.reactT; if (age > 30) continue;
       const hp = head(n); ctx.save(); ctx.globalAlpha = (age > 25 ? (30 - age) / 5 : 1) * 0.92; ctx.translate(hp.x + 18, hp.y - 4); ctx.scale(0.78, 0.78); Art.badge(ctx, 0, 0, n.reactOrder, age); ctx.restore();
     }
-    if (G.state !== 'accuse') {
+    if (G.state !== 'accuse' && G.state !== 'dialogue') { // while you talk to someone, the rest of the room holds its tongue
       // speech first (most important), then thoughts; each bubble moves out of the way of the ones already placed
       const bubbles = [];
       if (G.player.bubble) { const hp = head({ x: G.player.x, y: G.player.y, def: { look: PLAYER_LOOK } }); bubbles.push([hp.x, hp.y - 26, G.player.bubble, null]); }
@@ -1349,12 +1415,13 @@ const Game = (() => {
     const back = n.seated && Math.sin(n.face) < -0.6 && Math.sin(n.baseFace) < -0.6 && !n.anim && G.state !== 'accuse'; // only people seated facing away
     const faceDir = Math.cos(n.face) < -0.15 ? -1 : 1;
     const o = { t, walking: n.walking, faceDir, expr: n.expr, anim: n.anim, animT: n.animT };
-    if (n.def.sprite === 'dog') return Art.drawDog(ctx, n.def.look, n.x, n.y, o);
-    if (n.def.sprite === 'baby') return Art.drawBaby(ctx, n.def.look, n.x, n.y, o);
+    const y = n.y - (n.hopT > 0 ? Math.sin((1 - n.hopT / 0.45) * Math.PI) * 7 : 0); // the jolt when the smell hits
+    if (n.def.sprite === 'dog') return Art.drawDog(ctx, n.def.look, n.x, y, o);
+    if (n.def.sprite === 'baby') return Art.drawBaby(ctx, n.def.look, n.x, y, o);
     // nervous sweat: the culprit when you are close, and naturally nervous innocents
     const close = U.dist(n, G.player) < L.ranges.talk * 1.3;
     const sweat = RULES.sweat && close && G.flags.fart && (n.isCulprit || (L.nervous || []).includes(n.id)) && G.state === 'play';
-    Art.drawPerson(ctx, n.def.look, n.x, n.y, { ...o, lookX: faceDir * lookX, lookY, back, sweat, talking: !!(n.bubble && n.bubble.tone !== 'thought'), blinkSeed: n.id.length * 7 + n.id.charCodeAt(0) });
+    Art.drawPerson(ctx, n.def.look, n.x, y, { ...o, lookX: faceDir * lookX, lookY, back, sweat, talking: !!(n.bubble && n.bubble.tone !== 'thought'), blinkSeed: n.id.length * 7 + n.id.charCodeAt(0) });
   }
 
   function drawPlayer(t) {

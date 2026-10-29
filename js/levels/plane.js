@@ -33,12 +33,12 @@
     tips: { late: { title: 'Out of the lavatory', text: 'Someone was in the lavatory when it happened, so they cannot be the culprit. But they might have seen something before take-off. Ask "Seen anything weird?"' } },
     // seat zones are named the way passengers say it, facing the front: the far side is their right
     zones: [
-      { id: 'frontright', name: 'Front Right Seats', x: FRONT, y: FAR_TOP, w: 280, h: 86 },
-      { id: 'backright', name: 'Back Right Seats', x: FRONT + 280, y: FAR_TOP, w: GALLEY_X - FRONT - 280, h: 86 },
-      { id: 'aisle', name: 'Aisle', x: FRONT, y: 446, w: GALLEY_X - FRONT, h: 42, noSpawn: true },
-      { id: 'frontleft', name: 'Front Left Seats', x: FRONT, y: 488, w: 280, h: NEAR_BOT - 488 },
-      { id: 'backleft', name: 'Back Left Seats', x: FRONT + 280, y: 488, w: GALLEY_X - FRONT - 280, h: NEAR_BOT - 488 },
-      { id: 'galley', name: 'Rear Galley', x: GALLEY_X, y: FAR_TOP, w: REAR - GALLEY_X, h: NEAR_BOT - FAR_TOP, noSpawn: true },
+      { id: 'frontright', name: 'Front Right Seats', at: 'in the front right seats', x: FRONT, y: FAR_TOP, w: 280, h: 86 },
+      { id: 'backright', name: 'Back Right Seats', at: 'in the back right seats', x: FRONT + 280, y: FAR_TOP, w: GALLEY_X - FRONT - 280, h: 86 },
+      { id: 'aisle', name: 'Aisle', at: 'in the aisle', x: FRONT, y: 446, w: GALLEY_X - FRONT, h: 42, noSpawn: true },
+      { id: 'frontleft', name: 'Front Left Seats', at: 'in the front left seats', x: FRONT, y: 488, w: 280, h: NEAR_BOT - 488 },
+      { id: 'backleft', name: 'Back Left Seats', at: 'in the back left seats', x: FRONT + 280, y: 488, w: GALLEY_X - FRONT - 280, h: NEAR_BOT - 488 },
+      { id: 'galley', name: 'Rear Galley', at: 'in the rear galley', x: GALLEY_X, y: FAR_TOP, w: REAR - GALLEY_X, h: NEAR_BOT - FAR_TOP, noSpawn: true },
     ],
     view: { x: 330, y: 214, w: 752, h: 423 },
     ranges: { notice: 40, overhear: 96, gossip: 100, talk: 104, search: 44, personal: 20, spacing: 40, depth: 0.45, itemOffset: null },
@@ -85,6 +85,13 @@
     mustSit: seatbeltOn,
     player: { start: { x: PLAYER_SEAT.x, y: PLAYER_SEAT.y }, seat: PLAYER_SEAT, look: { body: '#f08a24', outfit: 'hoodie', pants: '#3a4a6a', shoes: '#f6efdf', skin: '#f3cfae', hair: '#2d1d10', hairStyle: 'messy', acc: 'none', scale: 1.0, voice: 300 } },
     nervous: ['brad'],
+    // people chatting, in Free Play (campaign cases have their own in js/story.js)
+    banter: [
+      ["brad", "dana", "Babe! Best week ever, right?", "It was lovely. I have filed it under 'lovely'."],
+      ["rosa", "lindqvist", "Excuse me. Did you give the keynote at the summit?", "No. I am asleep."],
+      ["gary", "brad", "Bradley! Honeymoon buddy! Hot sauce?", "Uncle Gary, how are you even on this flight?"],
+      ["marguerite", "rosa", "Anything to drink, sweetheart?", "Anything that is not this coffee."],
+    ],
     cast: [
       { id: 'dana', name: 'Dana', role: 'Married on Saturday. HR, on holiday.', shame: 7, nose: 1.1, tol: 1.0, perception: 1.45, gossip: 1.0, trait: 'Enforcer: writes everything down',
         look: { body: '#3fa7a0', outfit: 'hawaiian', pants: '#e8dcc2', shoes: '#c9a46b', skin: '#c98e64', hair: '#2a1a12', hairStyle: 'bob', acc: 'glasses', features: ['lashes', 'earrings'], scale: 0.98, voice: 380 },
@@ -118,7 +125,7 @@
     foods: ['eggs', 'chili', 'broccoli', 'garlic', 'tuna'],
     // what economy calls each dish
     menu: {
-      eggs: { name: 'the cheese omelette', wrapper: 'two empty foil omelette trays, stacked very neatly' },
+      eggs: { name: 'the cheese omelette', wrapper: 'an empty foil omelette tray' },
       broccoli: { name: 'the veggie quiche', wrapper: 'a foil quiche tray with green crumbs' },
       chili: { name: 'the chili mac', wrapper: 'a chili-mac tray scraped completely clean' },
       garlic: { name: 'the garlic bread', wrapper: 'a greasy garlic-bread wrapper' },
@@ -251,8 +258,9 @@
     voices: {
       dana: {
         hello: 'Oh. Hi. Of course you are on this flight.',
+        react: 'I am writing this down. In pen',
         breakfast: 'I had {food}. I am on holiday. I am not documenting it.',
-        where: 'In my seat, by the {zone}. I booked the cheapest fare. It does not let you sit together.',
+        where: 'In my seat, {at}. I booked the cheapest fare. It does not let you sit together.',
         smell: '{Smell}. On my honeymoon. I am writing this down.',
         gossip: 'Off the record? Nothing is off the record, even on holiday. {fact}',
         gossipNone: 'Brad bought Biscuit his own seat. I found out at the gate. It is in the binder.',
@@ -264,10 +272,11 @@
       },
       brad: {
         hello: 'Hey! Hi! Best week of my life! I am fine! Everything is great!',
+        react: 'Is that a bad omen? It feels like a bad omen',
         breakfast: 'Just {food}! I eat healthy now. I am a husband.',
-        where: 'In my seat! By the {zone}. Next to Biscuit. He has his own boarding pass.',
+        where: 'In my seat! {at}, next to Biscuit. He has his own boarding pass.',
         smell: 'Oh no. Yes. {Smell}. Is that a bad omen? On a plane? That is a bad omen.',
-        gossip: 'I am not supposed to notice anything this week, but {fact}',
+        gossip: 'I am not supposed to notice anything this week. But okay. {fact}',
         gossipNone: 'Mom texted me thirty times. She wants to know if Dana is "settling in".',
         confront: 'Dude. Was that you? On my honeymoon?',
         guilty: 'It was me. Please do not tell Dana. She is RIGHT THERE.',
@@ -277,6 +286,7 @@
       },
       gary: {
         hello: 'Hey hey! The elevator kid! You came on the honeymoon too? Me too! Nobody invited me either!',
+        react: 'Whoa! And I only just came OUT of the can!',
         breakfast: '{food}, baby! Two of them! Airline food is underrated!',
         where: 'Wasn\'t even in my seat, pal! I was in the can the whole climb. Best seat on the plane.',
         smell: 'WHOO! {Smell}! At thirty-six thousand feet! Somebody\'s showing off!',
@@ -290,8 +300,9 @@
       },
       marguerite: {
         hello: 'Can I help you, sweetheart? Thirty-one years. I see everything in this cabin.',
+        react: 'Thirty-one years. Never this bad',
         breakfast: '{food}. Crew meal. In the galley. Standing up, like a professional.',
-        where: 'In the {zone}. Where I always am, unless somebody needs something. Somebody always needs something.',
+        where: '{at}. Where I always am, unless somebody needs something. Somebody always needs something.',
         smell: '{Smell}. Row by row, I will find out who.',
         gossip: 'I do not gossip. I report. {fact}',
         gossipNone: 'The man in the eye mask has been asleep since the gate. Or he wants us to think so.',
@@ -299,12 +310,13 @@
         guilty: 'Fine. It was me. Thirty-one years, and the first one I could not hold.',
         reluctant: 'Crew do not discuss operational matters.',
         innocent: 'I have smelled everything there is to smell. That was not me.',
-        rumor: '{name}. I had a feeling about row {name}.',
+        rumor: '{name}. I had a feeling about that row.',
       },
       lindqvist: {
         hello: 'Mm? I was asleep. I am always asleep on planes. It is the only place nobody asks me to smell anything.',
+        react: 'Mm. Forty parts per billion. Not my problem',
         breakfast: '{food}. I think. I ate it with my eyes closed.',
-        where: 'In the {zone}, with the mask on. Nothing to see, nothing to smell.',
+        where: '{at}, with the mask on. Nothing to see, nothing to smell.',
         smell: '{Smell}. Hydrogen sulfide, maybe forty parts per billion. Not my problem. I am on holiday.',
         gossip: 'I sleep. I do not see. But I hear. {fact}',
         gossipNone: 'I gave the keynote at the summit. You asked a question about elevators. It was a good question. I hated it.',
@@ -316,8 +328,9 @@
       },
       rosa: {
         hello: 'Hola! Wait. You are the Nose! From the video! You stayed at my hotel. Room 212. You opened every window.',
+        react: 'In my hotel, somebody would be FIRED',
         breakfast: '{food}. Airline food is a crime. I run a hotel. I would know.',
-        where: 'In the {zone}, filming the clouds. My guests love a cloud.',
+        where: '{at}, filming the clouds. My guests love a cloud.',
         smell: '{Smell}. If this happened in my hotel, somebody would be fired.',
         gossip: 'In my business you notice everything. {fact}',
         gossipNone: 'I am flying in to buy a building on Monday. I cannot say which. Big. Old. Smells a little.',

@@ -54,6 +54,7 @@ const NPC = (() => {
     if (n.bubble) { n.bubble.t -= dt; if (n.bubble.t <= 0) n.bubble = null; }
     if (n.anim) { n.animT += dt; if (n.animT > 2.6) { n.anim = null; n.animT = 0; } }
     if (n.exprT > 0) { n.exprT -= dt; if (n.exprT <= 0) n.expr = 'neutral'; }
+    if (n.hopT > 0) n.hopT -= dt;
 
     // ---- where to be ----
     const ceremony = t >= TIMELINE.places;
@@ -122,8 +123,9 @@ const NPC = (() => {
       const need = n.def.tol * 1.5 + (n.isCulprit ? 0.8 : 0);
       if (!n.reacted && n.expo >= need) {
         n.reacted = true; n.reactT = G.t; n.reactZone = zoneAt(n).id;
-        n.expr = 'disgust'; n.exprT = 3;
-        say(n, n.def.dog ? (n.def.sprite === 'baby' ? '*wails*' : '*whimpers*') : U.pick(Math.random, G.mentioned ? REACTIONS_POST : REACTIONS_PRE), 2.6, 'thought');
+        n.expr = 'disgust'; n.exprT = 3; n.hopT = 0.45;
+        const own = !n.def.dog && VOICES[n.id] && VOICES[n.id].react; // everyone reacts in their own way
+        say(n, n.def.dog ? (n.def.sprite === 'baby' ? '*wails*' : '*whimpers*') : own ? `*${own}*` : U.pick(Math.random, G.mentioned ? REACTIONS_POST : REACTIONS_PRE), 3, 'thought');
         for (const o of G.npcs) if (o !== n && o.present && U.dist(o, n) < L.ranges.gossip * 0.85) suspect(n, o.id, 12);
         if (G.cs.reverse && U.dist(G.player, n) < L.ranges.gossip * 0.85) suspect(n, 'player', 12);
         if (RULES.aura && U.dist(G.player, n) < L.ranges.gossip * 0.85) n.sus = Math.min(100, n.sus + 4);

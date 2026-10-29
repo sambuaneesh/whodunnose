@@ -174,9 +174,9 @@ const Case = (() => {
     facts[witness] = isDog
       ? { text: sg.witness, implicates: [sg.id], weight: 2, kind: 'witness', food: sg.food, about: sg.id, short: `${nm(sg.id)} ate ${food.name}...` }
       : { text: ft.witness || `${nm(culprit)} was scarfing ${food.name} before this. I saw it.`, implicates: [culprit], weight: 2, kind: 'witness', food: food.id, about: culprit, short: `...${nm(culprit)} and the ${food.name}...` };
-    if (positionalWitness) facts[positionalWitness] = { text: ft.zone || `${nm(nearDecoy)} was right by the ${origin.name} when it started.`, implicates: [nearDecoy], weight: 1, kind: 'zone', about: nearDecoy, zone: origin.id, short: `...${nm(nearDecoy)}, by the ${origin.name}...` };
+    if (positionalWitness) facts[positionalWitness] = { text: ft.zone || `${nm(nearDecoy)} was ${zoneAtPhrase(origin)} when it started.`, implicates: [nearDecoy], weight: 1, kind: 'zone', about: nearDecoy, zone: origin.id, short: `...${nm(nearDecoy)}, by the ${origin.name}...` };
     if (mealWitness && !fix.soleEater) facts[mealWitness] = { text: ft.meal || `${nm(foodDecoy)} went back for seconds of the ${food.name}. Thirds, actually.`, implicates: [foodDecoy], weight: 1, kind: 'meal', about: foodDecoy, food: food.id, short: `...${nm(foodDecoy)} had thirds...` };
-    if (culpritPosWitness) facts[culpritPosWitness] = { text: ft.culpritZone || `${nm(culprit)} was over by the ${origin.name} earlier. Kind of lurking.`, implicates: [culprit], weight: 1, kind: 'zone', about: culprit, zone: origin.id, short: `...${nm(culprit)} lurking by the ${origin.name}...` };
+    if (culpritPosWitness) facts[culpritPosWitness] = { text: ft.culpritZone || `${nm(culprit)} was ${zoneAtPhrase(origin)} earlier. Kind of lurking.`, implicates: [culprit], weight: 1, kind: 'zone', about: culprit, zone: origin.id, short: `...${nm(culprit)} lurking by the ${origin.name}...` };
 
     const bags = {};
     for (const c of CAST) {

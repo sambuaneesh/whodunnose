@@ -441,7 +441,7 @@ const UI = (() => {
     const n = dlg.n;
     if (o.id === 'back') { dlg.sub = null; renderOptions(); return; }
     const r = dlg.mode === 'confront' ? Game.confrontChoose(n, o.id) : Game.talkChoose(n, o.id);
-    if (r.sub) { dlg.sub = r.sub; typeText('(Who do you want them to suspect?)', 300); renderOptions(); return; }
+    if (r.sub) { dlg.sub = r.sub; typeText(r.subText || '(Who do you want them to suspect?)', 300); renderOptions(); return; }
     dlg.sub = null;
     if (dlg.mode === 'confront') dlg.mode = 'done';
     $('#dlgPortrait').src = Art.portrait(n.def, r.expr || 'neutral');

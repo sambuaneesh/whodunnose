@@ -111,7 +111,7 @@ const TIPS = {
   callPoint: { title: 'Time to call it', text: 'The doors are about to open. Press O and point at whoever did it.' },
   watched: { title: 'Someone can see you', text: 'The eye under your Aura meter shows how many people can see you right now. Odd behaviour only costs Aura if someone sees it. Everyone faces the doors, so behind them is a blind spot.' },
   bag: { title: 'Bags do not lie', text: 'HOLD E next to a bag to search it. Searching is odd behaviour, so check the eye first: zero watching means free.' },
-  contradiction: { title: 'Caught a lie', text: 'Their story does not match the evidence. Hang on to that clue: when you call it, you will need proof.' },
+  contradiction: { title: 'Caught a lie', text: 'Their story does not match the evidence. Go and show them what you found ("Show them something you found"): liars crack when the proof is in front of them. Either way, keep that clue for when you call it.' },
   callProof: { title: 'Time to call it', text: 'This time you need proof. Point at the culprit, then pick the clue that shows it was them.' },
   law: { title: 'Playground law', text: 'New rule: whoever smelt it, dealt it. Do NOT be the first to mention the smell, or people will decide it was you. Wait for someone else.' },
   mention: { title: 'It is out in the open', text: 'Someone said it. Now it is safe for you to ask people about the smell. Try "Where were you standing?" too.' },
@@ -240,6 +240,7 @@ function buildLevel(caseDef) {
     lv.cast = lv.cast.map((c) => ((st.roles || {})[c.id] ? { ...c, role: st.roles[c.id] } : c));
     if (st.intro) lv.intro = st.intro;
     if (st.clock) lv.clockStart = st.clock;
+    if (st.banter) lv.banter = st.banter;
   }
   return lv;
 }
@@ -254,6 +255,7 @@ function loadLevel(caseDef) {
 }
 
 const zoneById = (id) => ZONES.find((z) => z.id === id);
+const zoneAtPhrase = (z) => z.at || `by the ${z.name}`; // "by the buttons", "in the left pews"
 const spawnZones = () => ZONES.filter((z) => !z.noSpawn); // where people can be standing or sitting when it happens
 const zoneCenter = (z) => ({ x: z.x + z.w / 2, y: z.y + z.h / 2 });
 function zoneAt(p) {

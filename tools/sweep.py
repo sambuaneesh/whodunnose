@@ -5,9 +5,7 @@ import json, os, subprocess, sys, argparse
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SIZES = {'desk': [1440, 810, 1, False], 'hd': [1920, 1080, 1, False], 'small': [1280, 720, 1, False],
          'tall': [900, 1000, 1, False], 'phone': [844, 390, 2, True]}
-HELP = """window.T={start(ref,seed){const i=CASES.findIndex(c=>c.id===ref);const c=i>=0?{...CASES[i]}:FREE_PLAY(ref.replace('free-','').split(':')[0],+(ref.split(':')[1])||4242);
-document.querySelector('#title').hidden=true;document.querySelector('#briefing').hidden=true;Game.newGame(c,seed||c.seed);for(const k in TIPS)G.tipsShown[k]=1;G.tipQueue=[];document.querySelector('#tip').hidden=true;G.state='play';},
-to(t){Game.skipTo(t);document.querySelector('#tip').hidden=true;['#dialogue','#notebook'].forEach(s=>document.querySelector(s).hidden=true);if(G.state!=='result'&&G.state!=='accuse')G.state='play';}};1"""
+HELP = open(os.path.join(ROOT, 'tools/checks/helpers.js')).read()
 ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--sizes', default='desk')
 ap.add_argument('--cases', default='c1,c2,c3,c4,c5,c6,c7,c8,free-elevator,free-wedding,free-plane')
 ap.add_argument('--times', default='3,14,45,90'); ap.add_argument('--pt', action='store_true'); ap.add_argument('--extra', default='')
