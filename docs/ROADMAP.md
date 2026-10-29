@@ -26,11 +26,19 @@ Working agreement (from the product owner, 2026-10-29):
 - [x] Audit every line of text and every mechanic for consistency ("connect all the dots")
 
 ### Iteration 4 (v4 release)
-- [ ] New settings and cases where they serve the story
+- [x] New settings and cases where they serve the story (season two opener: the plane)
 - [x] Reverse case ("you dealt it")
 - [x] Daily case, achievements
 - [x] Accessibility: colour-blind palette check, touch controls, remappable keys
 - [x] Performance pass, final polish, v4 release notes
+
+### Iteration 5 (v4.1): neatness, and season two begins
+- [x] Glasses: two separate lenses with a bridge; sunglasses cover the eyes
+- [x] Layout pass: nothing floating over the scene overlaps (bubbles, name tags, debug chips), the HUD steps aside, the camera frames the scene above the action bar, captions behave like subtitles, crowds stagger so faces stay visible
+- [x] Briefings and the title fit on one screen; results open at the top
+- [x] Season two opener: "Cruising Altitude", a plane with a seatbelt sign
+- [ ] More season two cases: Thornbury Tower under its new owner, with Mr. Lindqvist as a rival nose
+- [ ] A human playtest of case 1, the bonus case and the plane
 
 ## Log
 - 2026-10-29: roadmap created. Starting iteration 1.
@@ -43,3 +51,5 @@ Working agreement (from the product owner, 2026-10-29):
 - 2026-10-29: daily case (same seed for everyone on a date, alternating elevator and chapel, Normal difficulty, first finish of the day counts, streak, spoiler-free "Copy result" text) and 19 achievements (js/meta.js) with an unlock pop-up and a list on the title screen. Campaign reset keeps achievements and daily history; playtest runs never count. Fixed the chapel bunting, which still said BRAD + CHANTELLE.
 - 2026-10-29: accessibility. Phones held sideways: the case file collapses to a one-line tab with a count (tap to open), meters, toasts and action buttons tighten, key hints are hidden on touch screens, and Search/Plant is a press-and-hold button. Remappable keys in Settings > Controls (js/keys.js): bindings use physical key positions so WASD works on AZERTY, clashes swap, Escape/Enter/arrows/number keys are reserved, and the action bar shows the bound keys (labelled for the keyboard layout where the browser allows). Colour check: no state is shown by colour alone (vision cones also differ in strength, objectives use ticks and crosses, ranks are letters, Aura has a number, "watching" is text).
 - 2026-10-29: performance measured (1.3 to 3 ms frame work median at 2x, under 6 ms p95: no changes needed). Polish: pitch sheet lists the new modes as playable, the reverse case says "The room decides" at the lobby and "Bonus case" on results. v4 release notes in docs/RELEASE-v4.md. Iteration 4 complete apart from new settings and cases.
+- 2026-10-29: owner feedback: the glasses still overlapped ("the specs is not fixed"), and screens looked cluttered and overlapping. Fixed glasses (separate lenses, wider-set eyes inside them) and sunglasses (eyes hidden, proper lenses). Layout pass: one screen-space layout (Tags in game.js) places bubbles, Smell Vision names and playtest chips so they never overlap each other or the HUD; HUD cards fade while someone stands behind them; the case file folds to one line and opens when an objective changes; the camera frames each scene above the action bar; captions sit low like subtitles and jump to the top when you stand there; crowds stagger (a depth factor in the spacing rule), nobody spawns on you or on furniture; zone names choose a free corner and fade under people; the rumble prompt moved into the prompt bar; vision cones stop at the walls; briefings and the title fit on one screen; results open at the top; playtest labels are compact chips. Lines that start with a dish name now start with a capital everywhere.
+- 2026-10-29: season two opener "Cruising Altitude" (js/levels/plane.js, case c8, unlocked after case 6). A seated crowd mode: passengers keep their seats facing forward (blind spot behind), the seatbelt sign decides when you may walk the aisle and standing with it on costs Aura, the flight attendant patrols, Uncle Gary was in the lavatory (the latecomer), turbulence, landing call. Levels now describe their crowd (standing, mingling, seated), speeds, labels and late-arrival wording instead of the engine checking for the elevator; levels can rename dishes (the eggs are a cheese omelette). Written case: Brad ate two omelettes on the flight home from the honeymoon and blamed the dog he bought a seat for; Rosa Delgado (buying Thornbury Tower) and Mr. Lindqvist (a rival nose) set up season two. Free Play and the daily case include the plane. Verified headlessly: c8 generates as written and solves, Free Play on the plane solves, all earlier cases unchanged.

@@ -1,5 +1,13 @@
 # v4 release notes
 
+## v4.1
+- **Season two opener, "Cruising Altitude":** the flight home from the honeymoon. A new plane setting where everyone is strapped in facing forward, the seatbelt sign decides when you can walk the aisle, the flight attendant patrols, and you call it before landing. Two new characters set up season two.
+- **A tidier screen:** speech bubbles, name tags and labels never overlap each other or the HUD; HUD cards fade when someone is behind them; the case file folds to one line; captions sit low like subtitles and move when you are standing there; the scene is framed above the action bar; crowds stagger so every face is visible.
+- **Fixed:** glasses (two separate lenses) and sunglasses (they now hide the eyes). Briefings and the title screen fit on one screen. Results open at the top.
+- Free Play and the daily case now include the plane.
+
+## v4.0
+
 v4 turns the v3 campaign into a written season with a bonus case, a daily case and achievements. Sound, characters, playtesting tools and phone support were all reworked.
 
 ## Story

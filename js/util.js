@@ -30,8 +30,9 @@ const U = (() => {
     return d;
   }
   const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-  const fill = (str, vars) => str.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : `{${k}}`));
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  // a line that opens with a placeholder still starts with a capital ("{food}, bro." -> "A protein shake, bro.")
+  const fill = (str, vars) => { const out = str.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : `{${k}}`)); return str[0] === '{' ? cap(out) : out; };
   return { rng, clamp, lerp, dist, pick, shuffle, angDiff, fmtTime, fill, cap };
 })();
 if (typeof module !== 'undefined') module.exports = U;

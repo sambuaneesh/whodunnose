@@ -224,7 +224,7 @@ const STORY = {
       },
     },
     say: {
-      brad: { hello: "Hey! It's Dana's friend from the elevator! Small world! Small plane! Best week of my life! I'm fine!", breakfast: 'Just {food}! The veggie one. I eat healthy now. I am a husband.', gossipNone: 'I bought Biscuit his own seat. Dana found out at the gate. She has not said anything. She has written something.', guilty: "Okay! It was me! Two omelettes! Dana gave me hers! I couldn't eat a thing at my own wedding and I've been hungry for a WEEK! Please don't tell my mother!" },
+      brad: { hello: "Hey! It's Dana's friend from the elevator! Small world! Small plane! Best week of my life! I'm fine!", breakfast: 'Just {food}! I eat healthy now. I am a husband.', gossipNone: 'I bought Biscuit his own seat. Dana found out at the gate. She has not said anything. She has written something.', guilty: "Okay! It was me! Two omelettes! Dana gave me hers! I couldn't eat a thing at my own wedding and I've been hungry for a WEEK! Please don't tell my mother!" },
       dana: { hello: 'Oh. Of course you are on this flight. The company portal only books the cheapest fare. I set that up. I regret it.', breakfast: '{food}. I gave Brad my omelette. I have not been able to look at an egg since the wedding.', where: 'In the {zone}, one row away from my husband. The cheapest fare does not let you sit together. I wrote that policy too.' },
       gary: { hello: "The elevator kid! I didn't know you were coming on the honeymoon! Neither did they!" },
       rosa: { gossipNone: 'I am flying in to sign for a building tomorrow. I cannot say which one. Big. Old. Thirty floors. Smells a little.' },

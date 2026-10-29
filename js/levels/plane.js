@@ -25,6 +25,8 @@
     mode: 'seated', npcPace: 0.7, walkSpeed: 80, stepLen: 15, gossipRate: 0.8, closeCamera: true, decals: false,
     short: 'Plane', place: 'Flight 404, economy', callWhen: 'before landing', failTitle: 'Banned from the airline', airText: 'Recycled air and coffee.',
     crew: 'marguerite', beltLine: 'Sir. SIR. The seatbelt sign is ON.',
+    lateWhere: 'was in the lavatory when it happened', latePress: 'I was in the can! Ask anyone! Everyone heard!',
+    tips: { late: { title: 'Out of the lavatory', text: 'Someone was in the lavatory when it happened, so they cannot be the culprit. But they might have seen something before take-off. Ask "Seen anything weird?"' } },
     zones: [
       { id: 'galley', name: 'Rear Galley', x: 524, y: 250, w: 232, h: 70, noSpawn: true },
       { id: 'backleft', name: 'Back Left Seats', x: 524, y: 320, w: 93, h: 136 },
@@ -286,7 +288,7 @@
       lindqvist: {
         hello: 'Mm? I was asleep. I am always asleep on planes. It is the only place nobody asks me to smell anything.',
         breakfast: '{food}. I think. I ate it with my eyes closed.',
-        where: 'By the window, in the {zone}. With the mask on. Nothing to see, nothing to smell.',
+        where: 'In the {zone}, with the mask on. Nothing to see, nothing to smell.',
         smell: '{Smell}. Hydrogen sulfide, maybe forty parts per billion. Not my problem. I am on holiday.',
         gossip: 'I sleep. I do not see. But I hear. {fact}',
         gossipNone: 'I gave the keynote at the summit. You asked a question about elevators. It was a good question. I hated it.',

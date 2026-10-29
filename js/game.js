@@ -131,7 +131,7 @@ const Game = (() => {
   }
   function showTip(id) {
     G.state = 'tip';
-    UI.showTip(TIPS[id], () => { if (G.state === 'tip') G.state = 'play'; });
+    UI.showTip((L.tips && L.tips[id]) || TIPS[id], () => { if (G.state === 'tip') G.state = 'play'; });
   }
   function flushTips() { if (G.state === 'play' && G.tipQueue.length && !G.tipQueue[0].startsWith('__') && !G.tipQueue.includes('__fart')) showTip(G.tipQueue.shift()); }
 
@@ -723,7 +723,7 @@ const Game = (() => {
       case 'where': {
         const zid = cs.fartZone[n.id];
         if (!zid) {
-          addClue({ key: 'zone-' + n.id, kind: 'zone', who: n.id, text: `${n.def.name} got on after it happened. Not a suspect.`, implicates: [], weight: 0 });
+          addClue({ key: 'zone-' + n.id, kind: 'zone', who: n.id, text: `${n.def.name} ${L.lateWhere || 'got on after it happened'}. Not a suspect.`, implicates: [], weight: 0 });
           return { text: v.where };
         }
         const z = zoneById(zid);
@@ -1028,7 +1028,7 @@ const Game = (() => {
     const z = cs.fartZone[accused];
     if (guilty) st.push({ id: 'zone', topic: 'Where they were', speaker: def.name, text: `I was nowhere near the ${cs.origin.name}. I was over by the ${zoneById(cs.alibiZone).name}.`,
       contra: (c) => ['zone', 'gossip', 'photo'].includes(c.kind) && ab(c) && c.zone === cs.origin.id, press: `The ${zoneById(cs.alibiZone).name}. The whole time. Mostly.` });
-    else if (!z) st.push({ id: 'zone', topic: 'Where they were', speaker: def.name, text: "I wasn't even here when it happened!", contra: () => false, press: 'I got on later. Check the floor numbers.' });
+    else if (!z) st.push({ id: 'zone', topic: 'Where they were', speaker: def.name, text: "I wasn't even here when it happened!", contra: () => false, press: L.latePress || 'I got on later. Check the floor numbers.' });
     else st.push({ id: 'zone', topic: 'Where they were', speaker: def.name, text: `I was by the ${zoneById(z).name} the whole time.`, contra: () => false,
       press: z === cs.origin.id ? `Yes, I was near it. But so was ${cName}, and they were acting strange.` : 'People saw me there. Ask around.' });
     st.push({ id: 'cover', topic: 'What they did', speaker: def.name, text: guilty ? `And I have not been doing anything weird. I certainly wasn't ${cs.cover.label}.` : "I've just been standing here like a normal person.",
