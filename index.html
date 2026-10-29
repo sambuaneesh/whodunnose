@@ -191,22 +191,26 @@ button { cursor: pointer; }
 .board.locked select { border-bottom-color: var(--fart); background: #e7f6cf; }
 .board-row { display: flex; gap: 1em; align-items: center; flex-wrap: wrap; }
 .board-row button, .acc-row button, #vend button { border: 2px solid var(--ink); background: var(--aura); color: #fff; font-weight: 700; padding: .5em 1.1em; border-radius: 3px; box-shadow: 0 3px 0 var(--ink); }
-.board-row button:disabled, .acc-row button:disabled { opacity: .45; cursor: default; }
+.board-row button:disabled, .acc-row button:disabled { opacity: 1; background: #d9d3c6; color: #6f695e; box-shadow: none; cursor: default; }
 .board-fb { font-weight: 600; }
 .solved { position: absolute; right: 1em; top: .6em; font-family: var(--f-display); color: #3c8d2f; border: 4px solid #3c8d2f; padding: .1em .5em; transform: rotate(8deg); font-size: 1.8em; }
 
 /* accusation */
 /* the call-out: the zoomed scene stays visible on the left, the sheet sits on the right */
 #accuse { background: linear-gradient(90deg, rgba(28,22,40,0) 0 38%, rgba(28,22,40,.55) 42%); justify-items: end; padding-left: 0; }
-#accuse .sheet { background: var(--paper); width: 60%; box-shadow: -10px 0 0 rgba(0,0,0,.25); }
+#accuse .sheet { background: var(--paper); width: 60%; height: auto; max-height: 100%; align-self: center; box-shadow: -10px 0 0 rgba(0,0,0,.25); }
 .objection { font-family: var(--f-display); font-size: 6em; color: var(--stamp); text-align: center; margin-top: 18%; transform: rotate(-6deg); animation: obj .5s cubic-bezier(.2,2,.4,1); text-shadow: .06em .06em 0 var(--ink); }
 @keyframes obj { from { transform: rotate(-6deg) scale(3); opacity: 0 } }
 .obj-sub { text-align: center; font-size: 1.3em; }
 .acc-sub { color: var(--muted); margin: 0 0 .8em; }
 .agrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .6em; }
-.acard { display: grid; justify-items: center; gap: .25em; border: 2px solid var(--ink); background: #fff; padding: .5em; text-align: center; border-radius: 3px; }
-.acard img { width: 5em; height: 5em; }
-.acard.on { background: #fff3b0; outline: 3px solid var(--stamp); }
+/* the line-up: each suspect against a height chart; the one you pick steps forward */
+.acard { display: grid; justify-items: center; gap: .25em; border: 2px solid var(--ink); padding: .5em .5em .55em; text-align: center; border-radius: 3px; cursor: pointer; transition: transform .12s, box-shadow .12s;
+  background: repeating-linear-gradient(180deg, transparent 0 1.1em, rgba(28,26,31,.10) 1.1em calc(1.1em + 1px)), #f4f1ea; box-shadow: 0 3px 0 rgba(0,0,0,.22); }
+.acard:hover { transform: translateY(-2px); }
+.acard img { width: 6.2em; height: 6.2em; }
+.acard b { background: var(--ink); color: #fff; padding: .1em .5em; border-radius: 2px; font-size: .9em; }
+.acard.on { background: repeating-linear-gradient(180deg, transparent 0 1.1em, rgba(28,26,31,.10) 1.1em calc(1.1em + 1px)), #fff3b0; outline: 3px solid var(--stamp); transform: translateY(-4px) scale(1.04); box-shadow: 0 6px 0 rgba(0,0,0,.25); }
 .acard small { font-size: .74em; color: var(--muted); line-height: 1.25; }
 .stakes { width: 100%; height: .55em; border: 1.5px solid var(--ink); background: #eee; }
 .stakes i { display: block; height: 100%; background: var(--stamp); }
@@ -300,6 +304,7 @@ button { cursor: pointer; }
 .polaroid figcaption { position: absolute; left: .6em; bottom: .3em; font-family: var(--f-hand); font-size: 1.1em; }
 .sc-trait { font-size: .72em; font-weight: 700; color: #4b2a85; margin-bottom: .15em; }
 .susbar.room i, .stakes.room i { background: var(--aura); }
+.acc-legend { display: block; font-size: .82em; color: var(--muted); margin-top: .2em; }
 .mini-l { font-size: .62em; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); justify-self: start; }
 /* field guide */
 .guide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7em; }
@@ -531,7 +536,7 @@ button { cursor: pointer; }
   .brief { padding: .9em 1.2em; } .brief h2 { font-size: 1.8em; } .brief-story { font-size: .95em; }
   .brief .acc-row, #accuse .acc-row { position: sticky; bottom: 0; background: var(--paper); padding-top: .4em; z-index: 1; }
   .agrid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .4em; }
-  .acard { padding: .3em; } .acard img { width: 3.6em; height: 3.6em; } .acard b { font-size: .85em; }
+  .acard { padding: .3em; } .acard img { width: 4em; height: 4em; } .acard b { font-size: .8em; }
   #dialogue { grid-template-columns: 5.5em 1fr; padding: .7em .9em; gap: .8em; }
   #dlgPortrait { width: 5.5em; height: 5.5em; }
   #dlgText { min-height: 0; margin: .2em 0 .5em; }

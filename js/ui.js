@@ -578,7 +578,8 @@ const UI = (() => {
       const withdrawn = G.trial && G.trial.withdrawn;
       const mode = RULES.accuse;
       const sub = withdrawn ? 'You took back your first accusation. One more try.' : mode === 'point' ? 'Who did it? Point at them.' : mode === 'proof' ? 'Point at the culprit. Then you will need one clue that proves it.' : 'Name the culprit. Then break their testimony with evidence.';
-      el.innerHTML = `<h2>Who dealt it?</h2><p class="acc-sub">${sub}</p><div class="agrid">` +
+      const legend = RULES.aura ? ' <span class="acc-legend">Stakes: how much they stand to lose. Name someone with more to lose and it scores more, if you are right.</span>' : '';
+      el.innerHTML = `<h2>Who dealt it?</h2><p class="acc-sub">${sub}${legend}</p><div class="agrid">` +
         CAST.filter((c) => Game.npcById(c.id).present).map((c) => `<button class="acard ${acc.accused === c.id ? 'on' : ''}" data-id="${c.id}"><img alt="" src="${Art.portrait(c, 'neutral')}"><b>${esc(c.name)}</b>${RULES.aura ? `<span class="mini-l">Stakes</span><span class="stakes"><i style="width:${c.shame * 10}%"></i></span>` : ''}${RULES.rumors ? `<span class="mini-l">Room suspects</span><span class="stakes room"><i style="width:${Math.round(Game.crowdOpinion(c.id))}%"></i></span>` : ''}</button>`).join('') +
         `</div><div class="acc-row"><button class="ghost" id="accCancel" ${withdrawn ? 'hidden' : ''}>Not yet</button><button id="accNext" ${acc.accused ? '' : 'disabled'}>${mode === 'point' ? 'It was them!' : mode === 'proof' ? 'Show proof' : 'Cross-examine'}</button></div>`;
       el.querySelectorAll('.acard').forEach((b) => b.addEventListener('click', () => { acc.accused = b.dataset.id; Sfx.ui('tick'); renderAccuse(); }));
