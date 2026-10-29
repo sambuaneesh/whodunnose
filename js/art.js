@@ -603,7 +603,8 @@ const Art = (() => {
 
   function bubble(ctx, x, y, text, { tone = 'speech', alpha = 1, belowY = null, place = null } = {}) {
     ctx.save(); ctx.globalAlpha = alpha;
-    ctx.font = tone === 'shout' ? '700 15px "Lexend", sans-serif' : tone === 'whisper' ? 'italic 500 13px "Lexend", sans-serif' : '500 14px "Lexend", sans-serif';
+    // speech: plain; thought or action (*like this*): italic in a pale blue cloud; whisper: lavender, dotted; shout: bold yellow
+    ctx.font = tone === 'shout' ? '700 15px "Lexend", sans-serif' : tone === 'whisper' || tone === 'thought' ? 'italic 500 13px "Lexend", sans-serif' : '500 14px "Lexend", sans-serif';
     const maxW = 230, words = text.split(' '), lines = [];
     let line = '';
     for (const w of words) { const test = line ? line + ' ' + w : w; if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test; }
@@ -620,7 +621,9 @@ const Art = (() => {
       bx = r.x; by = r.y + (flip ? 12 : 0);
     }
     const fill = tone === 'thought' ? '#eef3ff' : tone === 'shout' ? '#fff3b0' : tone === 'whisper' ? '#efe8ff' : '#fffdf6';
-    paper(ctx, rectPts(bx, by, w, h, 30), fill, Math.floor(x + y), { amp: 1.4, stroke: INK, lw: tone === 'whisper' ? 1.5 : 2 });
+    if (tone === 'whisper') ctx.setLineDash([3, 3]);
+    paper(ctx, rectPts(bx, by, w, h, 30), fill, Math.floor(x + y), { amp: 1.4, stroke: tone === 'thought' ? '#5b6a8f' : INK, lw: tone === 'whisper' || tone === 'thought' ? 1.5 : 2 });
+    ctx.setLineDash([]);
     ctx.fillStyle = fill; ctx.strokeStyle = INK; ctx.lineWidth = 2;
     const tx = U.clamp(x, bx + 14, bx + w - 14);
     const ey = flip ? by + 1 : by + h - 1, tip = flip ? by - 12 : by + h + 12;

@@ -117,6 +117,7 @@
     },
     clockLabel(t) { const f = floorAt(t); return f === 0 ? 'L' : `▼ ${f}`; },
     hudClock: false,
+    snapCrop: { x: 486, y: 190, w: 392, h: 282 }, // the car, its floor display and the sign
     stampTime(t) { return `Floor ${floorAt(t)}`; },
 
     script(t, api) {

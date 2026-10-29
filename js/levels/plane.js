@@ -26,6 +26,7 @@
   LEVELS.plane = {
     id: 'plane', episode: 'Season 2 · Episode 1', title: 'Cruising Altitude', length: '~2.5 min',
     blurb: 'Five rows. One aisle. A seatbelt sign that decides when anyone can move. Somebody in economy has done something unforgivable.',
+    snapCrop: { x: FRONT - 40, y: 232, w: REAR - FRONT + 50, h: NEAR_BOT - 222 }, // the cabin
     mode: 'seated', seatFace: Math.PI, npcPace: 0.7, walkSpeed: 80, stepLen: 15, gossipRate: 0.8, closeCamera: true, decals: false,
     short: 'Plane', place: 'Flight 404, economy', callWhen: 'before landing', failTitle: 'Banned from the airline', airText: 'Recycled air and coffee.',
     crew: 'marguerite', beltLine: 'Sir. SIR. The seatbelt sign is ON.',

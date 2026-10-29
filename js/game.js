@@ -625,7 +625,12 @@ const Game = (() => {
     out.getContext('2d').drawImage(cv, a.x * scale, a.y * scale, (b.x - a.x) * scale, (b.y - a.y) * scale, 0, 0, out.width, out.height);
     return out.toDataURL('image/jpeg', 0.82);
   }
-  const captureScreen = () => { const out = document.createElement('canvas'); out.width = 480; out.height = 270; out.getContext('2d').drawImage(cv, 0, 0, cv.width, cv.height, 0, 0, 480, 270); return out.toDataURL('image/jpeg', 0.82); };
+  // a snapshot for the results comic: just the car or cabin when the level says where that is and it is all on screen
+  const captureScreen = () => {
+    const c = L.snapCrop, a = c && toScreen(c.x, c.y), b = c && toScreen(c.x + c.w, c.y + c.h);
+    if (c && a.x >= 0 && a.y >= 0 && b.x <= W && b.y <= H) return capture(c);
+    const out = document.createElement('canvas'); out.width = 480; out.height = 270; out.getContext('2d').drawImage(cv, 0, 0, cv.width, cv.height, 0, 0, 480, 270); return out.toDataURL('image/jpeg', 0.82);
+  };
   function takePhoto() {
     const cs = G.cs, s = cs.spots[cs.culprit];
     const crop = L.photo.crop || { x: U.clamp(s.x - 290 + (Math.random() - 0.5) * 120, 0, W - 580), y: U.clamp(s.y - 230, 0, H - 330), w: 580, h: 330 };
