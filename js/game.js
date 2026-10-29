@@ -8,18 +8,18 @@ const G = { state: 'title', features: {}, caseDef: null };
 // Screen-space label layout: everything floating over the scene (bubbles, name tags, debug chips) asks for a
 // spot and gets the nearest one that does not cover the HUD or a label placed earlier this frame.
 const Tags = (() => {
-  let taken = [];
+  let taken = [], faces = [];
   const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   const free = (r) => r.x >= 2 && r.x + r.w <= W - 2 && r.y >= 2 && r.y + r.h <= H - 2 && !taken.some((q) => hit(r, q));
-  function reset(blockers) { taken = (blockers || []).slice(); }
-  // tries the preferred spot, then nudges up, sideways and down in growing steps
+  function reset(blockers, faceRects) { taken = (blockers || []).slice(); faces = faceRects || []; }
+  // tries the preferred spot, then nudges up, sideways and down in growing steps; faces are avoided when there is room
   function place(r, { pad = 3 } = {}) {
     const g = { x: r.x - pad, y: r.y - pad, w: r.w + pad * 2, h: r.h + pad * 2 };
     const steps = [[0, 0]];
     for (let k = 1; k <= 6; k++) { const dy = (r.h + pad) * k * 0.55, dx = (r.w / 2 + pad) * k * 0.6; steps.push([0, -dy], [dx, 0], [-dx, 0], [dx, -dy], [-dx, -dy], [0, dy]); }
-    for (const [dx, dy] of steps) {
+    for (const strict of [true, false]) for (const [dx, dy] of steps) {
       const c = { ...g, x: U.clamp(g.x + dx, 2, W - g.w - 2), y: U.clamp(g.y + dy, 2, H - g.h - 2) };
-      if (free(c)) { taken.push(c); return { x: c.x + pad, y: c.y + pad, w: r.w, h: r.h, moved: dx || dy }; }
+      if (free(c) && !(strict && faces.some((q) => hit(c, q)))) { taken.push(c); return { x: c.x + pad, y: c.y + pad, w: r.w, h: r.h, moved: dx || dy }; }
     }
     taken.push(g); return { ...r, moved: false };
   }
@@ -1371,8 +1371,9 @@ const Game = (() => {
 
     // ---- screen pass: everything you read stays crisp at any zoom ----
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    Tags.reset(UI.hudRects());
     const head = (n) => toScreen(n.x, n.y - (n.def && n.def.dog ? 58 : 96 * ((n.def ? n.def.look.scale : 1) || 1)));
+    const face = (n, sc) => { const p = toScreen(n.x, n.y - 88 * sc), r = 25 * sc * G.cam.z; return { x: p.x - r, y: p.y - r * 0.6, w: r * 2, h: r * 1.9 }; };
+    Tags.reset(UI.hudRects(), [face(G.player, PLAYER_LOOK.scale || 1), ...G.npcs.filter((n) => n.present && !n.def.dog).map((n) => face(n, n.def.look.scale || 1))]);
     if (!photoFrame && sv) Art.drawZoneTags(ctx, sv, toScreen, Tags.place);
     if (!RULES.aura && inPlay && !photoFrame) { // the first case marks who you are, in the same layout as everything else
       const hp = head({ x: G.player.x, y: G.player.y, def: { look: PLAYER_LOOK } }), r = Tags.place({ x: hp.x - 19, y: hp.y - 24, w: 38, h: 17 });
