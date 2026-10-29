@@ -20,7 +20,7 @@
       { id: 'back', name: 'Back Door', at: 'by the back door', x: 30, y: 575, w: 1220, h: 140 },
     ],
     bounds: { x0: 22, x1: W - 22, y0: 114, y1: H - 8 },
-    view: { x: 0, y: 0, w: W, h: H },
+    view: { x: -130, y: -80, w: W + 260, h: H + 80 }, // the walls run up behind the HUD, so the altar row is never under it
     ranges: { notice: 72, overhear: 210, gossip: 150, talk: 88, search: 50, personal: 22, spacing: 52, depth: 0.7, itemOffset: null },
     // pews are solid: their backrests block walking; people go round through the aisles
     obstacles: PEW_BLOCKS.flatMap((b) => PEW_ROWS.map((y) => ({ x: b.x0 - 8, y: y + 2, w: b.x1 - b.x0 + 16, h: 20 }))),
@@ -327,22 +327,44 @@
 
   function buildChapel(ctx) {
     const { paper, paperRect, paperEllipse, INK } = Art;
-    ctx.fillStyle = '#c4935b'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#c4935b'; ctx.fillRect(-150, -100, W + 300, H + 120);
     ctx.strokeStyle = 'rgba(90,55,25,0.35)'; ctx.lineWidth = 1.5;
     for (let y = 100; y < H; y += 26) {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
       for (let x = ((y / 26) % 2) * 90; x < W; x += 180) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 26); ctx.stroke(); }
     }
-    paperRect(ctx, -10, -10, W + 20, 114, '#6b7591', 1, { amp: 3 });
-    ctx.strokeStyle = 'rgba(30,35,60,0.25)'; ctx.lineWidth = 1.5;
-    for (let y = 10; y < 100; y += 22) for (let x = (y % 44 ? 0 : 30); x < W; x += 60) ctx.strokeRect(x, y, 60, 22);
-    [160, 400, 880, 1110].forEach((x, i) => {
-      paper(ctx, [[x - 34, 92], [x - 34, 34], [x, 8], [x + 34, 34], [x + 34, 92]], '#2a2440', 10 + i, { amp: 1.5 });
-      const cols = ['#e2483d', '#f2c14e', '#3f8fd2', '#5bbf6a', '#b25bd6'];
-      for (let k = 0; k < 6; k++) {
-        const cx = x - 20 + (k % 2) * 40, cy = 40 + Math.floor(k / 2) * 18;
-        paper(ctx, [[cx - 14, cy - 8], [cx + 14, cy - 10], [cx + 12, cy + 8], [cx - 12, cy + 9]], cols[(k + i) % 5], 20 + k + i * 7, { amp: 2, shadow: false });
+    // the stone wall, tall enough to sit behind the HUD, with a timber beam along the top
+    // side walls, seen from above, framing the room
+    for (const [x0, sd] of [[-150, 4], [W, 5]]) {
+      paperRect(ctx, x0, -100, 150, H + 120, '#5c6580', sd, { amp: 2, shadow: false });
+      ctx.strokeStyle = 'rgba(30,35,60,0.25)'; ctx.lineWidth = 1.5;
+      for (let y = -100; y < H + 20; y += 22) for (let x = x0 + ((y + 100) % 44 ? 0 : 30); x < x0 + 150; x += 60) ctx.strokeRect(x, y, 60, 22);
+      paperRect(ctx, x0 === W ? W : -8, 96, 8, H - 90, '#8a6a4a', sd + 6, { stroke: INK, lw: 1, amp: 0.8 }); // skirting where wall meets floor
+      for (const y of [240, 470]) { // candle sconces
+        const cx = x0 === W ? W + 40 : -40;
+        paperRect(ctx, cx - 6, y, 12, 22, '#b08a3e', sd * 10 + y, { stroke: INK, lw: 1, amp: 0.4 });
+        paperRect(ctx, cx - 3, y - 14, 6, 14, '#fff7d6', sd * 10 + y + 1, { amp: 0.3 });
+        paperEllipse(ctx, cx, y - 18, 3, 5, '#ffb43b', sd * 10 + y + 2, { shadow: false });
       }
+    }
+    // the stone wall behind the altar, tall enough to sit behind the HUD, with a timber beam along the top
+    paperRect(ctx, -150, -100, W + 300, 204, '#6b7591', 1, { amp: 3 });
+    ctx.strokeStyle = 'rgba(30,35,60,0.25)'; ctx.lineWidth = 1.5;
+    for (let y = -78; y < 100; y += 22) for (let x = ((y + 78) % 44 ? -150 : -120); x < W + 150; x += 60) ctx.strokeRect(x, y, 60, 22);
+    paperRect(ctx, -150, -100, W + 300, 24, '#5a3a22', 2, { stroke: INK, lw: 1.5, amp: 1 });
+    paperRect(ctx, -150, 96, W + 300, 8, '#8a6a4a', 3, { stroke: INK, lw: 1, amp: 1 });
+    // tall leaded windows: a pointed arch of coloured glass held in dark lead
+    [160, 400, 880, 1110].forEach((x, i) => {
+      paper(ctx, [[x - 32, 92], [x - 32, -22], [x - 22, -46], [x, -62], [x + 22, -46], [x + 32, -22], [x + 32, 92]], '#2a2440', 10 + i, { amp: 1.2, stroke: INK, lw: 2 });
+      const cols = ['#e2483d', '#f2c14e', '#3f8fd2', '#5bbf6a', '#b25bd6'];
+      for (let r = 0; r < 6; r++) for (let c = 0; c < 2; c++) {
+        const px = x - 26 + c * 27, py = -20 + r * 18.5;
+        paperRect(ctx, px, py, 25, 16.5, cols[(r * 2 + c + i) % 5], 20 + r * 2 + c + i * 13, { amp: 0.6, shadow: false });
+      }
+      paper(ctx, [[x - 25, -24], [x - 16, -42], [x, -54], [x + 16, -42], [x + 25, -24]], cols[(i + 2) % 5], 34 + i, { amp: 0.6, shadow: false });
+      paperEllipse(ctx, x, -36, 7, 7, '#fbe7a1', 38 + i, { shadow: false, amp: 0.3 });
+      ctx.strokeStyle = '#2a2440'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, -24); ctx.lineTo(x, 92); ctx.stroke();
+      paperRect(ctx, x - 36, 88, 72, 6, '#8a6a4a', 42 + i, { stroke: INK, lw: 1, amp: 0.4 }); // the sill
     });
     ctx.save(); ctx.strokeStyle = '#3b2b1b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(470, 18); ctx.quadraticCurveTo(640, 48, 810, 18); ctx.stroke(); ctx.restore();
     const letters = 'BRAD + DANA';

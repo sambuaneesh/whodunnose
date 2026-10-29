@@ -374,8 +374,11 @@ button { cursor: pointer; }
 .hud-mid.ghost { opacity: .6; } /* the phase and clock stay readable */
 .hud-card.ghost-you, #hud .chipbtn.ghost-you { opacity: .18; }
 .hud-card.ghost:hover, #hud .chipbtn.ghost:hover { opacity: 1; }
-/* on a wide screen the meters sit top right, beside Hint, so the top-left corner of the room stays clear */
-@container (min-width: 1000px) { #meters { position: absolute; right: 8.2em; top: .8em; } }
+/* time stands still while you talk, so the phase card steps aside for the faces behind it */
+#stage:has(#dialogue:not([hidden])) #hud .hud-mid { opacity: 0; }
+/* the meters sit top right, beside (or under) Hint, so the top-left corner of the room stays clear */
+#meters { position: absolute; right: 8.2em; top: .8em; }
+@container (max-width: 1000px) { #meters { right: .6em; top: 3.4em; } } /* under Hint, right of the phase card */
 .pr.urgent { background: #fff3b0; animation: pulse .35s infinite alternate; }
 .cf-tag { font-family: var(--f-display); font-size: .95em; margin-bottom: .25em; }
 #objList, .oblist { list-style: none; margin: 0; padding: 0; display: grid; gap: .2em; font-size: .85em; }
@@ -481,6 +484,9 @@ button { cursor: pointer; }
 .nudge { color: var(--aura) !important; }
 .crit { font-size: .8em; color: var(--muted); margin: .3em 0 0; }
 .missed { margin: 0; padding-left: 1.2em; display: grid; gap: .35em; line-height: 1.35; }
+.res-ach { margin-top: 1em; display: flex; flex-wrap: wrap; gap: .35em; align-items: center; }
+.res-ach small { width: 100%; font-size: .7em; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+.res-ach b { background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 2px 0 var(--ink); padding: .2em .6em; font-family: var(--f-display); font-weight: 400; font-size: .9em; }
 .unlock { margin-top: 1em; background: #e7f6cf; border: 2px solid var(--ink); padding: .6em .8em; display: grid; gap: .2em; }
 .unlock span { font-size: .9em; }
 #accuse .sheet { width: 62%; }
@@ -549,7 +555,7 @@ button { cursor: pointer; }
 .ach.locked { opacity: .55; border-style: dashed; }
 .ach.locked b::before { content: '🔒 '; }
 #achPop { position: absolute; left: 1em; bottom: 1em; max-width: 19em; z-index: 20; background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--ink); padding: .5em 1em; text-align: center; animation: slidein .35s ease-out; pointer-events: none; }
-#stage:has(#results:not([hidden])) #achPop { left: auto; right: 2.2em; bottom: auto; top: 1.6em; } /* clear of the results text */
+#stage:has(#results:not([hidden])) #achPop { display: none; } /* the results sheet lists them */
 #achPop small { display: block; font-size: .7em; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
 #achPop b { font-family: var(--f-display); font-weight: 400; font-size: 1.15em; }
 .daily { border: 2px solid var(--ink); background: #fff7d6; padding: .4em .6em; display: grid; line-height: 1.2; grid-template-columns: 1fr auto; gap: .1em .6em; align-items: center; }

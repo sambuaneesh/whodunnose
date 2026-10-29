@@ -88,7 +88,12 @@ const UI = (() => {
     show('#achievements');
   }
   let achT = null;
+  // season two numbers its cases from 1 again, so it says which season
+  const caseNo = (c) => (c.season === 2 ? `S2 Case ${c.num}` : `Case ${c.num}`);
+  let runAch = []; // achievements earned this case, listed on the results sheet
   function achievement(a) {
+    runAch.push(a);
+    if (G.state === 'result') { Sfx.ui('good'); return; } // the results sheet lists it instead of a pop over the text
     const el = $('#achPop');
     el.innerHTML = `<small>Achievement</small><b>${esc(a.title)}</b><div>${esc(a.desc)}</div>`;
     el.hidden = false; Sfx.ui('good');
@@ -161,12 +166,12 @@ const UI = (() => {
   }
 
   function resetRun() {
-    cfPinned = false; cfAutoT = 7; cfKey = '';
+    cfPinned = false; cfAutoT = 7; cfKey = ''; runAch = [];
     ['#dialogue', '#notebook', '#accuse', '#results', '#tip', '#pause'].forEach(hide);
     $('#toasts').innerHTML = ''; $('#clueToasts').innerHTML = ''; clueQ = []; clueBusy = false;
     speakNow(false);
     $('#hud').hidden = false; $('#actionbar').hidden = false;
-    $('#caseTag').textContent = G.caseDef.daily ? G.caseDef.title : G.caseDef.free ? `Free Play · #${G.seed}` : G.caseDef.bonus ? `Bonus: ${G.caseDef.title}` : `Case ${G.caseDef.num}: ${G.caseDef.title}`;
+    $('#caseTag').textContent = G.caseDef.daily ? G.caseDef.title : G.caseDef.free ? `Free Play · #${G.seed}` : G.caseDef.bonus ? `Bonus: ${G.caseDef.title}` : `${caseNo(G.caseDef)}: ${G.caseDef.title}`;
     $('#objectLabel').textContent = 'Call it';
     // only show what this case has taught
     const R = RULES;
@@ -693,14 +698,15 @@ const UI = (() => {
     const nextCase = idx >= 0 && idx < CASES.length - 1 && Store.unlocked(idx + 1) ? CASES[idx + 1] : null;
     const criteria = cs.reverse ? 'S: someone else named by a clear margin, Aura 80+, no hints · A: clear margin, Aura 50+ · B: someone else named · C: nobody named · F: you were named.' : RULES.accuse === 'point' ? 'S: right culprit, no hints. F: wrong person.' : 'S: right culprit, full proof, Aura 80+, no hints · A: full proof, Aura 50+ · B: some proof · C: no proof · D: never called it · F: wrong person or no Aura left.';
     $('#resultsBody').innerHTML = `
-      <div class="res-top"><div class="rank r-${r.rank}">${r.rank}</div><div><div class="res-k">${G.caseDef.daily ? G.caseDef.title : G.caseDef.free ? 'Free Play' : G.caseDef.bonus ? 'Bonus case' : `Case ${G.caseDef.num}`} · ${esc(G.caseDef.title)} · Score ${r.score}</div><h2>${esc(r.title)}</h2>${intro ? `<p>${esc(intro)}</p>` : ''}<p class="crit">${esc(criteria)}</p></div></div>
+      <div class="res-top"><div class="rank r-${r.rank}">${r.rank}</div><div><div class="res-k">${G.caseDef.daily ? G.caseDef.title : G.caseDef.free ? 'Free Play' : G.caseDef.bonus ? 'Bonus case' : caseNo(G.caseDef)} · ${esc(G.caseDef.title)} · Score ${r.score}</div><h2>${esc(r.title)}</h2>${intro ? `<p>${esc(intro)}</p>` : ''}<p class="crit">${esc(criteria)}</p></div></div>
       ${panels.length ? `<div class="comic">${panels.map((p) => `<div class="panel">${p.img ? `<img alt="" src="${p.img}">` : `<div class="pp"><img alt="" src="${p.portrait}"></div>`}<div class="pcap">${esc(p.cap)}</div></div>`).join('')}</div>` : ''}
       <div class="res-cols">
         <div><h3>What really happened</h3><p>${truth}</p>
           ${st && passed ? `<h3>${st.finale ? 'And finally' : 'What happened next'}</h3><p class="next-beat">${esc(st.next)}</p>${st.finale ? `<p class="season-end"><b>${esc(SEASON.title)}</b> · case closed.</p>` : ''}` : ''}
           ${r.missed.length ? `<h3>What you missed</h3><ul class="missed">${r.missed.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>` : '<h3>What you missed</h3><p class="muted">Nothing. Clean case.</p>'}</div>
         <div><h3>Score</h3><table class="score">${r.rows.map(([l, v]) => `<tr><td>${esc(l)}</td><td>${v > 0 ? '+' : ''}${v}</td></tr>`).join('')}<tr class="tot"><td>Total</td><td>${r.score}</td></tr></table>
-          ${nextCase && r.rank !== 'F' && r.rank !== 'D' ? `<div class="unlock"><b>Case ${nextCase.num} unlocked: ${esc(nextCase.title)}</b><span>New: ${nextCase.learn.map((l) => esc(l[1])).join(', ')}</span></div>` : ''}</div>
+          ${runAch.length ? `<div class="res-ach"><small>${runAch.length > 1 ? 'Achievements' : 'Achievement'}</small>${runAch.map((a) => `<b title="${esc(a.desc)}">★ ${esc(a.title)}</b>`).join('')}</div>` : ''}
+          ${nextCase && r.rank !== 'F' && r.rank !== 'D' ? `<div class="unlock"><b>${caseNo(nextCase)} unlocked: ${esc(nextCase.title)}</b><span>New: ${nextCase.learn.map((l) => esc(l[1])).join(', ')}</span></div>` : ''}</div>
       </div>
       <div class="acc-row"><button class="ghost" id="rTitle">Case select</button><button class="ghost" id="rSame">Try again</button>${G.caseDef.daily ? '<button id="rShare">Copy result</button>' : nextCase && r.rank !== 'F' && r.rank !== 'D' ? '<button id="rNext">Next case</button>' : G.caseDef.free ? '<button id="rNew">New random case</button>' : ''}</div>`;
     $('#rTitle').addEventListener('click', () => { hide('#results'); toTitle(); });
