@@ -152,8 +152,9 @@
     },
     overlay(ctx, t, api) {
       // the shaft slides past: a floor every 120 units, moving up as the car goes down, still while the doors are open
-      const gt = api.time(), last = api.get('shaftT') ?? gt, open = api.doorOpen('main') > 0.05;
-      const pos = Math.min(30, (api.get('shaftPos') || 0) + (open ? 0 : Math.max(0, gt - last) * 30 / (this.timeline.speakNow || 126)));
+      const gt = api.time(), rate = 30 / (this.timeline.speakNow || 126), open = api.doorOpen('main') > 0.05;
+      const last = api.get('shaftT'), was = last === undefined ? gt * rate : api.get('shaftPos'); // (a run that starts mid-way catches up)
+      const pos = Math.min(30, was + (open || last === undefined ? 0 : Math.max(0, gt - last) * rate));
       api.set('shaftT', gt); api.set('shaftPos', pos);
       drawShaft(ctx, 30 - pos);
       const label = this.clockLabel(gt);

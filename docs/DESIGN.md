@@ -64,6 +64,15 @@ Read across reviews and essays on comedy and deduction games, October 2026:
 
 What this changed: campaign cases are now authored rather than rolled, every lie has a motive, every case plants the next, and the debrief tells the story of what really happened.
 
+## Making the existing cases less boring (research, iteration 6)
+
+- **Evidence should change what people say.** Detective games feel like clicking through menus when questioning is only picking lines; they come alive when the player puts evidence in front of a suspect and the suspect reacts ([Summer Engine's detective template notes](https://www.summerengine.com/templates/narrative/detective-mystery/detective-mystery), and the "feels predetermined" complaint in [reviews of Interrogation](https://gamingtrend.com/reviews/question-everything-even-your-own-morals-interrogation-you-will-be-deceived-review)). So talking now has "Show them something you found": the liar cracks, an innocent who ate it explains where they were, anything else is rude.
+- **A tell to read.** Ace Attorney's "perceive" idea: the liar squirms when they answer, but so do naturally nervous people, so it is a hint, not an answer.
+- **Characters you remember.** Everyone now reacts to the smell in their own words, and pairs of people chat in character (written per case, never a clue), so the room is alive between questions.
+- **The climax pays off.** The verdict is the moment the case was building to: a big confession, the room reacting in character, a stamp.
+
+Parked for season two: a rival nose (Ace Attorney's rival prosecutors are loved for personality and a redemption arc: [Miles Edgeworth](https://en.wikipedia.org/wiki/Miles_Edgeworth), [Franziska von Karma](https://en.wikipedia.org/wiki/Franziska_von_Karma)); an electronic nose prop (real e-noses use arrays of gas sensors and pattern recognition; hydrogen sulfide sensors reach about 25 parts per billion, [DST India](https://dst.gov.in/new-electronic-nose-biodegradable-polymer-and-monomer-can-detect-hydrogen-sulphide-sewers)); smell professionals who hide losing their sense of smell, which is a real taboo ([Boston Globe](https://www.bostonglobe.com/2021/09/19/world/when-covid-19-stole-their-smell-these-experts-lost-much-more)); and a yoga class, where twists famously release gas and one pose is literally the wind-relieving pose ([Healthline](https://www.healthline.com/health/fitness/yoga-farts), [Pavanamuktasana](https://myyogateacher.com/yoga-asana/pavanamuktasana)).
+
 ## Season one: Thornbury Tower
 
 You are a new junior analyst on the thirtieth floor of Thornbury & Partners. One week, one elevator, one wedding.
