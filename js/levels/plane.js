@@ -8,9 +8,9 @@
   // further away sits a little to the right, so heads in the same row do not hide each other.
   const FRONT = 404, REAR = 1004; // the front bulkhead and the rear wall
   const ROW_X = [474, 558, 642, 726, 810]; // row 1 (front) to row 5 (back)
-  const LANES = [376, 422, 512, 558]; // far window, far aisle, near aisle, near window (feet)
+  const LANES = [368, 428, 506, 566]; // far window, far aisle, near aisle, near window (feet): far enough apart that a seat never hides the passenger behind it
   const AISLE = 467, GALLEY_X = 870;
-  const skew = (y) => (558 - y) * 0.3; // how far right a seat sits for being further away
+  const skew = (y) => (566 - y) * 0.3; // how far right a seat sits for being further away
   const JUMP_SEAT = { x: 930, y: 420 }; // the crew seat in the rear galley
   const LAV = { x: 972, y: 452 }; // just outside the lavatory door
   const BELT_OFF = 22, TURBULENCE = 96, BUMPS = 106;

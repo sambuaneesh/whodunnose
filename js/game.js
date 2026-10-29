@@ -17,7 +17,7 @@ const Tags = (() => {
     const g = { x: r.x - pad, y: r.y - pad, w: r.w + pad * 2, h: r.h + pad * 2 };
     const steps = [[0, 0]];
     for (let k = 1; k <= 6; k++) { const dy = (r.h + pad) * k * 0.55, dx = (r.w / 2 + pad) * k * 0.6; steps.push([0, -dy], [dx, 0], [-dx, 0], [dx, -dy], [-dx, -dy], [0, dy]); }
-    for (const strict of [true, false]) for (const [dx, dy] of steps) {
+    for (const strict of [true, false]) for (const [dx, dy] of strict ? steps.slice(0, 19) : steps) { // dodging a face never sends it far from its speaker
       const c = { ...g, x: U.clamp(g.x + dx, 2, W - g.w - 2), y: U.clamp(g.y + dy, 2, H - g.h - 2) };
       if (free(c) && !(strict && faces.some((q) => hit(c, q)))) { taken.push(c); return { x: c.x + pad, y: c.y + pad, w: r.w, h: r.h, moved: dx || dy }; }
     }

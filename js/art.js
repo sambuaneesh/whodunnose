@@ -92,11 +92,12 @@ const Art = (() => {
       const [x, y] = corners.find(([cx, cy]) => !furniture.some((f) => hit({ x: cx, y: cy, w, h }, f))) || corners[0];
       const r = { x, y, w, h };
       const covered = people.some((p) => hit(r, { x: p.x - 24, y: p.y - 100, w: 48, h: 108 }));
-      const k = z.id + L.id, target = covered ? 0.08 : 0.5;
+      const k = z.id + L.id, target = covered ? 0.06 : 0.42;
       decalFade[k] = decalFade[k] === undefined ? target : decalFade[k] + (target - decalFade[k]) * 0.12;
-      ctx.globalAlpha = decalFade[k];
-      paperRect(ctx, x, y, w, h, '#f3ead6', z.x + z.y, { amp: fs * 0.08, shadow: false });
-      ctx.fillStyle = INK; ctx.fillText(label, x + fs * 0.6, y + h / 2 + fs * 0.05);
+      // stencilled onto the floor, like a car park bay, rather than a sticker on top of the scene
+      ctx.globalAlpha = decalFade[k]; if ('letterSpacing' in ctx) ctx.letterSpacing = `${fs * 0.12}px`;
+      ctx.fillStyle = 'rgba(20,16,12,0.55)'; ctx.fillText(label, x + fs * 0.6 + fs * 0.08, y + h / 2 + fs * 0.13);
+      ctx.fillStyle = '#fbf3e0'; ctx.fillText(label, x + fs * 0.6, y + h / 2 + fs * 0.05);
     }
     ctx.restore();
   }
