@@ -51,6 +51,7 @@ const Meta = (() => {
     { id: 'untouchable', title: 'Untouchable', desc: 'Finish a case without losing any Aura.', test: (r) => RULES.aura && G.aura >= 99.5 && r.rank !== 'F' && r.rank !== 'D' },
     { id: 'lawyer', title: 'Playground Lawyer', desc: 'Win a case with playground law on, without ever mentioning the smell first.', test: (r) => RULES.folklore && G.mentioned && G.mentionBy !== 'player' && r.rank !== 'F' && r.rank !== 'D' },
     { id: 'liar', title: 'Lie Detector', desc: 'Catch a liar out with their own bag.', live: true, test: () => G.clues.some((c) => c.kind === 'contradiction' && c.text.includes('their bag')) },
+    { id: 'gotcha', title: 'Gotcha', desc: 'Show a liar the evidence and watch them crack.', live: true, test: () => G.clues.some((c) => c.key.startsWith('admit-')) },
     { id: 'ninja', title: 'Bag Ninja', desc: 'Search three bags in one case without being seen.', live: true, test: () => (G.stats.unseenBags || 0) >= 3 },
     { id: 'ears', title: 'Walls Have Ears', desc: 'Overhear three whispers in one case.', live: true, test: () => (G.stats.overheard || 0) >= 3 },
     { id: 'iron', title: 'Iron Gut', desc: 'Clench through three rumbles in one case.', live: true, test: () => (G.stats.clenches || 0) >= 3 },
