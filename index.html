@@ -73,6 +73,9 @@ button { cursor: pointer; }
 
 /* ---------- action bar ---------- */
 #actionbar { position: absolute; left: 50%; bottom: .8em; transform: translateX(-50%); display: flex; gap: .45em; flex-wrap: nowrap; }
+/* three groups: investigate | your own tummy | notebook and the call */
+#actionbar .act[data-act=release], #actionbar .act[data-act=notebook] { margin-left: .9em; }
+.act[data-act=release], .act[data-act=clench] { background: #f3e6c4; } /* (the urgent clench colour still wins) */
 .act { display: flex; align-items: center; gap: .45em; border: 2px solid var(--ink); background: var(--paper); padding: .35em .7em .35em .4em; font-weight: 600; font-size: .9em; border-radius: 4px; box-shadow: 0 3px 0 var(--ink); white-space: nowrap; }
 .act:hover { background: #fff; }
 .act:active { transform: translateY(3px); box-shadow: none; }
@@ -532,6 +535,7 @@ button { cursor: pointer; }
   #stage:has(#clueToasts > *) #caption { max-width: 52%; left: calc(50% + 4.5em); } /* clear of the clue note on the left */
   .act { padding: .3em .55em; font-size: .85em; }
   #actionbar { gap: .3em; }
+  #actionbar .act[data-act=release], #actionbar .act[data-act=notebook] { margin-left: .5em; }
   /* everything that matters stays on one screen */
   .brief { padding: .9em 1.2em; } .brief h2 { font-size: 1.8em; } .brief-story { font-size: .95em; }
   .brief .acc-row, #accuse .acc-row { position: sticky; bottom: 0; background: var(--paper); padding-top: .4em; z-index: 1; }
