@@ -152,24 +152,31 @@ const Playtest = (() => {
       ctx.restore();
     }
   }
+  // One small chip per person above their head: name, suspicion and current theory. The person you would
+  // talk to gets the full card. Chips go through the same layout as bubbles, so they never stack up.
   function drawScreen(ctx, toScreen) {
     if (!active || !G.cs || !flags.debug || !['play', 'tip', 'paused'].includes(G.state)) return;
-    ctx.save(); ctx.font = '600 10px "Lexend", sans-serif'; ctx.textAlign = 'left';
+    ctx.save(); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const near = G.npcs.filter((n) => n.present).sort((a, b) => U.dist(a, G.player) - U.dist(b, G.player))[0];
+    const short = (id) => (id === 'player' ? 'YOU' : castById(id) ? castById(id).name.split(' ').pop() : id);
     for (const n of G.npcs) {
       if (!n.present) continue;
       let top = null, tv = 0; for (const id in n.op) if (n.op[id] > tv) { tv = n.op[id]; top = id; }
-      const fact = G.cs.facts[n.id];
-      const pv = Math.round(n.op.player || 0);
-      const lines = [
+      const fact = G.cs.facts[n.id], pv = Math.round(n.op.player || 0);
+      const full = n === near && U.dist(n, G.player) < L.ranges.talk * 2.2;
+      const lines = full ? [
         `${n.def.name}${n.isCulprit ? ' ★' : ''}`,
-        n.def.dog ? `reacted ${n.reacted ? '#' + n.reactOrder : 'no'}` : `sus ${Math.round(n.sus)} · ${n.reacted ? 'reacted #' + n.reactOrder : 'not yet'}`,
-        top ? `thinks: ${top === 'player' ? 'YOU' : castById(top) ? castById(top).name : top} ${Math.round(tv)}` : 'thinks: nobody',
-        G.cs.reverse && top !== 'player' && pv ? `you: ${pv}` : '',
+        n.def.dog ? `reacted ${n.reacted ? '#' + n.reactOrder : 'no'}` : `sus ${Math.round(n.sus)} · ${n.reacted ? 'reacted #' + n.reactOrder : 'not reacted'}`,
+        `thinks: ${top ? `${short(top)} ${Math.round(tv)}` : 'nobody'}${G.cs.reverse && top !== 'player' && pv ? ` · you ${pv}` : ''}`,
         fact ? `knows: ${fact.kind} (${G.know.facts[n.id] ? 'learned' : 'hidden'})` : '',
-      ].filter(Boolean);
-      const p = toScreen(n.x, n.y), w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 10, h = lines.length * 12 + 6;
-      ctx.fillStyle = n.isCulprit ? 'rgba(80,10,20,0.82)' : 'rgba(20,18,28,0.78)'; ctx.fillRect(p.x + 14, p.y - h - 4, w, h);
-      ctx.fillStyle = '#fff'; lines.forEach((l, i) => ctx.fillText(l, p.x + 19, p.y - h + 8 + i * 12));
+      ].filter(Boolean) : [`${n.def.name.split(' ').pop()}${n.isCulprit ? ' ★' : ''}${n.def.dog ? '' : ' ' + Math.round(n.sus)}${top ? ' → ' + short(top) : ''}${fact && !G.know.facts[n.id] ? ' ·i' : ''}`];
+      ctx.font = full ? '600 10px "Lexend", sans-serif' : '600 9px "Lexend", sans-serif';
+      const lh = full ? 12 : 11, w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 10, h = lines.length * lh + 4;
+      const hp = toScreen(n.x, n.y - (n.def.dog ? 58 : 96 * (n.def.look.scale || 1)) * 1);
+      const r = Tags.place({ x: hp.x - w / 2, y: hp.y - h - 22, w, h }, { pad: 2 });
+      ctx.fillStyle = n.isCulprit ? 'rgba(110,16,30,0.85)' : 'rgba(20,18,28,0.72)';
+      ctx.beginPath(); ctx.roundRect(r.x, r.y, w, h, 3); ctx.fill();
+      ctx.fillStyle = '#fff'; lines.forEach((l, i) => ctx.fillText(l, r.x + 5, r.y + 2 + lh / 2 + i * lh));
     }
     ctx.restore();
   }

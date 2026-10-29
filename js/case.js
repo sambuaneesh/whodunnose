@@ -106,7 +106,7 @@ const Case = (() => {
     meals[sg.id] = isDog ? sg.food : null;
 
     // where everyone stands when it happens
-    const spots = {}, taken = [];
+    const spots = {}, taken = [{ ...L.player.start }]; // nobody starts on top of you
     const gap = L.ranges.spacing, fixSpot = L.fixSpot ? (p) => L.fixSpot(p) : (p) => p;
     function place(z, near = null) {
       for (let tries = 0; tries < 80; tries++) {
@@ -143,20 +143,24 @@ const Case = (() => {
     for (const c of CAST) if (!spots[c.id] && CAST.some((k) => k.stayNear === c.id) && !late.has(c.id)) spots[c.id] = place(emptiest(elsewhere));
     // shuffle apart anyone standing on top of someone else, without leaving their zone
     const home = Object.fromEntries(Object.entries(spots).map(([id, p]) => [id, zoneAt(p)]));
-    const ids = Object.keys(spots);
-    for (let it = 0; it < 40; it++) {
+    const ids = Object.keys(spots), dk = L.ranges.depth ?? 1.6; // same staggering rule as NPC.separate
+    spots.player = { ...L.player.start }; ids.push('player'); home.player = zoneAt(spots.player); // you are in the crowd too
+    for (let it = 0; it < 60; it++) {
       for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
-        const a = spots[ids[i]], b = spots[ids[j]], dx = b.x - a.x, dy = (b.y - a.y) * 1.6, d = Math.hypot(dx, dy) || 0.01;
+        const a = spots[ids[i]], b = spots[ids[j]], dx = b.x - a.x, dy = (b.y - a.y) * dk, d = Math.hypot(dx, dy) || 0.01;
         if (d >= gap) continue;
-        const push = (gap - d) / 2, ux = dx / d, uy = dy / d / 1.6;
+        const push = (gap - d) / 2, ux = dx / d, uy = dy / d / dk;
         a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push;
       }
+      spots.player.x = L.player.start.x; spots.player.y = L.player.start.y; // ...but you do not move
       for (const id of ids) {
+        if (id === 'player') continue;
         const z = home[id], p = spots[id];
         p.x = U.clamp(p.x, z.x + 6, z.x + z.w - 6); p.y = U.clamp(p.y, z.y + z.h * 0.25, z.y + z.h - 2);
         spots[id] = fixSpot(p);
       }
     }
+    delete spots.player;
     const fartZone = {};
     for (const id in spots) fartZone[id] = zoneAt(spots[id]).id;
 

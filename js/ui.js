@@ -39,7 +39,7 @@ const UI = (() => {
     cl.addEventListener('pointerdown', hold(true)); cl.addEventListener('pointerup', hold(false)); cl.addEventListener('pointerleave', hold(false));
     // Search (or Plant) is a press-and-hold button too, for touch screens
     $('[data-act=search]').addEventListener('pointerdown', (e) => { e.preventDefault(); Sfx.init(); Game.holdSearch(); });
-    $('#caseFile').addEventListener('click', () => $('#caseFile').classList.toggle('open'));
+    $('#caseFile').addEventListener('click', () => { cfPinned = !cfPinned; cfAutoT = 0; $('#caseFile').classList.toggle('open', cfPinned); });
     document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {
       const a = b.dataset.act;
       Sfx.init();
@@ -110,7 +110,7 @@ const UI = (() => {
     if (caseDef.free && !caseDef.daily) $('#briefDiff').innerHTML = Object.entries(DIFFICULTY).map(([k, d]) => `<button class="${S().difficulty === k ? 'on' : ''}" data-diff="${k}">${d.label}</button>`).join('');
     document.querySelectorAll('[data-diff]').forEach((b) => b.addEventListener('click', () => { Store.set('difficulty', b.dataset.diff); openBriefing({ ...caseDef }); }));
     show('#briefing');
-    $('#briefStart').focus();
+    $('#briefStart').focus({ preventScroll: true }); $('#briefing .brief').scrollTop = 0;
   }
   function beginCase() {
     if (G.state !== 'briefing') return;
@@ -120,7 +120,39 @@ const UI = (() => {
     Sfx.sting('title');
   }
 
+  // The case file stays folded to one line during play. It opens by itself at the start of a case and for a
+  // moment whenever an objective changes; hovering or clicking opens it too.
+  let cfPinned = false, cfAutoT = 0, cfKey = '';
+  // HUD rectangles in canvas units: labels avoid them, and a card fades when someone is standing behind it
+  let hudBoxes = [], hudFrame = 0;
+  function hudRects() { return hudBoxes; }
+  function measureHud() {
+    const st = $('#cv').getBoundingClientRect(); if (!st.width) return;
+    const k = W / st.width, out = [];
+    const sel = '#hud .hud-card:not([hidden]), #hud .chipbtn:not([hidden]), #caption.on, #prompt .pr, #actionbar:not([hidden]), #clueToasts > *, #toasts > *, #ptBadge';
+    const boxes = Game.screenBoxes();
+    document.querySelectorAll(sel).forEach((el) => {
+      const r = el.getBoundingClientRect(); if (!r.width || el.closest('[hidden]')) return;
+      const box = { x: (r.left - st.left) * k, y: (r.top - st.top) * k, w: r.width * k, h: r.height * k };
+      out.push(box);
+      if (el.matches('.hud-card, .chipbtn')) {
+        const hit = boxes.some((b) => b.x < box.x + box.w && b.x + b.w > box.x && b.y < box.y + box.h && b.y + b.h > box.y);
+        el.classList.toggle('ghost', hit && G.state === 'play');
+      }
+    });
+    hudBoxes = out;
+    // the caption sits just above the prompts, or at the top when you are standing where it would cover you
+    const cap = $('#caption'), pr = $('#prompt').getBoundingClientRect(), ab = $('#actionbar').getBoundingClientRect();
+    const floor = Math.min(pr.height ? pr.top : Infinity, ab.height ? ab.top : Infinity, st.bottom);
+    cap.style.setProperty('--capB', `${Math.round(st.bottom - floor + 8)}px`);
+    const ch = cap.getBoundingClientRect().height || 40, me = boxes[0];
+    const capTop = ((floor - 8 - ch) - st.top) * k;
+    const cr = cap.getBoundingClientRect(), cx0 = (cr.left - st.left) * k, cx1 = (cr.right - st.left) * k;
+    cap.classList.toggle('up', !!me && me.y + me.h > capTop && me.x < cx1 && me.x + me.w > cx0 && G.state === 'play');
+  }
+
   function resetRun() {
+    cfPinned = false; cfAutoT = 7; cfKey = '';
     ['#dialogue', '#notebook', '#accuse', '#results', '#tip', '#pause'].forEach(hide);
     $('#toasts').innerHTML = ''; $('#clueToasts').innerHTML = ''; clueQ = []; clueBusy = false;
     speakNow(false);
@@ -176,6 +208,9 @@ const UI = (() => {
     setText($('#nbBadge'), 'nb', G.unseenClues ? String(G.unseenClues) : ''); $('#nbBadge').hidden = !G.unseenClues;
     setText($('#tourCount'), 'tour', `${Object.keys(G.features).length}/${FEATURES.length}`);
     $('#btnTour').hidden = !S().presenter;
+    if (cfAutoT > 0) cfAutoT -= 1 / 60;
+    $('#caseFile').classList.toggle('open', cfPinned || cfAutoT > 0 || G.state === 'paused');
+    if (++hudFrame % 6 === 0) measureHud();
     if (captionT > 0) { captionT -= 1 / 60; if (captionT <= 0) $('#caption').classList.remove('on'); }
     if (stampT > 0) { stampT -= 1 / 60; if (stampT <= 0) $('#stamp').classList.remove('on'); }
   }
@@ -189,6 +224,9 @@ const UI = (() => {
     // on small screens the case file collapses to its title and a count
     const ids = G.caseDef.objectives, done = ids.filter((id) => G.objState && G.objState[id] === 'done').length;
     $('#caseTag').dataset.count = `${done}/${ids.length}`;
+    const key = ids.map((id) => (G.objState && G.objState[id]) || 'open').join();
+    if (cfKey && key !== cfKey) cfAutoT = Math.max(cfAutoT, 4);
+    cfKey = key;
   }
 
   let lastPrompt = '';
@@ -196,7 +234,7 @@ const UI = (() => {
     const key = JSON.stringify(lines);
     if (key === lastPrompt) return;
     lastPrompt = key;
-    $('#prompt').innerHTML = lines.map(([k, a, c]) => `<div class="pr"><kbd>${esc(k)}</kbd><span>${esc(a)}</span>${c ? `<em class="${/nobody/.test(c) ? 'safe' : 'risk'}">${esc(c)}</em>` : ''}</div>`).join('');
+    $('#prompt').innerHTML = lines.map(([k, a, c, cls]) => `<div class="pr ${cls || ''}"><kbd>${esc(k)}</kbd><span>${esc(a)}</span>${c ? `<em class="${/nobody/.test(c) ? 'safe' : 'risk'}">${esc(c)}</em>` : ''}</div>`).join('');
   }
   function caption(text, dur = 4) { const el = $('#caption'); el.textContent = text; el.classList.add('on'); captionT = dur; }
   function stamp(text, tone = 'red') {
@@ -216,7 +254,7 @@ const UI = (() => {
     $('#tipTitle').textContent = tip.title;
     $('#tipText').textContent = tip.text;
     show('#tip'); Sfx.ui('tip');
-    setTimeout(() => $('#tipOk').focus(), 30);
+    setTimeout(() => $('#tipOk').focus({ preventScroll: true }), 30);
   }
   function closeTip() { if ($('#tip').hidden) return; hide('#tip'); const d = tipDone; tipDone = null; if (d) d(); }
 
@@ -606,7 +644,7 @@ const UI = (() => {
       if (i >= lines.length) {
         $('#vend').innerHTML = '<button id="vDone">See how you did</button>';
         $('#vDone').addEventListener('click', () => { hide('#accuse'); acc = null; Game.finish('accuse', res); });
-        $('#vDone').focus();
+        $('#vDone').focus({ preventScroll: true });
         return;
       }
       const Ln = lines[i++], li = document.createElement('li');
@@ -650,7 +688,7 @@ const UI = (() => {
       <div class="acc-row"><button class="ghost" id="rTitle">Case select</button><button class="ghost" id="rSame">Try again</button>${G.caseDef.daily ? '<button id="rShare">Copy result</button>' : nextCase && r.rank !== 'F' && r.rank !== 'D' ? '<button id="rNext">Next case</button>' : G.caseDef.free ? '<button id="rNew">New random case</button>' : ''}</div>`;
     $('#rTitle').addEventListener('click', () => { hide('#results'); toTitle(); });
     $('#rSame').addEventListener('click', () => openBriefing(G.caseDef));
-    const rn = $('#rNext'); if (rn) { rn.addEventListener('click', () => openBriefing(nextCase)); setTimeout(() => rn.focus(), 50); }
+    const rn = $('#rNext'); if (rn) { rn.addEventListener('click', () => openBriefing(nextCase)); setTimeout(() => { rn.focus({ preventScroll: true }); $('#resultsBody').scrollTop = 0; $('#results').scrollTop = 0; }, 50); }
     const rs = $('#rShare');
     if (rs) rs.addEventListener('click', () => {
       const text = Meta.shareText(r), done = () => { rs.textContent = 'Copied'; };
@@ -685,5 +723,5 @@ const UI = (() => {
     return false;
   }
 
-  return { achievement, init, resetRun, hud, objectives, prompt, caption, stamp, beat, speakNow, showTip, featureShown, clueToast, openDialogue, openItem, openPhoto, openNotebook, openAccuse, showResults, handleKey, pause };
+  return { achievement, init, resetRun, hud, hudRects, objectives, prompt, caption, stamp, beat, speakNow, showTip, featureShown, clueToast, openDialogue, openItem, openPhoto, openNotebook, openAccuse, showResults, handleKey, pause };
 })();

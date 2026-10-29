@@ -84,8 +84,12 @@ button { cursor: pointer; }
 @keyframes objpulse { from { transform: scale(1); box-shadow: 0 3px 0 var(--ink), 0 0 0 0 rgba(217,67,79,.6) } to { transform: scale(1.12); box-shadow: 0 3px 0 var(--ink), 0 0 0 .8em rgba(217,67,79,0) } }
 
 /* ---------- caption, stamp, toasts ---------- */
-#caption { position: absolute; left: 50%; top: 6.4em; transform: translate(-50%, -.6em); max-width: 62%; background: rgba(28,26,31,.88); color: #fff; padding: .55em 1em; border-radius: 4px; font-size: 1.02em; line-height: 1.35; text-align: center; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; text-wrap: balance; }
+/* captions read like subtitles: at the bottom, just above the action prompts; when you are standing down
+   there they move to the top instead (UI sets --capB and .up) */
+#prompt { position: absolute; left: 50%; bottom: 4.1em; transform: translateX(-50%); }
+#caption { position: absolute; left: 50%; bottom: var(--capB, 6.6em); transform: translate(-50%, .6em); max-width: 62%; width: max-content; background: rgba(28,26,31,.88); color: #fff; padding: .55em 1em; border-radius: 4px; font-size: 1.02em; line-height: 1.35; text-align: center; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; text-wrap: balance; }
 #caption.on { opacity: 1; transform: translate(-50%, 0); }
+#caption.up { bottom: auto; top: 5.8em; }
 .stamp { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%) rotate(-7deg) scale(2.2); opacity: 0; pointer-events: none;
   font-family: var(--f-display); font-size: 2.6em; line-height: 1.05; text-align: center; color: var(--stamp); border: .14em solid var(--stamp); padding: .15em .45em; background: rgba(255,250,240,.9); max-width: 70%; text-wrap: balance; }
 .stamp.gold { color: #9a6b00; border-color: #c8920a; }
@@ -344,7 +348,17 @@ button { cursor: pointer; }
 
 /* ---------- v3: HUD left column, case file ---------- */
 #hud .hud-left { display: flex; flex-direction: column; gap: .5em; max-width: 21em; }
-#caseFile { padding: .55em .8em .6em; }
+#caseFile { padding: .55em .8em .6em; cursor: pointer; }
+/* the case file folds to one line during play (see UI: it opens on its own when something changes) */
+#caseFile:not(.open):not(:hover) #objList { display: none; }
+#caseFile:not(.open):not(:hover) .cf-tag { margin: 0; }
+#caseFile:not(.open):not(:hover) .cf-tag::after { content: ' · ' attr(data-count) ' ▾'; font-family: var(--f-body); font-size: .85em; color: var(--muted); }
+/* a HUD card steps back while someone stands behind it */
+.hud-card, #hud .chipbtn { transition: opacity .3s; }
+.hud-card.ghost, #hud .chipbtn.ghost { opacity: .22; }
+.hud-mid.ghost { opacity: .6; } /* the phase and clock stay readable */
+.hud-card.ghost:hover, #hud .chipbtn.ghost:hover { opacity: 1; }
+.pr.urgent { background: #fff3b0; animation: pulse .35s infinite alternate; }
 .cf-tag { font-family: var(--f-display); font-size: .95em; margin-bottom: .25em; }
 #objList, .oblist { list-style: none; margin: 0; padding: 0; display: grid; gap: .2em; font-size: .85em; }
 #objList li, .oblist li { display: flex; gap: .45em; align-items: flex-start; line-height: 1.25; }
@@ -381,14 +395,18 @@ button { cursor: pointer; }
 
 /* briefing */
 #briefing { background: rgba(20,16,30,.78); z-index: 7; }
-.brief { width: min(56em, 94%); padding: 1.6em 2em 1.6em; max-height: 94%; overflow-y: auto; }
+.brief { width: min(58em, 94%); padding: 1.3em 1.9em 1.3em; max-height: 94%; overflow-y: auto; scrollbar-width: thin; }
 .brief-k { font-weight: 700; text-transform: uppercase; letter-spacing: .1em; font-size: .8em; color: var(--aura); }
-.brief h2 { font-family: var(--f-display); font-size: 2.8em; margin: .05em 0 .2em; line-height: 1; }
-.brief-goal { font-size: 1.15em; line-height: 1.45; margin: 0 0 1em; max-width: 46em; }
+.brief h2 { font-family: var(--f-display); font-size: 2.3em; margin: .05em 0 .2em; line-height: 1; }
+.brief-goal { font-size: 1.05em; line-height: 1.4; margin: 0 0 .8em; max-width: 46em; }
 .brief-cols { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1.6em; }
 .brief h3 { font-family: var(--f-display); font-size: 1em; margin: 0 0 .5em; }
-#briefLearn ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .5em; }
-#briefLearn li { display: grid; grid-template-columns: 5em 1fr; gap: .7em; align-items: center; background: #fff; border: 2px solid var(--ink); padding: .45em .6em; }
+#briefLearn ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(13em, 1fr)); gap: .45em; }
+#briefLearn li { display: grid; grid-template-columns: 3.6em 1fr; gap: .6em; align-items: center; background: #fff; border: 2px solid var(--ink); padding: .4em .55em; }
+.brief-cols:has(#briefLearn:empty) { grid-template-columns: 1fr; }
+.brief-cols:has(#briefLearn:empty) #briefLearn { display: none; }
+.brief-side { display: flex; flex-direction: column; justify-content: space-between; gap: 1em; }
+.brief-side .acc-row { margin-top: auto; }
 #briefLearn kbd { font-family: var(--f-display); background: var(--ink); color: var(--paper); text-align: center; padding: .25em .3em; border-radius: 3px; font-size: .9em; }
 #briefLearn li div { display: grid; }
 #briefLearn li span { font-size: .88em; color: #4a4452; }
@@ -453,7 +471,7 @@ button { cursor: pointer; }
 #watch circle { fill: #3b6118; }
 #watch.seen { background: #ffd9d4; color: #9b1c25; }
 #watch.seen circle { fill: #d9434f; }
-#prompt { position: absolute; left: 50%; bottom: 4.1em; transform: translateX(-50%); display: grid; gap: .3em; justify-items: center; pointer-events: none; }
+#prompt { display: grid; gap: .3em; justify-items: center; pointer-events: none; }
 .pr { display: flex; align-items: center; gap: .5em; background: #fffdf6; border: 2px solid var(--ink); padding: .25em .7em .25em .35em; border-radius: 3px; box-shadow: 0 3px 0 rgba(0,0,0,.3); font-weight: 600; font-size: .92em; }
 .pr kbd { font-family: var(--f-display); background: var(--ink); color: var(--paper); border-radius: 3px; padding: .05em .4em; font-size: .85em; }
 .pr em { font-style: normal; font-size: .85em; padding: .05em .45em; border-radius: 2px; }
@@ -476,10 +494,6 @@ button { cursor: pointer; }
 /* small screens (phones held sideways): collapse the case file, tighten the HUD */
 @container (max-width: 760px) {
   #hud { padding: .5em .6em; gap: .5em; }
-  #caseFile { cursor: pointer; }
-  #caseFile:not(.open) #objList { display: none; }
-  #caseFile:not(.open) .cf-tag { margin: 0; }
-  #caseFile:not(.open) .cf-tag::after { content: ' · ' attr(data-count) ' ▾'; }
   .meter { grid-template-columns: 3.8em 6.5em 1.8em; font-size: .85em; }
   #clueToasts { width: 15em; }
   .act { padding: .3em .55em; font-size: .85em; }
@@ -511,7 +525,7 @@ button { cursor: pointer; }
 .daily.locked { opacity: .55; }
 /* season story */
 .season-k { font-family: var(--f-display); font-size: .95em; margin: .7em 0 .35em; } .season-k span { font-family: var(--f-body); font-size: .8em; color: var(--muted); margin-left: .4em; }
-.brief-story { font-family: var(--f-hand); font-size: 1.12em; line-height: 1.4; margin: .2em 0 .7em; color: #3b3542; border-left: 4px solid var(--gold); padding-left: .7em; }
+.brief-story { font-family: var(--f-hand); font-size: 1.05em; line-height: 1.35; margin: .2em 0 .6em; color: #3b3542; border-left: 4px solid var(--gold); padding-left: .7em; }
 .next-beat { font-family: var(--f-hand); font-size: 1.08em; line-height: 1.4; }
 .season-end { margin-top: .4em; padding: .4em .7em; background: var(--gold); border: 2px solid var(--ink); display: inline-block; }
 /* playtest tools (unlocked by URL code) */
@@ -607,9 +621,8 @@ button { cursor: pointer; }
       <h2 id="briefTitle"></h2>
       <p id="briefStory" class="brief-story" hidden></p>
       <p id="briefGoal" class="brief-goal"></p>
-      <div class="brief-cols"><div id="briefLearn"></div><div id="briefObj"></div></div>
-      <div id="briefDiff" class="seg" hidden></div>
-      <div class="acc-row"><button class="ghost" id="briefBack">Back</button><button id="briefStart" class="big">Start <kbd>Enter</kbd></button></div>
+      <div class="brief-cols"><div id="briefLearn"></div><div class="brief-side"><div id="briefObj"></div><div id="briefDiff" class="seg" hidden></div>
+        <div class="acc-row"><button class="ghost" id="briefBack">Back</button><button id="briefStart" class="big">Start <kbd>Enter</kbd></button></div></div></div>
     </div>
   </div>
 

@@ -78,14 +78,23 @@ const Art = (() => {
   }
 
   // Zone names painted on the floor, under the people standing there (world space, scaled to stay readable).
-  function drawZoneDecals(ctx, zoom) {
+  // Zone names painted on the floor. Each takes the first corner of its zone that furniture does not cover,
+  // and fades almost away while someone stands on it, so a name never peeks out from behind a person.
+  const decalFade = {};
+  function drawZoneDecals(ctx, zoom, people = [], furniture = []) {
     ctx.save();
     const fs = 10 / zoom * (zoom > 1.5 ? 1.25 : 1);
     ctx.font = `700 ${fs}px "Lexend", sans-serif`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
     for (const z of ZONES) {
-      const label = z.name.toUpperCase(), w = ctx.measureText(label).width + fs * 1.2, h = fs * 1.7;
-      const x = z.x + fs * 0.4, y = z.y + z.h - h - fs * 0.3;
-      ctx.globalAlpha = 0.6;
+      const label = z.name.toUpperCase(), w = ctx.measureText(label).width + fs * 1.2, h = fs * 1.7, m = fs * 0.4;
+      const corners = [[z.x + m, z.y + z.h - h - m], [z.x + m, z.y + m], [z.x + z.w - w - m, z.y + z.h - h - m], [z.x + z.w - w - m, z.y + m]];
+      const [x, y] = corners.find(([cx, cy]) => !furniture.some((f) => hit({ x: cx, y: cy, w, h }, f))) || corners[0];
+      const r = { x, y, w, h };
+      const covered = people.some((p) => hit(r, { x: p.x - 24, y: p.y - 100, w: 48, h: 108 }));
+      const k = z.id + L.id, target = covered ? 0.08 : 0.5;
+      decalFade[k] = decalFade[k] === undefined ? target : decalFade[k] + (target - decalFade[k]) * 0.12;
+      ctx.globalAlpha = decalFade[k];
       paperRect(ctx, x, y, w, h, '#f3ead6', z.x + z.y, { amp: fs * 0.08, shadow: false });
       ctx.fillStyle = INK; ctx.fillText(label, x + fs * 0.6, y + h / 2 + fs * 0.05);
     }
@@ -93,12 +102,14 @@ const Art = (() => {
   }
 
   // Zone labels are drawn at screen scale so they stay readable whatever the camera zoom is.
-  function drawZoneTags(ctx, strong, toScreen) {
+  function drawZoneTags(ctx, strong, toScreen, place = null) {
     ctx.save();
     ctx.font = '700 11px "Lexend", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     for (const z of ZONES) {
       const a = toScreen(z.x, z.y), b = toScreen(z.x + z.w, z.y + z.h);
-      const x = a.x + 6, y = a.y + 12, w = ctx.measureText(z.name.toUpperCase()).width + 14;
+      const w = ctx.measureText(z.name.toUpperCase()).width + 14;
+      const at = place ? place({ x: a.x + 6, y: a.y + 3, w, h: 18 }) : { x: a.x + 6, y: a.y + 3 };
+      const x = at.x, y = at.y + 9;
       ctx.globalAlpha = strong ? 0.95 : 0.5;
       paperRect(ctx, x, y - 9, w, 18, strong ? '#fff3b0' : '#f3ead6', z.x + z.y, { amp: 1, shadow: false });
       ctx.fillStyle = INK; ctx.fillText(z.name.toUpperCase(), x + 7, y + 0.5);
@@ -389,7 +400,7 @@ const Art = (() => {
     const lx = U.clamp(o.lookX || 0, -1, 1) * 2.4, ly = U.clamp(o.lookY || 0, -1, 1) * 2;
     const blink = !disgust && !shock && ((o.t * 1000 + (o.blinkSeed || seed) * 397) % 3700) < 130;
     const { ex: eyeX, rx, ry } = eyeSpot(look), ey = hy - 3, specs = look.acc === 'glasses';
-    for (const ex of [-eyeX, eyeX]) {
+    for (const ex of look.acc === 'shades' ? [] : [-eyeX, eyeX]) { // sunglasses hide the eyes completely
       const side = ex < 0 ? -1 : 1;
       ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
       if (disgust || blink) {
@@ -430,7 +441,14 @@ const Art = (() => {
       ctx.beginPath(); ctx.moveTo(-inner, ey - 2); ctx.quadraticCurveTo(0, ey - 4.5, inner, ey - 2);
       ctx.moveTo(-outer, ey - 3); ctx.lineTo(-22, ey - 4); ctx.moveTo(outer, ey - 3); ctx.lineTo(22, ey - 4); ctx.stroke();
     }
-    if (look.acc === 'shades') paperRect(ctx, -16, hy - 10, 32, 11, '#111', seed + 60, { amp: 0.6, shadow: false });
+    if (look.acc === 'shades') {
+      // two dark lenses on a straight top bar, with a glint
+      ctx.fillStyle = '#141418'; ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
+      for (const ex of [-8.4, 8.4]) { ctx.beginPath(); ctx.roundRect(ex - 8, ey - 6, 16, 11, [2, 2, 6, 6]); ctx.fill(); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(-17, ey - 6); ctx.lineTo(17, ey - 6); ctx.moveTo(-16.4, ey - 4); ctx.lineTo(-22, ey - 5); ctx.moveTo(16.4, ey - 4); ctx.lineTo(22, ey - 5); ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1.3;
+      for (const ex of [-8.4, 8.4]) { ctx.beginPath(); ctx.moveTo(ex - 4.5, ey - 3); ctx.lineTo(ex - 1.5, ey - 3); ctx.stroke(); }
+    }
     if (f.includes('earrings')) for (const sx of [-23, 23]) { ctx.fillStyle = '#f2c14e'; ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(sx, hy + 7, 2.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
     // mouth: talking cycles through three cutout mouth shapes
     ctx.strokeStyle = INK; ctx.fillStyle = '#5a1d1d'; ctx.lineWidth = 2;
@@ -450,8 +468,8 @@ const Art = (() => {
   function drawBrows(ctx, look, hy, o) {
     const e = o.expr || 'neutral', f = look.features || [], bushy = f.includes('bushybrows');
     if (e === 'neutral' && !bushy) return;
-    if (e === 'disgust' || look.acc === 'shades') return;
-    const { ex: eyeX, ry } = eyeSpot(look), by = hy - 3 - ry - (look.acc === 'glasses' ? 4.2 : 2.5);
+    if (e === 'disgust') return;
+    const { ex: eyeX, ry } = eyeSpot(look), by = look.acc === 'shades' ? hy - 3 - 9.5 : hy - 3 - ry - (look.acc === 'glasses' ? 4.2 : 2.5);
     ctx.save(); ctx.lineCap = 'round';
     ctx.strokeStyle = bushy ? (look.hair || INK) : INK; ctx.lineWidth = bushy ? 3.6 : 2.4;
     if (bushy) { ctx.shadowColor = INK; ctx.shadowBlur = 0; }
@@ -565,7 +583,7 @@ const Art = (() => {
     ctx.restore();
   }
 
-  function bubble(ctx, x, y, text, { tone = 'speech', alpha = 1, belowY = null } = {}) {
+  function bubble(ctx, x, y, text, { tone = 'speech', alpha = 1, belowY = null, place = null } = {}) {
     ctx.save(); ctx.globalAlpha = alpha;
     ctx.font = tone === 'shout' ? '700 15px "Lexend", sans-serif' : tone === 'whisper' ? 'italic 500 13px "Lexend", sans-serif' : '500 14px "Lexend", sans-serif';
     const maxW = 230, words = text.split(' '), lines = [];
@@ -577,11 +595,18 @@ const Art = (() => {
     const flip = by < 78 && belowY !== null;
     if (flip) by = belowY + 14;
     else if (by < 4) by = 4;
+    let tether = null; // when the layout moves a bubble away from its speaker, a dotted line keeps it attached
+    if (place) {
+      const r = place({ x: bx, y: by - (flip ? 12 : 0), w, h: h + 12 });
+      if (r.moved) tether = { from: flip ? { x: U.clamp(x, r.x + 14, r.x + w - 14), y: r.y + 12 } : { x: U.clamp(x, r.x + 14, r.x + w - 14), y: r.y + h + 12 } };
+      bx = r.x; by = r.y + (flip ? 12 : 0);
+    }
     const fill = tone === 'thought' ? '#eef3ff' : tone === 'shout' ? '#fff3b0' : tone === 'whisper' ? '#efe8ff' : '#fffdf6';
     paper(ctx, rectPts(bx, by, w, h, 30), fill, Math.floor(x + y), { amp: 1.4, stroke: INK, lw: tone === 'whisper' ? 1.5 : 2 });
     ctx.fillStyle = fill; ctx.strokeStyle = INK; ctx.lineWidth = 2;
     const tx = U.clamp(x, bx + 14, bx + w - 14);
     const ey = flip ? by + 1 : by + h - 1, tip = flip ? by - 12 : by + h + 12;
+    if (tether && Math.hypot(tx - x, tip - y) > 10) { ctx.save(); ctx.setLineDash([2, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(tx, tip); ctx.lineTo(x, flip ? belowY + 2 : y + 2); ctx.stroke(); ctx.restore(); }
     ctx.beginPath(); ctx.moveTo(tx - 7, ey); ctx.lineTo(tx, tip); ctx.lineTo(tx + 7, ey); ctx.fill();
     ctx.beginPath(); ctx.moveTo(tx - 7, flip ? by : by + h); ctx.lineTo(tx, tip); ctx.lineTo(tx + 7, flip ? by : by + h); ctx.stroke();
     ctx.fillStyle = INK; ctx.textAlign = 'left'; ctx.textBaseline = 'top';

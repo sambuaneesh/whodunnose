@@ -19,7 +19,7 @@
     ],
     bounds: { x0: 22, x1: W - 22, y0: 114, y1: H - 8 },
     view: { x: 0, y: 0, w: W, h: H },
-    ranges: { notice: 72, overhear: 210, gossip: 150, talk: 88, search: 50, personal: 17, spacing: 46, itemOffset: null },
+    ranges: { notice: 72, overhear: 210, gossip: 150, talk: 88, search: 50, personal: 22, spacing: 52, depth: 0.7, itemOffset: null },
     // pews are solid: their backrests block walking; people go round through the aisles
     obstacles: PEW_BLOCKS.flatMap((b) => PEW_ROWS.map((y) => ({ x: b.x0 - 8, y: y + 2, w: b.x1 - b.x0 + 16, h: 20 }))),
     route(a, b) {
@@ -31,10 +31,15 @@
       return [{ x: aisle, y: a.y }, { x: aisle, y: b.y }, b];
     },
     // never leave someone standing inside a pew's backrest
+    // ...or on top of the guest book table or the coat stand
     fixSpot(p) {
       for (const y of PEW_ROWS) if (p.y > y - 6 && p.y < y + 26 && PEW_BLOCKS.some((k) => p.x > k.x0 - 10 && p.x < k.x1 + 10)) return { x: p.x, y: y - 3 };
+      if (p.x > 232 && p.x < 388 && p.y > 596 && p.y < 668) return { x: p.x, y: p.y < 632 ? 594 : 670 };
+      if (p.x > 1090 && p.x < 1140 && p.y > 588 && p.y < 684) return { x: p.x < 1114 ? 1086 : 1144, y: p.y };
       return p;
     },
+    // furniture painted into the floor: zone names stay clear of it
+    furniture: [{ x: 250, y: 598, w: 120, h: 56 }, { x: 1092, y: 592, w: 44, h: 80 }, { x: 588, y: 268, w: 104, h: 460 }],
     player: { start: { x: 640, y: 668 }, seat: { x: 360, y: 468, face: -Math.PI / 2 }, look: { body: '#f08a24', outfit: 'hoodie', pants: '#3a4a6a', shoes: '#f6efdf', skin: '#f3cfae', hair: '#2d1d10', hairStyle: 'messy', acc: 'none', scale: 1.0, voice: 300 } },
     // nose: how strongly they pick up gas. tol: exposure before reacting. shame: stakes for accusing.
     // perception: vision range multiplier ("enforcers" notice more). gossip: how fast they spread opinions.

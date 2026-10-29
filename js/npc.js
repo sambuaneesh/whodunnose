@@ -182,15 +182,28 @@ const NPC = (() => {
 
   // Personal space: people standing on top of each other drift apart.
   function separate(G, dt) {
-    const ps = G.npcs.filter((n) => n.present), r = L.ranges.personal * 2;
+    // depth < 1 means people mind someone straight in front or behind them less than someone at their elbow,
+    // so crowds stagger and every face stays visible
+    const ps = G.npcs.filter((n) => n.present), r = L.ranges.personal * 2, dk = L.ranges.depth ?? 1.6;
     for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
-      const a = ps[i], b = ps[j], dx = b.x - a.x, dy = (b.y - a.y) * 1.6, d = Math.hypot(dx, dy) || 0.01;
+      const a = ps[i], b = ps[j], dx = b.x - a.x, dy = (b.y - a.y) * dk, d = Math.hypot(dx, dy) || 0.01;
       if (d >= r) continue;
-      const push = Math.min(20 * dt, (r - d) / 2), ux = dx / d, uy = dy / d / 1.6;
+      const push = Math.min(20 * dt, (r - d) / 2), ux = dx / d, uy = dy / d / dk;
       // in the elevator people shuffle their standing spot too, so they do not walk back into each other
       const el = L.mode === 'elevator';
       if (!a.seated || el) { a.x -= ux * push; a.y -= uy * push; if (el && a.seat) { a.seat.x -= ux * push; a.seat.y -= uy * push; } }
       if (!b.seated || el) { b.x += ux * push; b.y += uy * push; if (el && b.seat) { b.seat.x += ux * push; b.seat.y += uy * push; } }
+      for (const n of [a, b]) { const bd = L.bounds; n.x = U.clamp(n.x, bd.x0, bd.x1); n.y = U.clamp(n.y, bd.y0, bd.y1); if (el && n.seat) { n.seat.x = U.clamp(n.seat.x, bd.x0, bd.x1); n.seat.y = U.clamp(n.seat.y, bd.y0, bd.y1); } }
+    }
+    // and nobody stands inside you: people standing about shuffle out of the player's space
+    const p = G.player, bd = L.bounds;
+    for (const n of ps) {
+      if (n.seated && L.mode !== 'elevator') continue;
+      const dx = n.x - p.x, dy = (n.y - p.y) * dk, d = Math.hypot(dx, dy) || 0.01;
+      if (d >= r) continue;
+      const push = Math.min(14 * dt, r - d), ux = dx / d, uy = dy / d / dk;
+      n.x = U.clamp(n.x + ux * push, bd.x0, bd.x1); n.y = U.clamp(n.y + uy * push, bd.y0, bd.y1);
+      if (L.mode === 'elevator' && n.seat) { n.seat.x = n.x; n.seat.y = n.y; }
     }
   }
 

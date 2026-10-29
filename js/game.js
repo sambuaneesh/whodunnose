@@ -5,16 +5,51 @@
 const STEP = 1 / 30;
 const G = { state: 'title', features: {}, caseDef: null };
 
+// Screen-space label layout: everything floating over the scene (bubbles, name tags, debug chips) asks for a
+// spot and gets the nearest one that does not cover the HUD or a label placed earlier this frame.
+const Tags = (() => {
+  let taken = [];
+  const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  const free = (r) => r.x >= 2 && r.x + r.w <= W - 2 && r.y >= 2 && r.y + r.h <= H - 2 && !taken.some((q) => hit(r, q));
+  function reset(blockers) { taken = (blockers || []).slice(); }
+  // tries the preferred spot, then nudges up, sideways and down in growing steps
+  function place(r, { pad = 3 } = {}) {
+    const g = { x: r.x - pad, y: r.y - pad, w: r.w + pad * 2, h: r.h + pad * 2 };
+    const steps = [[0, 0]];
+    for (let k = 1; k <= 6; k++) { const dy = (r.h + pad) * k * 0.55, dx = (r.w / 2 + pad) * k * 0.6; steps.push([0, -dy], [dx, 0], [-dx, 0], [dx, -dy], [-dx, -dy], [0, dy]); }
+    for (const [dx, dy] of steps) {
+      const c = { ...g, x: U.clamp(g.x + dx, 2, W - g.w - 2), y: U.clamp(g.y + dy, 2, H - g.h - 2) };
+      if (free(c)) { taken.push(c); return { x: c.x + pad, y: c.y + pad, w: r.w, h: r.h, moved: dx || dy }; }
+    }
+    taken.push(g); return { ...r, moved: false };
+  }
+  return { reset, place };
+})();
+
 const Game = (() => {
   let cv, ctx, background, gasCv, gasCtx, gasImg, dpr = 1, scale = 1;
   const keys = {};
   const SEARCH_HOLD = 0.85, TAP = 0.22;
 
   // ---------------- camera ----------------
-  const baseZoom = () => W / L.view.w;
+  // The scene is framed above the action bar, so nobody ever stands underneath the buttons.
+  let barH = 58; // canvas units the action bar takes at the bottom, measured from the page
+  const baseZoom = () => Math.min(W / L.view.w, (H - barH) / L.view.h);
+  const viewCenter = () => { const v = L.view; return { x: v.x + v.w / 2, y: v.y + v.h / 2 + barH / 2 / baseZoom() }; };
+  function measureBar() {
+    const bar = document.getElementById('actionbar');
+    if (!bar || bar.hidden || !cv) return;
+    const st = cv.getBoundingClientRect(), b = bar.getBoundingClientRect();
+    if (!st.height || !b.height) return;
+    const h = U.clamp(Math.round((st.bottom - b.top + 6) * H / st.height), 30, 110);
+    if (Math.abs(h - barH) < 2) return;
+    const wasFramed = G.cam && Math.abs(G.cam.tz - baseZoom()) < 0.001;
+    barH = h;
+    if (wasFramed) unfocus();
+  }
   function resetCam() {
-    const v = L.view, z = baseZoom();
-    G.cam = { x: v.x + v.w / 2, y: v.y + v.h / 2, z, tx: v.x + v.w / 2, ty: v.y + v.h / 2, tz: z, shake: 0 };
+    const c = viewCenter(), z = baseZoom();
+    G.cam = { x: c.x, y: c.y, z, tx: c.x, ty: c.y, tz: z, shake: 0 };
   }
   const toScreen = (x, y) => ({ x: (x - G.cam.x) * G.cam.z + W / 2, y: (y - G.cam.y) * G.cam.z + H / 2 });
   const toWorld = (sx, sy) => ({ x: (sx - W / 2) / G.cam.z + G.cam.x, y: (sy - H / 2) / G.cam.z + G.cam.y });
@@ -23,7 +58,7 @@ const Game = (() => {
     const z = baseZoom() * (L.mode === 'elevator' ? 1 + (mult - 1) * 0.35 : mult);
     G.cam.tx = p.x + 300 / z; G.cam.ty = p.y - 50 / mult; G.cam.tz = z;
   }
-  function unfocus() { if (!G.cam || !L) return; const v = L.view; G.cam.tx = v.x + v.w / 2; G.cam.ty = v.y + v.h / 2; G.cam.tz = baseZoom(); }
+  function unfocus() { if (!G.cam || !L) return; const c = viewCenter(); G.cam.tx = c.x; G.cam.ty = c.y; G.cam.tz = baseZoom(); }
   function shake(amount) { if (G.cam && Store.settings().shake) G.cam.shake = Math.max(G.cam.shake, amount); }
 
   // ---------------- setup ----------------
@@ -375,10 +410,10 @@ const Game = (() => {
     p.walking = len > 0;
     if (!len) return;
     let speed = L.mode === 'elevator' ? 60 : 165;
-    const r = L.ranges.personal * 2;
+    const r = L.ranges.personal * 1.4, dk = L.ranges.depth ?? 1.6; // bumping into someone, a little inside their personal space
     let squeezing = null;
     for (const n of present()) {
-      const dx = n.x - p.x, dy = (n.y - p.y) * 1.6;
+      const dx = n.x - p.x, dy = (n.y - p.y) * dk;
       if (Math.hypot(dx, dy) < r && (dx * mx + dy * my) > 0) { squeezing = n; break; }
     }
     if (squeezing) {
@@ -1124,6 +1159,7 @@ const Game = (() => {
 
   function render() {
     if (!G.cam || !L) return;
+    if ((G.anim * 60 | 0) % 20 === 0) measureBar();
     const cam = G.cam;
     cam.x += (cam.tx - cam.x) * 0.08; cam.y += (cam.ty - cam.y) * 0.08; cam.z += (cam.tz - cam.z) * 0.08; cam.shake *= 0.88;
     const sx = (Math.random() - 0.5) * cam.shake, sy = (Math.random() - 0.5) * cam.shake;
@@ -1144,6 +1180,7 @@ const Game = (() => {
       ctx.beginPath(); ctx.ellipse(PLAYER_SEAT.x, PLAYER_SEAT.y, 24 + Math.sin(t * 5) * 3, 9, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     }
     if (RULES.aura && Store.settings().cones && inPlay && !photoFrame) {
+      const bd = L.bounds; ctx.save(); ctx.beginPath(); ctx.rect(bd.x0 - 12, bd.y0 - 40, bd.x1 - bd.x0 + 24, bd.y1 - bd.y0 + 52); ctx.clip(); // sight stops at the walls
       for (const n of G.npcs) {
         if (n.def.dog || !n.present) continue;
         const seeing = NPC.sees(n, G.player), rng = NPC.range(n);
@@ -1153,6 +1190,7 @@ const Game = (() => {
         ctx.fillStyle = grd;
         ctx.beginPath(); ctx.moveTo(n.x, n.y - 30); ctx.arc(n.x, n.y - 30, rng, n.face - NPC.VIEW_HALF, n.face + NPC.VIEW_HALF); ctx.closePath(); ctx.fill();
       }
+      ctx.restore();
     }
     if (!photoFrame) {
       const godGas = Playtest.flag('gas');
@@ -1162,7 +1200,13 @@ const Game = (() => {
       if (sv) { ctx.fillStyle = 'rgba(18,24,12,0.55)'; ctx.fillRect(v.x, v.y, v.w, v.h); }
       ctx.save(); ctx.imageSmoothingEnabled = true; ctx.drawImage(gasCv, 0, 0, Gas.COLS, Gas.ROWS, gr.x, gr.y, gr.w, gr.h); ctx.restore();
     }
-    if (!photoFrame && !sv && RULES.questions.includes('where')) Art.drawZoneDecals(ctx, cam.z);
+    if (!photoFrame && !sv && RULES.questions.includes('where')) Art.drawZoneDecals(ctx, cam.z, [G.player, ...G.npcs.filter((n) => n.present)], [...(L.obstacles || []), ...(L.furniture || [])]);
+    const focusP = inPlay && !photoFrame ? nearestPerson() : null;
+    if (focusP) { // the person E talks to: a ring on the floor, never a label over somebody else
+      const k = L.view.w / W, pr = 1 + Math.sin(t * 5) * 0.06;
+      ctx.save(); ctx.strokeStyle = 'rgba(255,253,246,0.9)'; ctx.lineWidth = 3 * k * 1.4; ctx.setLineDash([7 * k * 1.4, 5 * k * 1.4]);
+      ctx.beginPath(); ctx.ellipse(focusP.x, focusP.y + 2, 26 * k * 1.6 * pr, 8 * k * 1.6 * pr, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    }
     const items = [...L.props(api)];
     const bagNear = inPlay ? nearestBag() : null;
     for (const c of CAST) {
@@ -1199,42 +1243,48 @@ const Game = (() => {
 
     // ---- screen pass: everything you read stays crisp at any zoom ----
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    Tags.reset(UI.hudRects());
     const head = (n) => toScreen(n.x, n.y - (n.def && n.def.dog ? 58 : 96 * ((n.def ? n.def.look.scale : 1) || 1)));
-    if (!photoFrame && sv) Art.drawZoneTags(ctx, sv, toScreen);
+    if (!photoFrame && sv) Art.drawZoneTags(ctx, sv, toScreen, Tags.place);
     if (RULES.badges && inPlay) for (const n of G.npcs) if (n.present && n.reactOrder) {
       const age = G.t - n.reactT; if (age > 30) continue;
       const hp = head(n); ctx.save(); ctx.globalAlpha = (age > 25 ? (30 - age) / 5 : 1) * 0.92; ctx.translate(hp.x + 18, hp.y - 4); ctx.scale(0.78, 0.78); Art.badge(ctx, 0, 0, n.reactOrder, age); ctx.restore();
     }
     if (G.state !== 'accuse') {
-      for (const n of G.npcs) if (n.present && n.bubble) { const hp = head(n); Art.bubble(ctx, hp.x, hp.y - 6, n.bubble.text, { tone: n.bubble.tone, alpha: Math.min(1, n.bubble.t * 3), belowY: toScreen(n.x, n.y).y }); }
-      for (const id in G.actors) { const a = G.actors[id]; if (a.bubble) { const hp = toScreen(a.x, a.y - (a.look ? 95 : 0)); Art.bubble(ctx, hp.x, hp.y, a.bubble.text, { tone: a.bubble.tone, belowY: toScreen(a.x, a.y).y }); } }
-      if (G.player.bubble) { const hp = head({ x: G.player.x, y: G.player.y, def: { look: PLAYER_LOOK } }); Art.bubble(ctx, hp.x, hp.y - 26, G.player.bubble.text, { tone: G.player.bubble.tone, alpha: Math.min(1, G.player.bubble.t * 3) }); }
+      // speech first (most important), then thoughts; each bubble moves out of the way of the ones already placed
+      const bubbles = [];
+      if (G.player.bubble) { const hp = head({ x: G.player.x, y: G.player.y, def: { look: PLAYER_LOOK } }); bubbles.push([hp.x, hp.y - 26, G.player.bubble, null]); }
+      for (const n of G.npcs) if (n.present && n.bubble) { const hp = head(n); bubbles.push([hp.x, hp.y - 6, n.bubble, toScreen(n.x, n.y).y]); }
+      for (const id in G.actors) { const a = G.actors[id]; if (a.bubble) { const hp = toScreen(a.x, a.y - (a.look ? 95 : 0)); bubbles.push([hp.x, hp.y, a.bubble, toScreen(a.x, a.y).y]); } }
+      const rankB = (b) => ({ shout: 0, speech: 1, whisper: 2, thought: 3 }[b.tone] ?? 1);
+      bubbles.sort((a, b) => rankB(a[2]) - rankB(b[2]));
+      for (const [x, y, b, belowY] of bubbles) Art.bubble(ctx, x, y, b.text, { tone: b.tone, alpha: b.t === undefined ? 1 : Math.min(1, b.t * 3), belowY, place: Tags.place });
     }
     ctx.font = '700 12px "Lexend", sans-serif'; ctx.textAlign = 'center';
     if (!inPlay) UI.prompt([]);
     if (inPlay) {
       const person = nearestPerson(), bag = nearestBag(), prop = nearestProp();
-      for (const n of G.npcs) {
-        if (!n.present || !(sv || n === person)) continue;
-        const sp = toScreen(n.x, n.y), label = n.def.name + (sv && n.reacted ? '  ✓ smelled it' : '');
-        const w = ctx.measureText(label).width + 12;
-        Art.paperRect(ctx, sp.x - w / 2, sp.y + 4, w, 18, sv && n.reacted ? '#d9f2a8' : '#fffdf6', n.x, { amp: 1, stroke: Art.INK, lw: 1 });
-        ctx.fillStyle = Art.INK; ctx.fillText(label, sp.x, sp.y + 17);
+      if (sv) for (const n of G.npcs) { // Smell Vision names everyone, without labels landing on each other
+        if (!n.present) continue;
+        const sp = toScreen(n.x, n.y), label = n.def.name + (n.reacted ? '  ✓ smelled it' : '');
+        const w = ctx.measureText(label).width + 12, r = Tags.place({ x: sp.x - w / 2, y: sp.y + 4, w, h: 18 });
+        Art.paperRect(ctx, r.x, r.y, w, 18, n.reacted ? '#d9f2a8' : '#fffdf6', n.x, { amp: 1, stroke: Art.INK, lw: 1 });
+        ctx.fillStyle = Art.INK; ctx.fillText(label, r.x + w / 2, r.y + 13);
       }
       // one clear prompt, in a fixed spot above the action bar, with the cost if anyone is watching
       const lines = [];
+      if (G.rumble) lines.push([`Hold ${Keys.labelFor('clench')}`, 'Rumble! Clench before it slips out', '', 'urgent']);
       if (person) lines.push(['E', person.def.dog ? `${person.def.sprite === 'baby' ? 'Coo at' : 'Pet'} ${person.def.name}` : `Talk to ${person.def.name}`, '']);
       if (bag) lines.push(['Hold E', `${G.cs.reverse ? 'Slip your empty cup into' : 'Search'} ${G.items[bag.id].label}`, RULES.aura ? (G.watchers ? `${G.watchers} watching · about −${Math.round(COSTS.search * G.diff.aura)} Aura` : 'nobody watching') : '']);
       if (prop) lines.push(['E', `Check the ${prop.label.toLowerCase()}`, '']);
       UI.prompt(lines);
       if (G.searching) { const ip = toScreen(G.items[G.searching.c.id].x, G.items[G.searching.c.id].y - 12); Art.holdRing(ctx, ip.x, ip.y, G.searching.k); }
-      if (G.rumble) {
-        const k = G.rumble.held / 0.8, pulse = 1 + Math.sin(t * 20) * 0.06, rp = toScreen(G.player.x, G.player.y - 40);
-        ctx.save(); ctx.translate(rp.x, rp.y);
-        ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, 50 * pulse, 0, Math.PI * 2); ctx.stroke();
-        ctx.strokeStyle = '#3c8d2f'; ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(0, 0, 50 * pulse, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2); ctx.stroke();
-        Art.paperRect(ctx, -76, 56, 152, 24, '#fff3b0', 999, { amp: 1, stroke: Art.INK, lw: 1.5 });
-        ctx.fillStyle = Art.INK; ctx.font = '700 13px "Lexend", sans-serif'; ctx.fillText('RUMBLE! Hold C', 0, 73); ctx.restore();
+      if (G.rumble) { // a small clench meter beside your head; the instruction lives in the prompt
+        const k = G.rumble.held / 0.8, pulse = 1 + Math.sin(t * 20) * 0.08, rp = head({ x: G.player.x, y: G.player.y, def: { look: PLAYER_LOOK } });
+        ctx.save(); ctx.translate(rp.x - 34, rp.y + 14);
+        ctx.fillStyle = 'rgba(255,243,176,0.95)'; ctx.strokeStyle = Art.INK; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 13 * pulse, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = '#3c8d2f'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, 9 * pulse, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#8a5a2b'; ctx.font = '400 11px "Bowlby One SC", sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText('!', 0, 1); ctx.restore();
       }
       if (RULES.aura) for (const n of G.npcs) if (n.present && !n.def.dog && n.sus > 25) {
         const hp = head(n); ctx.save(); ctx.font = '400 16px "Bowlby One SC", sans-serif';
@@ -1374,8 +1424,18 @@ const Game = (() => {
     requestAnimationFrame(frame);
   }
 
+  // where people are on screen (canvas units), so the HUD can step aside when someone is behind it
+  function screenBoxes() {
+    if (!G.cam || !G.cs || !L) return [];
+    const out = [], z = G.cam.z;
+    const box = (x, y, sc, dog) => { const p = toScreen(x, y), hh = (dog ? 60 : 100 * (sc || 1)) * z, hw = 24 * z; out.push({ x: p.x - hw, y: p.y - hh, w: hw * 2, h: hh + 6 * z }); };
+    box(G.player.x, G.player.y, PLAYER_LOOK.scale);
+    for (const n of G.npcs) if (n.present) box(n.x, n.y, n.def.look.scale, n.def.dog);
+    return out;
+  }
+
   return {
-    boot, newGame, showcase, holdSearch, sniff, smellVision, release, object, useHint, tapE, talkOptions, talkChoose, confrontOptions, confrontChoose,
+    screenBoxes, boot, newGame, showcase, holdSearch, sniff, smellVision, release, object, useHint, tapE, talkOptions, talkChoose, confrontOptions, confrontChoose,
     startConfront, anyConfronting, onReaction, onCover, onIdle, onOverhear, onDeflect, flash, checkBoard, finish, feature,
     npcById, humans, recomputeAura, fastForward, skipTo, revealAll, roomScores, crowdOpinion, primeSuspect, evalObjectives,
     resolvePoint, resolveProof, testimony, startTrial, trialPress, trialPresent, withdraw, resolveTrial, unfocus, focus, about,
