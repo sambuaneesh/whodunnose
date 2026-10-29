@@ -23,8 +23,10 @@ const FOODS = [
   { id: 'peas', name: 'pureed peas', smell: 'sour milk', stink: 0.6, loud: 0.5, special: true, wrapper: 'an empty jar of pureed peas',
     science: 'Babies swallow air when they feed, and peas bring fibre. Small body, surprising output.' },
 ];
-const foodById = (id) => FOODS.find((f) => f.id === id);
-const HUMAN_FOODS = () => FOODS.filter((f) => !f.special && (!L.foods || L.foods.includes(f.id)));
+// A setting can serve a dish under its own name (on the plane the eggs are an omelette); the science stays the same.
+const dish = (f) => (f && L && L.menu && L.menu[f.id] ? { ...f, ...L.menu[f.id] } : f);
+const foodById = (id) => dish(FOODS.find((f) => f.id === id));
+const HUMAN_FOODS = () => FOODS.filter((f) => !f.special && (!L.foods || L.foods.includes(f.id))).map(dish);
 
 const COVERS = [
   { id: 'fan', label: 'fanning the air behind them', anim: 'fan', bubble: null },
@@ -38,7 +40,7 @@ const COVERS = [
 // Aura only drops when someone SEES (or hears) you do something a real person would find odd.
 const COSTS = {
   sniff: 6, search: 18, squeeze: 3, camera: 6, mentionFirst: 40, silentTalk: 4, nosy: 4,
-  gurgle: 8, audible: 30, forced: 50, rumorRelief: 6, calmRelief: 35,
+  gurgle: 8, belt: 5, audible: 30, forced: 50, rumorRelief: 6, calmRelief: 35,
 };
 
 const DIFFICULTY = {
@@ -128,6 +130,7 @@ const TIPS = {
   gag: { title: 'Act natural', text: 'Innocent people react to the smell. Press Q to gag once it reaches you, and anyone watching will think you are a victim. Gag before anyone else has noticed, and they will wonder how you knew.' },
   plant: { title: 'Plant evidence', text: 'HOLD E next to someone else\'s bag to slip your empty chili cup into it. When the room decides, a chili cup in a bag counts against its owner. Just do not get seen.' },
   hush: { title: 'Someone saw your breakfast', text: 'That whisper was about you. Talk to them and ask them to keep it quiet before the whole car hears. It only works if they do not already suspect you.' },
+  belt: { title: 'Seatbelt sign', text: 'While the seatbelt sign is on, stay in your seat and talk to the people around you. When it dings off, you can walk the aisle, until the next bump.' },
   confront: { title: 'Confronted', text: 'Someone is onto you. Stay calm. Denying it too hard, or quoting the rhyme, only makes it worse.' },
 };
 
@@ -174,8 +177,15 @@ const CASES = [
     learn: [['F', 'Let it go', 'Under something LOUD, nobody can tell where it came from.'], ['Q', 'Gag', 'Act like a victim, but only once it reaches you.'], ['Hold E', 'Plant', 'Slip your empty chili cup into someone else\'s bag.'], ['E', 'Hush', 'Someone saw you eat. Ask them to keep quiet.']],
     objectives: ['letGo', 'law', 'hush', 'frame', 'survive'], tips: ['reverse', 'law', 'gag', 'plant', 'hush', 'rumor', 'rumble', 'confront'] },
 ];
+CASES.push(
+  { id: 'c8', setting: 'plane', num: 1, season: 2, after: 'c6', title: 'Cruising Altitude', seed: 8808, cast: null, rules: R6,
+    timeline: {}, loud: null, callWhen: 'before landing',
+    goal: 'A new place: a plane. Everyone is strapped into a seat facing the front, so the rows behind them are a blind spot. The seatbelt sign decides when you can move. Call it before the wheels touch down.',
+    learn: [['💺', 'Seatbelt sign', 'While it is on, stay in your seat (the dashed ring). Standing up gets you told off.'], ['E', 'Your neighbours', 'From your seat you can only reach the people around you.'], ['W S', 'The aisle', 'When the sign is off, walk the aisle and talk to anyone.']],
+    objectives: ['smell', 'law', 'where', 'liar', 'cover', 'call'], tips: ['belt', 'late', 'mention'] },
+);
 const FREE_PLAY = (setting, seed) => ({ id: 'free-' + setting, setting, num: 0, title: 'Free Play', seed, cast: null, rules: R6, timeline: {}, loud: null,
-  callWhen: setting === 'elevator' ? 'before the lobby' : 'at "speak now"', free: true,
+  callWhen: LEVELS[setting].callWhen, free: true,
   goal: 'Everything is on. Random case. Find who did it.', learn: [], objectives: ['smell', 'where', 'liar', 'cover', 'call'], tips: [] });
 
 // The pitch tour (Presenter mode): each system announces itself the first time it appears.
@@ -244,6 +254,7 @@ function loadLevel(caseDef) {
 }
 
 const zoneById = (id) => ZONES.find((z) => z.id === id);
+const spawnZones = () => ZONES.filter((z) => !z.noSpawn); // where people can be standing or sitting when it happens
 const zoneCenter = (z) => ({ x: z.x + z.w / 2, y: z.y + z.h / 2 });
 function zoneAt(p) {
   let best = null, bd = Infinity;

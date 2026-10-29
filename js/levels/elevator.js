@@ -12,7 +12,8 @@
   LEVELS.elevator = {
     id: 'elevator', episode: 'Season 1 · Episode 1', title: 'Going Down', length: '~2.5 min',
     blurb: 'Thirty floors. Seven strangers. Everyone faces the doors. Nobody says a word. Then someone does.',
-    mode: 'elevator',
+    mode: 'elevator', npcPace: 0.5, walkSpeed: 60, stepLen: 13, gossipRate: 0.6, closeCamera: true,
+    short: 'Elevator', place: 'Thornbury Tower, the elevator', callWhen: 'before the lobby', failTitle: 'Socially fired', airText: 'Carpet cleaner and coffee.',
     zones: [
       { id: 'backleft', name: 'Back Left Corner', x: 530, y: 300, w: 110, h: 55 },
       { id: 'backright', name: 'Back Right Corner', x: 640, y: 300, w: 110, h: 55 },

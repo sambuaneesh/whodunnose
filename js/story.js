@@ -15,6 +15,12 @@ const SEASON = {
   tagline: 'One week. One very small elevator. One wedding. Six cases.',
 };
 
+// Season two opens on the flight home and sets up what comes next: a new owner for Thornbury Tower, and a rival nose.
+const SEASON2 = {
+  title: 'Season Two: Under New Management',
+  tagline: 'The flight home, a new owner, and a rival nose.',
+};
+
 const STORY = {
   c1: {
     when: 'Monday', time: '12:52 PM',
@@ -201,6 +207,32 @@ const STORY = {
       caught: 'It was you, and now everyone knows it. By lunch the video has a sequel. Dana sends a single message from her honeymoon: "Really?"',
     },
     next: 'Dana comes back from her honeymoon to find a new rule in the handbook, written by Mr. Thornbury: no chili in the office fridge, ever. Nobody knows why. You know why.',
+  },
+
+  // ---------------- season two ----------------
+  c8: {
+    when: 'Sunday', time: '4:10 PM', youAre: 'the Nose',
+    previously: 'Mr. Thornbury sent his new Head of Air Quality to the Indoor Air Quality Summit at Hotel Paraíso, booked through the company travel portal. Dana set up that portal. It only books the cheapest seats. Dana also booked her honeymoon through it: same hotel, same week, same flights. Now the summit is over, the honeymoon is over, and you are all flying home together. Uncle Gary is here too. Nobody invited Gary on the honeymoon. Gary came anyway.',
+    intro: 'Sunday, 4:10 PM. Flight 404, climbing. The seatbelt sign is on.',
+    roles: { dana: 'Married last Saturday. HR, on holiday.', brad: 'Married last Saturday. Bought the dog a seat.', gary: 'Groom\'s uncle. Invited himself.', marguerite: 'Senior flight attendant. Thirty-one years.', lindqvist: 'Window seat. Eye mask. Gave the summit keynote.', rosa: 'Owns Hotel Paraíso. Flying in to buy a building.', biscuit: 'Brad\'s dog. Has his own boarding pass.' },
+    fix: {
+      culprit: 'brad', food: 'eggs', claim: 'broccoli', fartType: 'sbd', origin: 'backleft', nearDecoy: 'dana', foodDecoy: 'lindqvist', witness: 'marguerite', cover: 'blamedog',
+      meals: { dana: 'broccoli', gary: 'chili', rosa: 'tuna', marguerite: 'garlic' }, pins: { marguerite: 'galley', lindqvist: 'frontright', rosa: 'frontleft' },
+      facts: {
+        witness: 'The groom asked me for a second omelette. Then his wife gave him hers. Thirty-one years in this job, sweetheart, and nobody has ever asked for a second omelette.',
+        zone: 'The bride was in the back left seats when it started, right by her husband. Well, one row away. She booked the cheap fare.',
+      },
+    },
+    say: {
+      brad: { hello: "Hey! It's Dana's friend from the elevator! Small world! Small plane! Best week of my life! I'm fine!", breakfast: 'Just {food}! The veggie one. I eat healthy now. I am a husband.', gossipNone: 'I bought Biscuit his own seat. Dana found out at the gate. She has not said anything. She has written something.', guilty: "Okay! It was me! Two omelettes! Dana gave me hers! I couldn't eat a thing at my own wedding and I've been hungry for a WEEK! Please don't tell my mother!" },
+      dana: { hello: 'Oh. Of course you are on this flight. The company portal only books the cheapest fare. I set that up. I regret it.', breakfast: '{food}. I gave Brad my omelette. I have not been able to look at an egg since the wedding.', where: 'In the {zone}, one row away from my husband. The cheapest fare does not let you sit together. I wrote that policy too.' },
+      gary: { hello: "The elevator kid! I didn't know you were coming on the honeymoon! Neither did they!" },
+      rosa: { gossipNone: 'I am flying in to sign for a building tomorrow. I cannot say which one. Big. Old. Thirty floors. Smells a little.' },
+      lindqvist: { gossipNone: 'I gave the keynote at the summit. You asked a question about elevators. It was a good question. I hated it.' },
+      marguerite: { gossipNone: 'The groom keeps blaming the dog. The dog has been asleep since the gate. I have been watching the dog.' },
+    },
+    truth: 'Brad was too nervous to eat a thing at his own wedding. A week later, finally relaxed, he ate two in-flight cheese omelettes: his, and Dana\'s, because she has not been able to look at an egg since the reception. Eggs mean sulfur, and sulfur means silent and deadly, right there in the back left seats. On the flight home from his honeymoon, with his new wife one row away, Brad could not be that man. So he said he had the veggie quiche, and blamed the dog he bought a seat for.',
+    next: 'As the plane taxis to the gate, Rosa Delgado leans across the aisle. "Tomorrow I am buying a building," she says. "Thornbury Tower. Thirty floors, and the air in there is a disgrace. I am bringing my own expert." In the window seat, Mr. Lindqvist lifts his eye mask, looks straight at you, and smiles. Season two continues soon.',
   },
 };
 

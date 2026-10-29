@@ -400,7 +400,7 @@ const Art = (() => {
     const lx = U.clamp(o.lookX || 0, -1, 1) * 2.4, ly = U.clamp(o.lookY || 0, -1, 1) * 2;
     const blink = !disgust && !shock && ((o.t * 1000 + (o.blinkSeed || seed) * 397) % 3700) < 130;
     const { ex: eyeX, rx, ry } = eyeSpot(look), ey = hy - 3, specs = look.acc === 'glasses';
-    for (const ex of look.acc === 'shades' ? [] : [-eyeX, eyeX]) { // sunglasses hide the eyes completely
+    for (const ex of look.acc === 'shades' || look.acc === 'sleepmask' ? [] : [-eyeX, eyeX]) { // sunglasses and eye masks hide the eyes completely
       const side = ex < 0 ? -1 : 1;
       ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
       if (disgust || blink) {
@@ -441,6 +441,14 @@ const Art = (() => {
       ctx.beginPath(); ctx.moveTo(-inner, ey - 2); ctx.quadraticCurveTo(0, ey - 4.5, inner, ey - 2);
       ctx.moveTo(-outer, ey - 3); ctx.lineTo(-22, ey - 4); ctx.moveTo(outer, ey - 3); ctx.lineTo(22, ey - 4); ctx.stroke();
     }
+    if (look.acc === 'sleepmask') {
+      // a padded travel mask with sleepy eyes stitched on, and the strap round the head
+      ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(-23, ey - 4); ctx.lineTo(23, ey - 4); ctx.stroke();
+      ctx.fillStyle = '#9fc6e8'; ctx.beginPath(); ctx.roundRect(-18, ey - 8, 36, 12, 6); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 1.3;
+      for (const ex of [-8.4, 8.4]) { ctx.beginPath(); ctx.moveTo(ex - 5, ey - 2.5); ctx.quadraticCurveTo(ex, ey + 1.5, ex + 5, ey - 2.5); ctx.stroke(); }
+    }
     if (look.acc === 'shades') {
       // two dark lenses on a straight top bar, with a glint
       ctx.fillStyle = '#141418'; ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
@@ -469,7 +477,7 @@ const Art = (() => {
     const e = o.expr || 'neutral', f = look.features || [], bushy = f.includes('bushybrows');
     if (e === 'neutral' && !bushy) return;
     if (e === 'disgust') return;
-    const { ex: eyeX, ry } = eyeSpot(look), by = look.acc === 'shades' ? hy - 3 - 9.5 : hy - 3 - ry - (look.acc === 'glasses' ? 4.2 : 2.5);
+    const { ex: eyeX, ry } = eyeSpot(look), by = look.acc === 'shades' || look.acc === 'sleepmask' ? hy - 3 - 9.5 : hy - 3 - ry - (look.acc === 'glasses' ? 4.2 : 2.5);
     ctx.save(); ctx.lineCap = 'round';
     ctx.strokeStyle = bushy ? (look.hair || INK) : INK; ctx.lineWidth = bushy ? 3.6 : 2.4;
     if (bushy) { ctx.shadowColor = INK; ctx.shadowBlur = 0; }

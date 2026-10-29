@@ -11,7 +11,7 @@ const Meta = (() => {
   function dayIndex(key) { const [y, m, d] = key.split('-').map(Number); return Math.round((Date.UTC(y, m - 1, d) - EPOCH) / 86400000); }
   function hash(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
   function dailyCase(key = today()) {
-    const n = dayIndex(key) + 1, setting = n % 2 ? 'elevator' : 'wedding';
+    const n = dayIndex(key) + 1, setting = ['plane', 'elevator', 'wedding'][n % 3];
     return {
       ...FREE_PLAY(setting, 1000 + (hash('whodunnose' + key) % 9000)), id: 'daily', daily: key, dailyNum: n,
       title: `Daily Case #${n}`, goal: 'Everyone gets this exact case today. Everything is on, difficulty is Normal, and the first finish of the day is the one that counts for your streak.',
@@ -33,7 +33,7 @@ const Meta = (() => {
   }
   function shareText(r) {
     const c = G.caseDef, marks = c.objectives.map((id) => ({ done: '🟩', fail: '🟥' }[G.objState[id]] || '⬜')).join('');
-    return `Whodunnose · Daily #${c.dailyNum} (${c.setting === 'elevator' ? 'Elevator' : 'Chapel'})\nRank ${r.rank} · Aura ${Math.round(G.aura)}% · ${G.hintsUsed} hint${G.hintsUsed === 1 ? '' : 's'}\n${marks}`;
+    return `Whodunnose · Daily #${c.dailyNum} (${LEVELS[c.setting].short})\nRank ${r.rank} · Aura ${Math.round(G.aura)}% · ${G.hintsUsed} hint${G.hintsUsed === 1 ? '' : 's'}\n${marks}`;
   }
 
   // ---------------- achievements ----------------
@@ -41,7 +41,7 @@ const Meta = (() => {
   const ACH = [
     { id: 'first', title: 'Going Down', desc: 'Finish your first case.', test: () => true },
     { id: 'srank', title: 'Nose of God', desc: 'Get an S rank.', test: (r) => r.rank === 'S' },
-    { id: 'season', title: 'Head of Air Quality', desc: 'Finish all six cases of season one.', test: () => CASES.filter((c) => !c.bonus).every((c) => (Store.progress(c.id) || {}).done) },
+    { id: 'season', title: 'Head of Air Quality', desc: 'Finish all six cases of season one.', test: () => CASES.filter((c) => !c.bonus && !c.season).every((c) => (Store.progress(c.id) || {}).done) },
     { id: 'perfect', title: 'The Perfect Crime', desc: 'Get an S rank in You Dealt It.', test: (r) => r.kind === 'reverse' && r.rank === 'S' },
     { id: 'patsy', title: 'Patsy', desc: 'Get somebody else named in You Dealt It.', test: (r) => r.kind === 'reverse' && r.acc.named && r.acc.named !== 'player' },
     { id: 'baby', title: 'It Really Was the Baby', desc: 'Correctly name a baby or a dog as the culprit.', test: (r) => r.kind === 'accuse' && r.acc.correct && G.cs.isDog },

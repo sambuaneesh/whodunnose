@@ -58,14 +58,18 @@ const UI = (() => {
   // ---------------- title: campaign map ----------------
   function renderMap() {
     const next = Store.nextCase();
-    $('#btnPlay').textContent = Object.keys(CASES).length && Store.progress('c1') ? `Continue: Case ${next.num}` : 'Play';
-    $('#caseMap').innerHTML = CASES.map((c, i) => {
-      const open = Store.unlocked(i), pr = Store.progress(c.id), setting = LEVELS[c.setting].title;
-      return `<button class="case ${open ? '' : 'locked'} ${c === next ? 'next' : ''}" data-case="${i}" ${open ? '' : 'disabled'}>
-        <span class="case-n">${c.num}</span><span class="case-t"><b>${esc(c.title)}</b><small>${c.bonus ? 'Bonus · ' : c.story ? esc(c.story.when.slice(0, 3)) + ' · ' : ''}${c.setting === 'elevator' ? 'Elevator' : 'Chapel'} · ${open ? (pr && pr.best ? 'Best ' + pr.best : 'New') : 'Locked'}</small></span>
+    $('#btnPlay').textContent = Object.keys(CASES).length && Store.progress('c1') ? `Continue: ${next.title}` : 'Play';
+    const card = (c) => {
+      const i = CASES.indexOf(c), open = Store.unlocked(i), pr = Store.progress(c.id);
+      return `<button class="case ${open ? '' : 'locked'} ${c === next ? 'next' : ''} ${c.season ? 'wide' : ''}" data-case="${i}" ${open ? '' : 'disabled'}>
+        <span class="case-n">${c.num}</span><span class="case-t"><b>${esc(c.title)}</b><small>${c.bonus ? 'Bonus · ' : c.story ? esc(c.story.when.slice(0, 3)) + ' · ' : ''}${LEVELS[c.setting].short} · ${open ? (pr && pr.best ? 'Best ' + pr.best : 'New') : 'Locked'}</small></span>
         ${pr && pr.best ? `<span class="case-r r-${pr.best}">${pr.best}</span>` : ''}</button>`;
-    }).join('') + dailyCard() + `<div class="free ${Store.unlocked(3) ? '' : 'locked'}"><div><b>Free Play</b><small>${Store.unlocked(3) ? 'Everything on, random cases.' : 'Unlocks after Case 3.'}</small></div>
-        <div class="free-row"><button data-free="elevator" ${Store.unlocked(3) ? '' : 'disabled'}>Elevator</button><button data-free="wedding" ${Store.unlocked(3) ? '' : 'disabled'}>Chapel</button></div></div>`;
+    };
+    const free = Store.unlocked(3) ? '' : 'disabled';
+    $('#caseMap').innerHTML = CASES.filter((c) => !c.season).map(card).join('') + dailyCard()
+      + `<div class="season-k s2">${esc(SEASON2.title)} <span>${esc(SEASON2.tagline)}</span></div>` + CASES.filter((c) => c.season === 2).map(card).join('')
+      + `<div class="free ${free ? 'locked' : ''}"><div><b>Free Play</b><small>${free ? 'Unlocks after Case 3.' : 'Everything on, random cases.'}</small></div>
+        <div class="free-row">${Object.values(LEVELS).map((lv) => `<button data-free="${lv.id}" ${free}>${lv.short}</button>`).join('')}</div></div>`;
     document.querySelectorAll('[data-case]').forEach((b) => b.addEventListener('click', () => { Sfx.init(); openBriefing(CASES[+b.dataset.case]); }));
     document.querySelectorAll('[data-free]').forEach((b) => b.addEventListener('click', () => { Sfx.init(); openBriefing(FREE_PLAY(b.dataset.free, randomCase())); }));
     const db = $('[data-daily]'); if (db) db.addEventListener('click', () => { Sfx.init(); openBriefing(Meta.dailyCase()); });
@@ -99,7 +103,8 @@ const UI = (() => {
     Game.showcase(caseDef);
     G.state = 'briefing'; Sfx.duck(true);
     const st = caseDef.story;
-    $('#briefKicker').textContent = caseDef.daily ? `Daily case · ${caseDef.daily} · ${caseDef.setting === 'elevator' ? 'The elevator' : 'The chapel'} · Normal` : caseDef.free ? `Free Play · ${LEVELS[caseDef.setting].title} · ${DIFFICULTY[S().difficulty].label}` : `${caseDef.bonus ? 'Bonus case' : `Case ${caseDef.num} of ${CASES.filter((c) => !c.bonus).length}`} · ${st ? `${st.when}, ${st.time} · ` : ''}${caseDef.setting === 'elevator' ? 'Thornbury Tower, the elevator' : "St. Swithin's Chapel"}`;
+    const lv = LEVELS[caseDef.setting], season = CASES.filter((c) => !c.bonus && c.season === caseDef.season);
+    $('#briefKicker').textContent = caseDef.daily ? `Daily case · ${caseDef.daily} · ${lv.short} · Normal` : caseDef.free ? `Free Play · ${lv.short} · ${DIFFICULTY[S().difficulty].label}` : `${caseDef.bonus ? 'Bonus case' : (caseDef.season === 2 ? `Season Two · Case ${caseDef.num}` : `Case ${caseDef.num} of ${season.length}`)} · ${st ? `${st.when}, ${st.time} · ` : ''}${lv.place}`;
     $('#briefTitle').textContent = caseDef.title;
     $('#briefStory').textContent = st ? st.previously : '';
     $('#briefStory').hidden = !st;

@@ -55,7 +55,7 @@ const Game = (() => {
   const toWorld = (sx, sy) => ({ x: (sx - W / 2) / G.cam.z + G.cam.x, y: (sy - H / 2) / G.cam.z + G.cam.y });
   function focus(p, mult) {
     // the elevator camera is already close; do not zoom in nearly as far there
-    const z = baseZoom() * (L.mode === 'elevator' ? 1 + (mult - 1) * 0.35 : mult);
+    const z = baseZoom() * (L.closeCamera ? 1 + (mult - 1) * 0.35 : mult);
     G.cam.tx = p.x + 300 / z; G.cam.ty = p.y - 50 / mult; G.cam.tz = z;
   }
   function unfocus() { if (!G.cam || !L) return; const c = viewCenter(); G.cam.tx = c.x; G.cam.ty = c.y; G.cam.tz = baseZoom(); }
@@ -69,6 +69,13 @@ const Game = (() => {
     resetCam();
   }
 
+  // where someone's bag is: at their feet (elevator), under their seat (plane), or wherever they left it (chapel)
+  function itemPos(c, spot) {
+    if (L.itemAt) return spot ? L.itemAt(spot, c) : { x: -100, y: -100 };
+    const off = L.ranges.itemOffset;
+    return off ? (spot ? { x: spot.x + off.x, y: spot.y + off.y } : { x: -100, y: -100 }) : { x: c.item.x, y: c.item.y };
+  }
+
   function newGame(caseDef, seed) {
     prepare(caseDef);
     const diff = caseDef.free && !caseDef.daily ? DIFFICULTY[Store.settings().difficulty] : DIFFICULTY.normal;
@@ -80,16 +87,14 @@ const Game = (() => {
       board: { who: '', food: '', zone: '', cover: '', locked: false, checks: 0, feedback: '' },
       sniffCd: 0, sniffArrow: null, nextConfrontT: 0, gossipT: 1, objected: false, result: null,
       rumble: null, nextRumble: 0, photo: null, photoPending: false, snaps: {}, snapPending: null, trial: null,
-      doors: {}, watchers: 0, lastOddSeenT: -99, squeezeT: {}, eDown: null, searching: null,
+      doors: {}, watchers: 0, lastOddSeenT: -99, squeezeT: {}, beltT: -99, eDown: null, searching: null,
       objState: {}, tipsShown: {}, tipQueue: [], hintsUsed: 0, beatT: 0, unseenClues: 0,
       player: { x: L.player.start.x, y: L.player.start.y, face: -Math.PI / 2, target: null, path: [], walking: false, bubble: null, expr: 'neutral', exprT: 0, pending: null },
     });
     G.npcs = CAST.map((c) => NPC.create(c, G.cs));
     G.items = {};
     for (const c of CAST) {
-      const spot = G.cs.spots[c.id], off = L.ranges.itemOffset;
-      const pos = off ? (spot ? { x: spot.x + off.x, y: spot.y + off.y } : { x: -100, y: -100 }) : { x: c.item.x, y: c.item.y };
-      G.items[c.id] = { ...c.item, ...pos, owner: c.id, present: !(L.lateArrivals || []).includes(c.id) };
+      G.items[c.id] = { ...c.item, ...itemPos(c, G.cs.spots[c.id]), owner: c.id, present: !(L.lateArrivals || []).includes(c.id) };
     }
     G.props = RULES.photo && L.photo.source === 'prop' ? [{ id: 'photo', x: L.photo.x, y: L.photo.y, label: L.photo.label }] : [];
     for (const id in (L.gas.doors || {})) G.doors[id] = { open: 0, target: 0 };
@@ -171,7 +176,7 @@ const Game = (() => {
       n.sus = Math.min(100, n.sus + cost * (sound ? 1 - (d / sound) * 0.6 : 1) * (n.id === owner ? 1.5 : 1) * eagle);
       wit.push(n);
       if (eagle > 1) feature('traits');
-      if (!silent) { n.expr = 'sus'; n.exprT = 2.4; if (!n.walking && L.mode !== 'elevator') n.face = Math.atan2(p.y - n.y, p.x - n.x); }
+      if (!silent) { n.expr = 'sus'; n.exprT = 2.4; if (!n.walking && L.mode === 'mingle') n.face = Math.atan2(p.y - n.y, p.x - n.x); }
     }
     recomputeAura();
     feature('vision');
@@ -206,6 +211,7 @@ const Game = (() => {
     time: () => G.t || 0,
     changed(key, v) { const k = 'chg-' + key; if (G.flags[k] === v) return false; G.flags[k] = v; return true; },
     floorTick: () => Sfx.floorTick(),
+    shake: (a) => shake(a),
     music: (id) => Sfx.setMusic(id),
     organ: (dur) => { Sfx.stopMurmur(); Sfx.organ(dur); },
     actor(id, spec) { G.actors[id] = { id, walking: false, bubble: null, face: Math.PI / 2, speed: 34, ...spec }; },
@@ -213,10 +219,11 @@ const Game = (() => {
     arrive(id, from) {
       const n = npcById(id); if (!n) return;
       n.present = true; n.x = from.x; n.y = from.y;
-      const spot = freeSpot(['frontleft', 'buttons', 'middle'], n);
-      n.seat = { x: spot.x, y: spot.y, face: Math.PI / 2 }; n.target = { ...spot }; n.path = [];
+      const spot = L.arrivalSpot ? L.arrivalSpot(n, G) : freeSpot(['frontleft', 'buttons', 'middle'], n);
+      n.seat = { x: spot.x, y: spot.y, face: Math.PI / 2 };
+      const path = L.route ? L.route(n, spot) : [{ ...spot }]; n.target = path.shift(); n.path = path;
       const off = L.ranges.itemOffset || { x: 20, y: 4 };
-      G.items[id] = { ...G.items[id], x: spot.x + off.x, y: spot.y + off.y, present: true };
+      G.items[id] = { ...G.items[id], ...(L.itemAt ? L.itemAt(spot, castById(id)) : { x: spot.x + off.x, y: spot.y + off.y }), present: true };
       tip('late');
     },
   };
@@ -330,6 +337,7 @@ const Game = (() => {
     updateSearch(dt);
     for (const n of G.npcs) NPC.update(n, dt, G);
     NPC.separate(G, dt);
+    seatbelt();
     updateActors(dt);
     for (const id in G.doors) { const d = G.doors[id]; d.open += U.clamp(d.target - d.open, -dt * 1.5, dt * 1.5); }
     Gas.step(dt);
@@ -409,7 +417,7 @@ const Game = (() => {
     const len = Math.hypot(mx, my);
     p.walking = len > 0;
     if (!len) return;
-    let speed = L.mode === 'elevator' ? 60 : 165;
+    let speed = L.walkSpeed;
     const r = L.ranges.personal * 1.4, dk = L.ranges.depth ?? 1.6; // bumping into someone, a little inside their personal space
     let squeezing = null;
     for (const n of present()) {
@@ -436,7 +444,18 @@ const Game = (() => {
     p.face = Math.atan2(my, mx);
     // footsteps: carpet thuds in the elevator, wooden taps in the chapel
     p.stepAcc = (p.stepAcc || 0) + Math.hypot(p.x - ox, p.y - oy);
-    if (p.stepAcc > (L.mode === 'elevator' ? 13 : 30)) { p.stepAcc = 0; Sfx.step(L.id); }
+    if (p.stepAcc > L.stepLen) { p.stepAcc = 0; Sfx.step(L.id); }
+  }
+
+  // On the plane, standing up while the seatbelt sign is on gets you told off, in front of everyone.
+  function seatbelt() {
+    if (L.mode !== 'seated' || !L.mustSit(G.t) || G.t >= TIMELINE.speakNow || U.dist(G.player, PLAYER_SEAT) < 24) return;
+    if (G.t - (G.beltT ?? -99) < 8) return;
+    G.beltT = G.t;
+    const crew = L.crew && npcById(L.crew);
+    if (crew && crew.present) NPC.say(crew, L.beltLine || 'The seatbelt sign is on. Back to your seat, please.', 3, 'shout');
+    UI.caption('The seatbelt sign is on. Get back to your seat (the dashed ring).', 3);
+    act('stand up with the seatbelt sign on', COSTS.belt, { sound: L.ranges.overhear * 2.5 });
   }
 
   function updateActors(dt) {
@@ -460,7 +479,7 @@ const Game = (() => {
     for (const a of h) for (const b of h) {
       if (a === b || U.dist(a, b) > L.ranges.gossip) continue;
       if (quiet() && a.seated) continue; // nobody whispers during the vows (except you)
-      const rate = 0.12 * (a.def.gossip ?? 1) * (L.mode === 'elevator' ? 0.6 : 1);
+      const rate = 0.12 * (a.def.gossip ?? 1) * (L.gossipRate ?? 1);
       for (const id in a.op) if (id !== b.id && a.op[id] > (b.op[id] || 0) + 8) b.op[id] = (b.op[id] || 0) + (a.op[id] - (b.op[id] || 0)) * rate * 0.7;
       if (!RULES.aura || a.sus < 15 || a.sus <= b.sus + 8) continue;
       const delta = (a.sus - b.sus) * rate;
@@ -816,7 +835,7 @@ const Game = (() => {
     act('sniffing the air like a bloodhound', COSTS.sniff);
     const p = G.player, c = Gas.sample(p.x, p.y);
     let msg;
-    if (!G.flags.fart) msg = L.mode === 'elevator' ? 'Carpet cleaner and coffee.' : 'Lilies, floor polish, and nerves.';
+    if (!G.flags.fart) msg = L.airText;
     else if (c < 0.03) msg = 'Nothing here. Clean air.';
     else {
       identifySmell('sniff');
@@ -1139,7 +1158,7 @@ const Game = (() => {
     if (RULES.aura) { const ap = Math.round(G.aura * 4); rows.push([`Aura kept (${Math.round(G.aura)}%)`, ap]); score += ap; }
     if (G.board.locked) { rows.push(['Smell Board solved', 150]); score += 150; }
     if (G.hintsUsed) { rows.push([`Hints used (${G.hintsUsed})`, -50 * G.hintsUsed]); score -= 50 * G.hintsUsed; }
-    const title = kind === 'reverse' ? REVERSE_TITLES[rank] : TITLES[rank] || (kind === 'bankrupt' ? 'Aura bankrupt' : L.mode === 'elevator' ? 'Socially fired' : 'Wedding ruiner');
+    const title = kind === 'reverse' ? REVERSE_TITLES[rank] : TITLES[rank] || (kind === 'bankrupt' ? 'Aura bankrupt' : L.failTitle);
     const pid = G.caseDef.free ? 'free' : G.caseDef.id; // playtest runs never touch campaign progress
     const prog = Playtest.active ? Store.progress(pid) || { done: false, best: null, plays: 0 }
       : G.caseDef.daily ? Meta.recordDaily(G.caseDef.daily, { rank, score }) : Store.record(pid, rank);
@@ -1175,7 +1194,7 @@ const Game = (() => {
     if (!G.cs) return;
     if (L.overlay && !photoFrame) L.overlay(ctx, t, api);
 
-    if (L.mode === 'mingle' && G.t >= TIMELINE.places && G.t < TIMELINE.speakNow && U.dist(G.player, PLAYER_SEAT) > 22) {
+    if (L.mustSit && L.mustSit(G.t) && U.dist(G.player, PLAYER_SEAT) > 22) { // your seat, when you should be in it
       ctx.save(); ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = 3; ctx.setLineDash([6, 5]);
       ctx.beginPath(); ctx.ellipse(PLAYER_SEAT.x, PLAYER_SEAT.y, 24 + Math.sin(t * 5) * 3, 9, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     }
@@ -1200,7 +1219,7 @@ const Game = (() => {
       if (sv) { ctx.fillStyle = 'rgba(18,24,12,0.55)'; ctx.fillRect(v.x, v.y, v.w, v.h); }
       ctx.save(); ctx.imageSmoothingEnabled = true; ctx.drawImage(gasCv, 0, 0, Gas.COLS, Gas.ROWS, gr.x, gr.y, gr.w, gr.h); ctx.restore();
     }
-    if (!photoFrame && !sv && RULES.questions.includes('where')) Art.drawZoneDecals(ctx, cam.z, [G.player, ...G.npcs.filter((n) => n.present)], [...(L.obstacles || []), ...(L.furniture || [])]);
+    if (!photoFrame && !sv && RULES.questions.includes('where') && L.decals !== false) Art.drawZoneDecals(ctx, cam.z, [G.player, ...G.npcs.filter((n) => n.present)], [...(L.obstacles || []), ...(L.furniture || [])]);
     const focusP = inPlay && !photoFrame ? nearestPerson() : null;
     if (focusP) { // the person E talks to: a ring on the floor, never a label over somebody else
       const k = L.view.w / W, pr = 1 + Math.sin(t * 5) * 0.06;
@@ -1212,7 +1231,7 @@ const Game = (() => {
     for (const c of CAST) {
       const it = G.items[c.id];
       if (!it || !it.present) continue;
-      if (!RULES.search && L.ranges.itemOffset) { items.push({ y: it.y, draw: () => Art.drawItem(ctx, it, it.x, it.y, false, true) }); continue; }
+      if (!RULES.search && (L.ranges.itemOffset || L.itemAt)) { items.push({ y: it.y, draw: () => Art.drawItem(ctx, it, it.x, it.y, false, true) }); continue; }
       items.push({ y: it.y, draw: () => Art.drawItem(ctx, it, it.x, it.y, bagNear === c, G.know.bags[c.id] === 'seen') });
     }
     for (const n of G.npcs) if (n.present) items.push({ y: n.y, draw: () => drawNPC(n, t) });
@@ -1385,8 +1404,8 @@ const Game = (() => {
     const dt = Math.min(0.1, (now - last) / 1000 || 0); last = now;
     G.anim = (G.anim || 0) + dt;
     if (G.state === 'play') { accT += dt * Playtest.timeScale(); while (accT >= STEP) { update(STEP); accT -= STEP; if (G.state !== 'play') break; } } else accT = 0;
-    if (G.state === 'play' && L.mode === 'mingle' && G.t >= TIMELINE.places) {
-      const p = G.player; if (!p.walking && U.dist(p, PLAYER_SEAT) < 22) p.face = -Math.PI / 2;
+    if (G.state === 'play' && L.mustSit && (L.mode === 'seated' || L.mustSit(G.t))) {
+      const p = G.player; if (!p.walking && U.dist(p, PLAYER_SEAT) < 22) p.face = PLAYER_SEAT.face;
     }
     render();
     UI.hud();
@@ -1399,7 +1418,7 @@ const Game = (() => {
     G.cs = Case.generate(caseDef.seed || 7);
     G.npcs = CAST.map((c) => NPC.create(c, G.cs));
     G.items = {};
-    for (const c of CAST) { const s = G.cs.spots[c.id], off = L.ranges.itemOffset; G.items[c.id] = { ...c.item, ...(off ? (s ? { x: s.x + off.x, y: s.y + off.y } : { x: -99, y: -99 }) : { x: c.item.x, y: c.item.y }), present: !(L.lateArrivals || []).includes(c.id) }; }
+    for (const c of CAST) G.items[c.id] = { ...c.item, ...itemPos(c, G.cs.spots[c.id]), present: !(L.lateArrivals || []).includes(c.id) };
     G.player = { x: L.player.start.x, y: L.player.start.y, face: -Math.PI / 2, expr: 'neutral' };
     Object.assign(G, { know: { bags: {}, reactions: [], facts: {} }, t: 0, flashes: [], floaters: [], pssts: [], puffs: [], sv: { t: 0 }, actors: {}, props: [], doors: { main: { open: 0, target: 0 } }, result: null, rumble: null, flags: {}, diff: DIFFICULTY.normal, watchers: 0, searching: null });
   }

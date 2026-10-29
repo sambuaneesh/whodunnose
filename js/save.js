@@ -41,7 +41,7 @@ const Store = (() => {
   // A case is open if it is the first, the previous one is done, or the playtest tools are on.
   function unlocked(index) {
     if (index === 0 || data.settings.playtest) return true;
-    const prev = CASES[index - 1];
+    const c = CASES[index], prev = c.after ? CASES.find((k) => k.id === c.after) : CASES[index - 1]; // a new season opens after the last one's finale
     return !!(data.progress[prev.id] && data.progress[prev.id].done);
   }
   const campaignDone = () => CASES.every((c) => data.progress[c.id] && data.progress[c.id].done);

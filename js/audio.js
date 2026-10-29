@@ -273,12 +273,13 @@ const Sfx = (() => {
   function duck(on) { ducked = on; if (ac) applyMusicGain(); }
 
   // ---------------- ambience ----------------
-  // Each room has a bed of sound: the elevator hums and creaks; the chapel breathes and its pews groan.
+  // Each room has a bed of sound: the elevator hums and creaks; the chapel breathes and its pews groan;
+  // the plane is a wall of engine noise with the odd chime.
   function setScene(id) {
     if (!ac) return;
     stopAmbience();
     if (!id) return;
-    setRoom(id === 'elevator' ? 0.45 : 2.6, id === 'elevator' ? 0.7 : 0.35);
+    setRoom(id === 'elevator' ? 0.45 : id === 'plane' ? 0.6 : 2.6, id === 'elevator' ? 0.7 : id === 'plane' ? 0.5 : 0.35);
     const out = ac.createGain(); out.gain.value = 0.0001; out.connect(buses.amb); out.gain.setTargetAtTime(1, ac.currentTime, 1.2);
     const nodes = [], t = ac.currentTime;
     if (id === 'elevator') {
@@ -288,6 +289,11 @@ const Sfx = (() => {
       const wob = ac.createOscillator(), wg = ac.createGain(); wob.frequency.value = 0.3; wg.gain.value = 0.015; wob.connect(wg); wg.connect(hg.gain); wob.start(); nodes.push(wob);
       const n = noise(), bp = ac.createBiquadFilter(), ng = ac.createGain(); bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = 0.6; ng.gain.value = 0.012;
       n.connect(bp); bp.connect(ng); ng.connect(out); n.start(); nodes.push(n);
+    } else if (id === 'plane') {
+      const n = noise(), lp = ac.createBiquadFilter(), ng = ac.createGain(); lp.type = 'lowpass'; lp.frequency.value = 320; ng.gain.value = 0.16;
+      n.connect(lp); lp.connect(ng); ng.connect(out); n.start(); nodes.push(n);
+      const hg = ac.createGain(); hg.gain.value = 0.018; hg.connect(out);
+      nodes.push(osc('sine', 82, t, t + 3600, hg), osc('sine', 123.5, t, t + 3600, hg));
     } else {
       const n = noise(), lp = ac.createBiquadFilter(), ng = ac.createGain(); lp.type = 'lowpass'; lp.frequency.value = 520; ng.gain.value = 0.06;
       n.connect(lp); lp.connect(ng); ng.connect(out); n.start(); nodes.push(n);
@@ -298,6 +304,7 @@ const Sfx = (() => {
     if (paused || !ok()) return;
     const t = now();
     if (id === 'elevator') { if (Math.random() < 0.09) creak(t, out, 0.04); return; }
+    if (id === 'plane') { if (Math.random() < 0.025) INST.vibes(988, t, 0.8, 0.05, out); else if (Math.random() < 0.05) creak(t, out, 0.025); return; }
     if (Math.random() < 0.07) creak(t, out, 0.05);
     // a bird outside the stained glass
     if (Math.random() < 0.04) [0, 0.12, 0.2].forEach((d, i) => { const g = ac.createGain(); g.connect(out); env(g, t + d, 0.01, 0.012, 0.08); const o = osc('sine', 3200 + i * 400, t + d, t + d + 0.12, g); o.frequency.exponentialRampToValueAtTime(4200 + i * 300, t + d + 0.08); });
@@ -417,6 +424,9 @@ const Sfx = (() => {
     if (!ok()) return;
     const t = now();
     if (/DING/.test(label)) return ding();
+    if (/engines|TURBULENCE/i.test(label)) { burst(t, /TURB/.test(label) ? 5.5 : 3.5, { type: 'lowpass', freq: 180, vol: 1.2, attack: 0.4 }); if (/TURB/.test(label)) for (let i = 0; i < 8; i++) INST.wood(300 + Math.random() * 200, t + i * 0.55 + Math.random() * 0.2, 0, 0.06, buses.sfx); return; }
+    if (/bark/i.test(label)) { [0, 0.22].forEach((d) => burst(t + d, 0.14, { freq: 700, q: 3, vol: 0.5, sweepTo: 380, attack: 0.01 })); return; }
+    if (/announcement/i.test(label)) { ding(); burst(t + 0.6, 2.4, { freq: 1300, q: 1.2, vol: 0.12 }); return; }
     if (/phone/i.test(label)) return ringtone();
     if (/key change/i.test(label)) { [65, 69, 72, 77].forEach((n, i) => INST.epiano(NOTE(n + 1), t + i * 0.1, 0.4, 0.08, buses.sfx)); return; }
     if (/sneez/i.test(label)) { tone(700, t, 0.3, { type: 'triangle', vol: 0.08 }); burst(t + 0.32, 0.5, { freq: 1800, vol: 0.7, sweepTo: 900 }); return; }

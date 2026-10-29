@@ -9,7 +9,8 @@ const NPC = (() => {
 
   function create(def, cs) {
     const p = cs.spots[def.id] || { x: -100, y: -100 };
-    const elevator = L.mode === 'elevator';
+    // in the elevator people stand where they are; on the plane they sit where they are; in the chapel they mingle
+    const elevator = L.mode !== 'mingle';
     const n = {
       id: def.id, def, x: p.x, y: p.y, face: Math.PI / 2, target: null, path: [], speed: def.dog ? 70 : 52,
       wait: 3 + Math.random() * 4, lookT: 1 + Math.random() * 2, baseFace: Math.PI / 2,
@@ -58,6 +59,13 @@ const NPC = (() => {
     const ceremony = t >= TIMELINE.places;
     if (L.mode === 'elevator') {
       if (!n.target && U.dist(n, n.seat) > 3) goTo(n, { x: n.seat.x, y: n.seat.y });
+    } else if (L.mode === 'seated') {
+      // passengers stay in their seats; a level can send someone somewhere (crew walking the aisle)
+      const away = L.roam ? L.roam(n, t, G) : null, dest = away || n.seat;
+      if (!n.target && U.dist(n, dest) > 3) goTo(n, { x: dest.x, y: dest.y });
+      const sat = !away && !n.target && U.dist(n, n.seat) < 4;
+      if (sat && !n.seated) { n.baseFace = n.face = n.seat.face; }
+      n.seated = sat;
     } else if (ceremony) {
       const s = n.seat;
       if (!n.seated && !n.target) goTo(n, { x: s.x, y: s.y });
@@ -74,13 +82,13 @@ const NPC = (() => {
     n.walking = false;
     if (n.target && !n.anim) {
       const dx = n.target.x - n.x, dy = n.target.y - n.y, d = Math.hypot(dx, dy);
-      const sp = (ceremony && !n.seated ? 95 : n.speed) * (L.mode === 'elevator' ? 0.5 : 1) * dt;
+      const sp = (ceremony && !n.seated ? 95 : n.speed) * (L.npcPace ?? 1) * dt;
       if (d <= sp) {
         n.x = n.target.x; n.y = n.target.y;
         n.target = n.path.length ? n.path.shift() : null;
         if (!n.target) {
-          n.baseFace = L.mode === 'elevator' ? Math.PI / 2 : Math.random() * Math.PI * 2;
-          if (L.mode === 'elevator') n.face = n.baseFace;
+          n.baseFace = L.mode !== 'mingle' ? (n.seat ? n.seat.face : Math.PI / 2) : Math.random() * Math.PI * 2;
+          if (L.mode !== 'mingle') n.face = n.baseFace;
         }
       } else { n.x += (dx / d) * sp; n.y += (dy / d) * sp; n.face = Math.atan2(dy, dx); n.walking = true; }
     }
@@ -93,7 +101,8 @@ const NPC = (() => {
         if (n.glancing > 0) { n.glancing -= dt; if (n.glancing <= 0) n.face = n.baseFace; }
         else if (n.glanceT <= 0 && t > TIMELINE.glanceFrom) {
           n.glanceT = 6 + Math.random() * 9; n.glancing = 1.6;
-          n.face = L.mode === 'elevator' ? n.baseFace + (Math.random() < 0.5 ? -1 : 1) * (0.9 + Math.random() * 0.9) : n.baseFace + Math.PI + (Math.random() - 0.5) * 0.8;
+          // facing forward (elevator, plane) you glance sideways; in a pew you turn round
+          n.face = L.mode !== 'mingle' ? n.baseFace + (Math.random() < 0.5 ? -1 : 1) * (0.9 + Math.random() * 0.9) : n.baseFace + Math.PI + (Math.random() - 0.5) * 0.8;
         } else n.face = n.baseFace;
         if (RULES.aura && n.sus > 55 && Math.random() < dt * 0.25) { n.glancing = 1.4; n.face = Math.atan2(G.player.y - n.y, G.player.x - n.x); }
       } else if (n.lookT <= 0) {
@@ -174,7 +183,7 @@ const NPC = (() => {
 
     // ---- confronting the player ----
     if (RULES.confront && !n.def.dog && n.sus >= 72 && !n.confronted && G.state === 'play' && t >= (G.nextConfrontT || 0)) {
-      if (L.mode === 'elevator') {
+      if (L.mode !== 'mingle') { // nobody walks over to you in a lift or a plane; they wait until you are close
         if (U.dist(n, G.player) < L.ranges.talk * 1.6) { n.confronted = true; G.nextConfrontT = t + 40; G.startConfront(n); }
       } else if (!ceremony && !G.anyConfronting()) { n.confronted = true; n.confronting = true; G.nextConfrontT = t + 45; }
     }

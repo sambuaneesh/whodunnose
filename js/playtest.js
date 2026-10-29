@@ -46,7 +46,7 @@ const Playtest = (() => {
     const cs = G.cs, inCase = !!(cs && G.caseDef && ['play', 'dialogue', 'notebook', 'tip', 'accuse', 'paused'].includes(G.state));
     const nm = (id) => (id && castById(id) ? castById(id).name : '—');
     const m = Sfx.meter ? Sfx.meter() : { peak: 0, rms: 0 }, ds = Sfx.debugState ? Sfx.debugState() : {};
-    const caseOpts = CASES.map((c, i) => `<option value="${i}">${c.num}. ${esc(c.title)}</option>`).join('') + '<option value="free-elevator">Free Play: elevator</option><option value="free-wedding">Free Play: chapel</option>';
+    const caseOpts = CASES.map((c, i) => `<option value="${i}">${c.season ? 'S2 · ' : ''}${c.num}. ${esc(c.title)}</option>`).join('') + Object.values(LEVELS).map((lv) => `<option value="free-${lv.id}">Free Play: ${lv.short.toLowerCase()}</option>`).join('');
     const rules = inCase ? Object.entries(RULES).filter(([, v]) => typeof v === 'boolean') : [];
     $('#pt').innerHTML = `
       <div class="pt-h"><b>Playtest</b><button data-pt="close">Close</button></div>

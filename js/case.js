@@ -78,7 +78,7 @@ const Case = (() => {
     const food = fix.food ? foodById(fix.food) : isDog ? foodById(sg.food) : U.pick(r, HUMAN_FOODS());
     const fartType = fix.fartType || fartTypeFor(food, r);
     const cover = fix.cover ? COVERS.find((c) => c.id === fix.cover) : isDog ? sg.cover : U.pick(r, COVERS);
-    const rolledOrigin = U.pick(r, ZONES), origin = fix.origin ? zoneById(fix.origin) : rolledOrigin;
+    const rolledOrigin = U.pick(r, spawnZones()), origin = fix.origin ? zoneById(fix.origin) : rolledOrigin;
     const companion = CAST.find((c) => c.stayNear === culprit) || (castById(culprit).stayNear ? castById(castById(culprit).stayNear) : null);
 
     const present = HUMANS.filter((id) => !late.has(id));
@@ -121,7 +121,9 @@ const Case = (() => {
       }
     }
     spots[culprit] = place(origin);
-    if (companion) spots[companion.id] = place(origin, spots[culprit]);
+    const tagAlong = new Set(); // companions a level seats exactly (see L.companionSpot); the shuffle leaves them be
+    const beside = (c) => { const o = spots[c.stayNear]; if (L.companionSpot) { tagAlong.add(c.id); const p = L.companionSpot(o); taken.push(p); return p; } return place(zoneAt(o), o); };
+    if (companion) spots[companion.id] = companion.stayNear === culprit ? beside(companion) : place(origin, spots[culprit]);
     spots[nearDecoy] = place(origin, spots[culprit]);
     const emptiest = (zs) => {
       const count = (z) => taken.filter((q) => zoneAt(q).id === z.id).length;
@@ -129,7 +131,7 @@ const Case = (() => {
       return U.pick(r, zs.filter((z) => count(z) === min));
     };
     const oc = zoneCenter(origin);
-    const elsewhere = ZONES.filter((z) => z.id !== origin.id);
+    const elsewhere = spawnZones().filter((z) => z.id !== origin.id);
     const far = elsewhere.slice().sort((a, b) => U.dist(zoneCenter(b), oc) - U.dist(zoneCenter(a), oc))[0];
     const zoneFor = (id) => (pin[id] && pin[id] !== origin.id ? zoneById(pin[id]) : null); // nobody else is ever pinned to the origin
     spots[foodDecoy] = place(zoneFor(foodDecoy) || far);
@@ -138,7 +140,8 @@ const Case = (() => {
       if (c.stayNear && spots[c.stayNear]) continue; // placed after their partner
       spots[c.id] = place(zoneFor(c.id) || emptiest(elsewhere));
     }
-    for (const c of CAST) if (!spots[c.id] && c.stayNear && spots[c.stayNear]) spots[c.id] = place(zoneAt(spots[c.stayNear]), spots[c.stayNear]);
+    // a companion (stroller, dog carrier) goes beside its owner
+    for (const c of CAST) if (!spots[c.id] && c.stayNear && spots[c.stayNear]) spots[c.id] = beside(c);
     for (const c of CAST) if (!spots[c.id] && c.stayNear === undefined && !late.has(c.id)) spots[c.id] = place(emptiest(elsewhere));
     for (const c of CAST) if (!spots[c.id] && CAST.some((k) => k.stayNear === c.id) && !late.has(c.id)) spots[c.id] = place(emptiest(elsewhere));
     // shuffle apart anyone standing on top of someone else, without leaving their zone
@@ -147,6 +150,7 @@ const Case = (() => {
     spots.player = { ...L.player.start }; ids.push('player'); home.player = zoneAt(spots.player); // you are in the crowd too
     for (let it = 0; it < 60; it++) {
       for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+        if (tagAlong.has(ids[i]) || tagAlong.has(ids[j])) continue;
         const a = spots[ids[i]], b = spots[ids[j]], dx = b.x - a.x, dy = (b.y - a.y) * dk, d = Math.hypot(dx, dy) || 0.01;
         if (d >= gap) continue;
         const push = (gap - d) / 2, ux = dx / d, uy = dy / d / dk;
@@ -154,7 +158,7 @@ const Case = (() => {
       }
       spots.player.x = L.player.start.x; spots.player.y = L.player.start.y; // ...but you do not move
       for (const id of ids) {
-        if (id === 'player') continue;
+        if (id === 'player' || tagAlong.has(id)) continue;
         const z = home[id], p = spots[id];
         p.x = U.clamp(p.x, z.x + 6, z.x + z.w - 6); p.y = U.clamp(p.y, z.y + z.h * 0.25, z.y + z.h - 2);
         spots[id] = fixSpot(p);
