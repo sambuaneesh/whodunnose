@@ -477,7 +477,7 @@ const Art = (() => {
     const e = o.expr || 'neutral', f = look.features || [], bushy = f.includes('bushybrows');
     if (e === 'neutral' && !bushy) return;
     if (e === 'disgust') return;
-    const { ex: eyeX, ry } = eyeSpot(look), by = look.acc === 'shades' || look.acc === 'sleepmask' ? hy - 3 - 9.5 : hy - 3 - ry - (look.acc === 'glasses' ? 4.2 : 2.5);
+    const { ex: eyeX, ry } = eyeSpot(look), by = look.acc === 'shades' || look.acc === 'sleepmask' ? hy - 3 - 9.5 : hy - 3 - ry - (look.acc === 'glasses' ? 6 : 2.5); // clear of the frames even when tilted
     ctx.save(); ctx.lineCap = 'round';
     ctx.strokeStyle = bushy ? (look.hair || INK) : INK; ctx.lineWidth = bushy ? 3.6 : 2.4;
     if (bushy) { ctx.shadowColor = INK; ctx.shadowBlur = 0; }
@@ -490,6 +490,7 @@ const Art = (() => {
       else if (e === 'sus') { const lift = side > 0 ? -2.5 : 0.5; ctx.moveTo(ex - 5, by + lift); ctx.lineTo(ex + 5, by + lift - (side > 0 ? 1 : 0)); }
       else if (e === 'happy') { ctx.moveTo(ex - 5, by); ctx.quadraticCurveTo(ex, by - 2.5, ex + 5, by); }
       else { ctx.moveTo(ex - 5, by); ctx.lineTo(ex + 5, by); }
+      if (!bushy) { const w = ctx.lineWidth; ctx.strokeStyle = look.skin || '#f3cfae'; ctx.lineWidth = w + 2.2; ctx.stroke(); ctx.strokeStyle = INK; ctx.lineWidth = w; } // a skin-coloured edge, so a brow still reads over a fringe
       ctx.stroke();
       if (bushy) { ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.stroke(); ctx.strokeStyle = look.hair || INK; ctx.lineWidth = 3.6; }
     }
