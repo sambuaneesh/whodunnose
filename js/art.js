@@ -170,9 +170,13 @@ const Art = (() => {
         if (item.kind === 'briefcase') { ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.strokeRect(x - 5, y - 23, 10, 5); paperRect(ctx, x - 2, y - 11, 4, 4, '#f2c14e', s + 5, { amp: 0.2, shadow: false }); }
         else paper(ctx, [[x - 16, y - 18], [x + 16, y - 18], [x + 12, y - 8], [x - 12, y - 8]], 'rgba(0,0,0,0.25)', s + 2, { shadow: false });
         break;
-      case 'gymbag':
-        paperEllipse(ctx, x, y - 10, 22, 10, c, s, { stroke: INK, lw: 1.5 });
-        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x - 18, y - 10); ctx.lineTo(x + 18, y - 10); ctx.stroke(); break;
+      case 'gymbag': // a duffel: two handles over the top, round red ends and a zip
+        ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+        for (const hx of [-7, 7]) { ctx.beginPath(); ctx.arc(x + hx, y - 19, 5, Math.PI, 0); ctx.stroke(); }
+        paper(ctx, [[x - 19, y - 19], [x + 19, y - 19], [x + 23, y - 10], [x + 19, y], [x - 19, y], [x - 23, y - 10]], c, s, { stroke: INK, lw: 1.5 });
+        for (const ex of [-19, 19]) paperEllipse(ctx, x + ex, y - 9.5, 4, 8.5, '#e74c3c', s + 1 + ex, { stroke: INK, lw: 1, shadow: false });
+        ctx.save(); ctx.strokeStyle = '#9a9a9a'; ctx.lineWidth = 1.2; ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.moveTo(x - 14, y - 15); ctx.lineTo(x + 14, y - 15); ctx.stroke(); ctx.restore();
+        break;
       case 'pizzabag':
         paperRect(ctx, x - 20, y - 16, 40, 16, c, s, { stroke: INK, lw: 1.5 });
         ctx.fillStyle = '#fff'; ctx.font = '700 7px "Lexend", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('HOT', x, y - 5); break;

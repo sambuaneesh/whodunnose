@@ -210,7 +210,8 @@ const UI = (() => {
     $('#tummyMeter').classList.toggle('danger', G.pressure > 70);
     const t = G.t || 0;
     setText($('#phase'), 'phase', L.phaseLabel(t));
-    setText($('#clock'), 'clock', L.clockLabel(t));
+    const clk = L.hudClock === false ? '' : L.clockLabel(t); // the elevator's floor is already in the phase line and on the car's display
+    setText($('#clock'), 'clock', clk); $('#clock').parentElement.hidden = !clk;
     const loud = RULES.tummy && G.loud ? `LOUD: ${G.loud.label}` : '';
     setText($('#loud'), 'loud', loud); $('#loud').hidden = !loud;
     const ps = RULES.rumors && G.state === 'play' ? Game.primeSuspect() : null;

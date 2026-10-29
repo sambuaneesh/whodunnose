@@ -47,7 +47,7 @@ const Case = (() => {
       const z = pin[c.id] ? zoneById(pin[c.id]) : U.pick(r, ZONES.filter((q) => count(q) === Math.min(...ZONES.map(count))));
       spots[c.id] = place(z);
     }
-    for (const c of CAST) if (c.stayNear && spots[c.stayNear]) spots[c.id] = place(zoneAt(spots[c.stayNear]), spots[c.stayNear]);
+    for (const c of CAST) if (c.stayNear && spots[c.stayNear]) { const p = place(zoneAt(spots[c.stayNear]), spots[c.stayNear]); spots[c.id] = { ...p, x: U.clamp(p.x, L.bounds.x0 + 24, L.bounds.x1 - 24) }; }
     const facts = { [witness]: { text: fix.witnessText || `You ate ${food.name} this morning. I saw it.`, implicates: ['player'], weight: 2, kind: 'witness', food: food.id, about: 'player', short: `...the ${food.name}...` } };
     const bags = {};
     for (const c of CAST) {
@@ -121,9 +121,10 @@ const Case = (() => {
       }
     }
     spots[culprit] = place(origin);
+    const wide = (p) => p && { ...p, x: U.clamp(p.x, L.bounds.x0 + 24, L.bounds.x1 - 24) }; // a stroller is wider than a person: keep it off the walls
     const tagAlong = new Set(); // companions a level seats exactly (see L.companionSpot); the shuffle leaves them be
-    const beside = (c) => { const o = spots[c.stayNear]; if (L.companionSpot) { tagAlong.add(c.id); const p = L.companionSpot(o); taken.push(p); return p; } return place(zoneAt(o), o); };
-    if (companion) spots[companion.id] = companion.stayNear === culprit ? beside(companion) : place(origin, spots[culprit]);
+    const beside = (c) => { const o = spots[c.stayNear]; if (L.companionSpot) { tagAlong.add(c.id); const p = L.companionSpot(o); taken.push(p); return p; } return wide(place(zoneAt(o), o)); };
+    if (companion) spots[companion.id] = companion.stayNear === culprit ? beside(companion) : wide(place(origin, spots[culprit]));
     spots[nearDecoy] = place(origin, spots[culprit]);
     const emptiest = (zs) => {
       const count = (z) => taken.filter((q) => zoneAt(q).id === z.id).length;

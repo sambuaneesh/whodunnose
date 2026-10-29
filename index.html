@@ -107,7 +107,7 @@ button { cursor: pointer; }
 /* one thing at a time: while a dialogue, the notebook or the call-out is open, the play HUD steps back */
 #stage:has(#results:not([hidden])) #clueToasts, #stage:has(#dialogue:not([hidden])) #clueToasts, #stage:has(#notebook:not([hidden])) #clueToasts, #stage:has(#accuse:not([hidden])) #clueToasts { opacity: 0; }
 #stage:has(#accuse:not([hidden])) #hud, #stage:has(#accuse:not([hidden])) #caption, #stage:has(#accuse:not([hidden])) #prompt, #stage:has(#accuse:not([hidden])) #actionbar { opacity: 0; pointer-events: none; transition: opacity .3s; }
-.cluetoast { background: #fffdf6; border: 2px solid var(--ink); padding: .45em .7em; font-size: .85em; line-height: 1.3; box-shadow: 0 3px 0 rgba(0,0,0,.25); animation: slidein .3s ease-out; transition: opacity .5s; font-family: var(--f-body); }
+.cluetoast { background: var(--paper); border-left: 4px solid var(--ink); padding: .5em .8em; font-size: .85em; line-height: 1.3; clip-path: polygon(0 1%, 20% 0, 48% 1.5%, 76% 0, 100% 1.2%, 99.4% 50%, 100% 99%, 70% 100%, 40% 98.6%, 12% 100%, 0 99%); animation: slidein .3s ease-out; transition: opacity .5s; font-family: var(--f-body); }
 .cluetoast b { color: var(--aura); margin-right: .3em; }
 .cluetoast.k-contradiction { background: #fff3b0; }
 .cluetoast.out { opacity: 0; }
@@ -554,7 +554,7 @@ button { cursor: pointer; }
 .ach span { font-size: .85em; line-height: 1.35; color: var(--muted); }
 .ach.locked { opacity: .55; border-style: dashed; }
 .ach.locked b::before { content: '🔒 '; }
-#achPop { position: absolute; left: 1em; bottom: 1em; max-width: 19em; z-index: 20; background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--ink); padding: .5em 1em; text-align: center; animation: slidein .35s ease-out; pointer-events: none; }
+#achPop { position: absolute; left: 1em; top: 42%; max-width: 19em; z-index: 20; background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--ink); padding: .5em 1em; text-align: center; animation: slidein .35s ease-out; pointer-events: none; }
 #stage:has(#results:not([hidden])) #achPop { display: none; } /* the results sheet lists them */
 #achPop small { display: block; font-size: .7em; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
 #achPop b { font-family: var(--f-display); font-weight: 400; font-size: 1.15em; }

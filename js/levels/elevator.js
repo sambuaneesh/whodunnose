@@ -116,6 +116,7 @@
       return t < 1 ? 'Going down' : `Going down · Floor ${f}`;
     },
     clockLabel(t) { const f = floorAt(t); return f === 0 ? 'L' : `▼ ${f}`; },
+    hudClock: false,
     stampTime(t) { return `Floor ${floorAt(t)}`; },
 
     script(t, api) {
