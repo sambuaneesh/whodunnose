@@ -372,6 +372,8 @@ const Art = (() => {
   }
 
   // Eyes: white ellipses; lids are painted *inside* the eye (clipped), so nothing spills onto hair or glasses.
+  // Glasses wearers get slightly smaller, wider-set eyes so each sits inside its own lens and the lenses never cross.
+  const eyeSpot = (look) => (look.acc === 'glasses' ? { ex: 8.8, rx: 5.8, ry: 7.2 } : { ex: 6.8, rx: 7, ry: 8.5 });
   function drawFace(ctx, look, hy, o, seed) {
     const e = o.expr || 'neutral', f = look.features || [];
     const disgust = e === 'disgust', sus = e === 'sus', shock = e === 'shock', angry = e === 'angry', worried = e === 'worried';
@@ -386,8 +388,8 @@ const Art = (() => {
     ctx.restore();
     const lx = U.clamp(o.lookX || 0, -1, 1) * 2.4, ly = U.clamp(o.lookY || 0, -1, 1) * 2;
     const blink = !disgust && !shock && ((o.t * 1000 + (o.blinkSeed || seed) * 397) % 3700) < 130;
-    const rx = 7, ry = 8.5, ey = hy - 3;
-    for (const ex of [-6.8, 6.8]) {
+    const { ex: eyeX, rx, ry } = eyeSpot(look), ey = hy - 3, specs = look.acc === 'glasses';
+    for (const ex of [-eyeX, eyeX]) {
       const side = ex < 0 ? -1 : 1;
       ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
       if (disgust || blink) {
@@ -414,9 +416,20 @@ const Art = (() => {
       ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(ex, ey, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
       if (f.includes('lashes')) { ctx.lineWidth = 1.3; for (let k = 0; k < 2; k++) { const ang = -Math.PI / 2 + side * (0.7 + k * 0.35); ctx.beginPath(); ctx.moveTo(ex + Math.cos(ang) * rx, ey + Math.sin(ang) * ry); ctx.lineTo(ex + Math.cos(ang) * (rx + 3), ey + Math.sin(ang) * (ry + 3)); ctx.stroke(); } }
       if (f.includes('bags')) { ctx.strokeStyle = 'rgba(80,50,90,0.6)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(ex, ey + 6, 5, 0.3, Math.PI - 0.3); ctx.stroke(); }
-      if (f.includes('wrinkles')) { ctx.strokeStyle = 'rgba(60,40,30,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(ex + side * 8, ey - 1); ctx.lineTo(ex + side * 11, ey - 3); ctx.moveTo(ex + side * 8, ey + 2); ctx.lineTo(ex + side * 11, ey + 3); ctx.stroke(); }
+      if (f.includes('wrinkles')) { ctx.strokeStyle = 'rgba(60,40,30,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); const wx = side * (specs ? 17.6 : 14.8); ctx.moveTo(wx, ey - 1); ctx.lineTo(wx + side * 3, ey - 3); ctx.moveTo(wx, ey + 2); ctx.lineTo(wx + side * 3, ey + 3); ctx.stroke(); }
     }
-    if (look.acc === 'glasses') { ctx.strokeStyle = INK; ctx.lineWidth = 1.6; for (const ex of [-6.8, 6.8]) { ctx.beginPath(); ctx.arc(ex, ey, 9.2, 0, Math.PI * 2); ctx.stroke(); } ctx.beginPath(); ctx.moveTo(-2.4, ey - 1); ctx.lineTo(2.4, ey - 1); ctx.stroke(); }
+    if (specs) {
+      // two separate lenses with a gap, a bridge between them and arms out to the ears
+      const hw = 7.4, hh = 8.4, lens = (cx) => { ctx.beginPath(); ctx.roundRect(cx - hw, ey - hh, hw * 2, hh * 2, 4.5); };
+      for (const ex of [-eyeX, eyeX]) {
+        lens(ex); ctx.fillStyle = 'rgba(190,225,255,0.18)'; ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(ex + 2, ey - hh + 2.4); ctx.lineTo(ex + 4.6, ey - hh + 2.4); ctx.stroke();
+        lens(ex); ctx.strokeStyle = INK; ctx.lineWidth = 1.7; ctx.stroke();
+      }
+      const inner = eyeX - hw, outer = eyeX + hw;
+      ctx.beginPath(); ctx.moveTo(-inner, ey - 2); ctx.quadraticCurveTo(0, ey - 4.5, inner, ey - 2);
+      ctx.moveTo(-outer, ey - 3); ctx.lineTo(-22, ey - 4); ctx.moveTo(outer, ey - 3); ctx.lineTo(22, ey - 4); ctx.stroke();
+    }
     if (look.acc === 'shades') paperRect(ctx, -16, hy - 10, 32, 11, '#111', seed + 60, { amp: 0.6, shadow: false });
     if (f.includes('earrings')) for (const sx of [-23, 23]) { ctx.fillStyle = '#f2c14e'; ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(sx, hy + 7, 2.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
     // mouth: talking cycles through three cutout mouth shapes
@@ -438,11 +451,11 @@ const Art = (() => {
     const e = o.expr || 'neutral', f = look.features || [], bushy = f.includes('bushybrows');
     if (e === 'neutral' && !bushy) return;
     if (e === 'disgust' || look.acc === 'shades') return;
-    const by = hy - 3 - 8.5 - (look.acc === 'glasses' ? 4 : 2.5);
+    const { ex: eyeX, ry } = eyeSpot(look), by = hy - 3 - ry - (look.acc === 'glasses' ? 4.2 : 2.5);
     ctx.save(); ctx.lineCap = 'round';
     ctx.strokeStyle = bushy ? (look.hair || INK) : INK; ctx.lineWidth = bushy ? 3.6 : 2.4;
     if (bushy) { ctx.shadowColor = INK; ctx.shadowBlur = 0; }
-    for (const ex of [-6.8, 6.8]) {
+    for (const ex of [-eyeX, eyeX]) {
       const side = ex < 0 ? -1 : 1;
       ctx.beginPath();
       if (e === 'angry') { ctx.moveTo(ex - 5 * side, by - 2); ctx.lineTo(ex + 5 * side, by + 2); }
