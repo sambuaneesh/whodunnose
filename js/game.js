@@ -67,18 +67,20 @@ const Game = (() => {
     const cam = G.cam, v = L.view, hw = W / 2 / z, hh = (H - barH) / 2 / z;
     cam.tz = z; cam.tx = U.clamp(p.x, v.x + hw, v.x + v.w - hw); cam.ty = U.clamp(p.y + dy, v.y + hh, v.y + v.h - hh) + barH / 2 / z;
   }
+  // ...but only where the wide shot is too small to read faces (phones); on a big screen the whole chapel fits
+  const follows = () => L.follow && baseZoom() * cv.clientWidth / W < 0.75;
   function followCam() {
     if (!G.cs || !G.player) return;
     const cam = G.cam, talk = G.talkWith && G.state === 'dialogue';
     if (talk) {
       // their feet just above the dialogue box, zoomed so all of them fits in the space that is left
-      const room = (G.dlgTop || H * 0.62) - 14, z = Math.max(baseZoom() * 0.9, Math.min(baseZoom() * (L.follow ? L.follow * 1.15 : 1.15), (room - 10) / 118));
+      const room = (G.dlgTop || H * 0.62) - 14, z = Math.max(baseZoom() * 0.9, Math.min(baseZoom() * (follows() ? L.follow * 1.15 : 1.15), (room - 10) / 118));
       // (below the scene is hidden behind the dialogue box anyway, so the camera may look past the floor)
       const v = L.view, hw = W / 2 / z, p = G.talkWith;
       cam.tz = z; cam.tx = U.clamp(p.x, v.x + hw, v.x + v.w - hw); cam.ty = Math.max(v.y + H / 2 / z, p.y + (H / 2 - room) / z);
     }
-    else if (G.talkWith && G.state !== 'dialogue') { G.talkWith = null; if (!L.follow) unfocus(); }
-    if (talk || !L.follow || !['play', 'tip', 'dialogue', 'notebook', 'paused'].includes(G.state)) return;
+    else if (G.talkWith && G.state !== 'dialogue') { G.talkWith = null; if (!follows()) unfocus(); }
+    if (talk || !follows() || !['play', 'tip', 'dialogue', 'notebook', 'paused'].includes(G.state)) return;
     if ((G.overviewT || 0) > G.t) unfocus();
     else { const v = L.view, c = { x: v.x + v.w / 2, y: v.y + v.h * 0.45 }; frameCam({ x: G.player.x * 0.75 + c.x * 0.25, y: G.player.y * 0.6 + c.y * 0.4 }, baseZoom() * L.follow, -40); } // leans toward the middle of the room
     if (G.camSnap) { cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; G.camSnap = false; }
@@ -262,6 +264,14 @@ const Game = (() => {
   }
 
   // ---------------- the timeline ----------------
+  // The sound card goes in the band of the wide shot that covers the fewest faces, so the first reactions stay visible.
+  function beatBand() {
+    const c = viewCenter(), z = baseZoom(), half = H * 0.045 + 40 * z;
+    const heads = [...humans(), G.player].map((n) => ({ x: (n.x - c.x) * z + W / 2, y: (n.y - 92 - c.y) * z + H / 2 })).filter((h) => Math.abs(h.x - W / 2) < W * 0.32);
+    let best = 0.4, fewest = 1e9;
+    for (const b of [0.4, 0.22, 0.6]) { const k = heads.filter((h) => Math.abs(h.y - b * H) < half).length; if (k < fewest) { fewest = k; best = b; } }
+    return best;
+  }
   function timeline() {
     const t = G.t, cs = G.cs, T = TIMELINE;
     if (t >= 1.5) once('startTips', () => { if (cs.reverse) tip('reverse'); tip('law'); tip('badgesOff'); if (RULES.aura) tip('watched'); });
@@ -275,12 +285,12 @@ const Game = (() => {
         Sfx.fart(cs.fartType, s.x, 1, { size: 0.8 + cs.food.loud * 0.5 });
         const side = s.x < L.view.x + L.view.w * 0.45 ? 'left' : s.x > L.view.x + L.view.w * 0.55 ? 'right' : 'middle';
         const kind = cs.fartType === 'squeaker' ? 'A high, squeaky one' : 'A long, low trumpet';
-        UI.beat('*pfrrrt*', `${kind}, from the ${side}.`);
+        UI.beat('*pfrrrt*', `${kind}, from the ${side}.`, beatBand());
         addClue({ key: 'sound', kind: 'sound', text: `${kind} came from the ${side}. ${cs.fartType === 'trumpet' ? 'That much gas usually means beans.' : 'Medium volume.'}`, implicates: [], weight: 0 });
         feature('audio');
       } else {
         Sfx.fart('sbd', s.x, 0.6);
-        UI.beat('...', 'No sound at all. But something is definitely happening.');
+        UI.beat('. . .', 'No sound at all. But something is definitely happening.', beatBand());
         addClue({ key: 'sound', kind: 'sound', text: 'No sound at all. Silent but deadly usually means sulfur-rich protein: eggs, fish, a protein shake.', implicates: [], weight: 0 });
       }
       G.photoPending = RULES.photo;

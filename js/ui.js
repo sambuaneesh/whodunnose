@@ -129,7 +129,7 @@ const UI = (() => {
   // moment whenever an objective changes; hovering or clicking opens it too.
   let cfPinned = false, cfAutoT = 0, cfKey = '';
   // HUD rectangles in canvas units: labels avoid them, and a card fades when someone is standing behind it
-  let hudBoxes = [], hudFrame = 0;
+  let hudBoxes = [], hudFrame = 0, hudLast = 0;
   function hudRects() { return hudBoxes; }
   function measureHud() {
     const st = $('#cv').getBoundingClientRect(); if (!st.width) return;
@@ -216,11 +216,12 @@ const UI = (() => {
     setText($('#nbBadge'), 'nb', G.unseenClues ? String(G.unseenClues) : ''); $('#nbBadge').hidden = !G.unseenClues;
     setText($('#tourCount'), 'tour', `${Object.keys(G.features).length}/${FEATURES.length}`);
     $('#btnTour').hidden = !S().presenter;
-    if (cfAutoT > 0) cfAutoT -= 1 / 60;
+    const now = performance.now(), dt = Math.min(0.1, (now - (hudLast || now)) / 1000); hudLast = now; // real seconds, whatever the frame rate
+    if (cfAutoT > 0) cfAutoT -= dt;
     $('#caseFile').classList.toggle('open', cfPinned || cfAutoT > 0 || G.state === 'paused');
     if (++hudFrame % 6 === 0) measureHud();
-    if (captionT > 0) { captionT -= 1 / 60; if (captionT <= 0) $('#caption').classList.remove('on'); }
-    if (stampT > 0) { stampT -= 1 / 60; if (stampT <= 0) $('#stamp').classList.remove('on'); }
+    if (captionT > 0) { captionT -= dt; if (captionT <= 0) $('#caption').classList.remove('on'); }
+    if (stampT > 0) { stampT -= dt; if (stampT <= 0) $('#stamp').classList.remove('on'); }
   }
 
   function objectives() {
@@ -232,6 +233,8 @@ const UI = (() => {
     // on small screens the case file collapses to its title and a count
     const ids = G.caseDef.objectives, done = ids.filter((id) => G.objState && G.objState[id] === 'done').length;
     $('#caseTag').dataset.count = `${done}/${ids.length}`;
+    const next = ids.find((id) => !G.objState || !G.objState[id] || G.objState[id] === 'open'), nl = next && OBJECTIVES[next].label;
+    $('#cfNext').textContent = next ? `Next: ${typeof nl === 'function' ? nl() : nl}` : '';
     const key = ids.map((id) => (G.objState && G.objState[id]) || 'open').join();
     if (cfKey && key !== cfKey) cfAutoT = Math.max(cfAutoT, 4);
     cfKey = key;
@@ -249,9 +252,9 @@ const UI = (() => {
     const el = $('#stamp'); el.textContent = text; el.className = 'stamp ' + tone;
     void el.offsetWidth; el.classList.add('on'); stampT = 2.2; Sfx.stamp();
   }
-  function beat(big, small) {
+  function beat(big, small, at = 0.4) {
     $('#caption').classList.remove('on'); captionT = 0;
-    const el = $('#beat'); $('#beatBig').textContent = big; $('#beatSmall').textContent = small;
+    const el = $('#beat'); el.style.top = (at * 100) + '%'; el.classList.toggle('quiet', /^[. ]+$/.test(big)); $('#beatBig').textContent = big; $('#beatSmall').textContent = small;
     el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
   }
   function speakNow(on) { $('#objectBtn').classList.toggle('speak', on); }

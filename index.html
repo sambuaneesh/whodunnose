@@ -364,12 +364,16 @@ button { cursor: pointer; }
 /* the case file folds to one line during play (see UI: it opens on its own when something changes) */
 #caseFile:not(.open):not(:hover) #objList { display: none; }
 #caseFile:not(.open):not(:hover) .cf-tag { margin: 0; }
+.cf-next { display: none; font-size: .8em; margin-top: .15em; color: #4a4356; }
+#caseFile:not(.open):not(:hover) .cf-next:not(:empty) { display: block; }
 #caseFile:not(.open):not(:hover) .cf-tag::after { content: ' · ' attr(data-count) ' ▾'; font-family: var(--f-body); font-size: .85em; color: var(--muted); }
 /* a HUD card steps back while someone stands behind it */
 .hud-card, #hud .chipbtn { transition: opacity .3s; }
 .hud-card.ghost, #hud .chipbtn.ghost { opacity: .5; }
 .hud-mid.ghost { opacity: .6; } /* the phase and clock stay readable */
 .hud-card.ghost:hover, #hud .chipbtn.ghost:hover { opacity: 1; }
+/* on a wide screen the meters sit top right, beside Hint, so the top-left corner of the room stays clear */
+@container (min-width: 1000px) { #meters { position: absolute; right: 8.2em; top: .8em; } }
 .pr.urgent { background: #fff3b0; animation: pulse .35s infinite alternate; }
 .cf-tag { font-family: var(--f-display); font-size: .95em; margin-bottom: .25em; }
 #objList, .oblist { list-style: none; margin: 0; padding: 0; display: grid; gap: .2em; font-size: .85em; }
@@ -394,7 +398,8 @@ button { cursor: pointer; }
 #beat { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; opacity: 0; }
 #beat.on { animation: beat 2.6s ease-out forwards; }
 #beatBig { font-family: var(--f-display); font-size: 4.5em; color: #fff; text-shadow: .06em .06em 0 var(--ink), 0 0 .5em rgba(155,197,61,.8); }
-#beatSmall { font-size: 1.3em; color: #fff; background: rgba(28,26,31,.85); padding: .3em .9em; border-radius: 4px; margin-top: .3em; display: inline-block; }
+#beat.quiet #beatBig { font-family: var(--f-body); font-weight: 700; font-size: 3.2em; color: #d9f2a8; letter-spacing: .1em; }
+#beatSmall { font-size: 1.3em; color: #fff; background: rgba(28,26,31,.85); padding: .3em .9em; border-radius: 4px; margin-top: .3em; display: none; } /* the same words land in the notes (bottom left), so the card never covers faces */
 @keyframes beat { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6) } 12% { opacity: 1; transform: translate(-50%, -50%) scale(1) } 75% { opacity: 1 } 100% { opacity: 0 } }
 
 /* tips */
@@ -511,6 +516,7 @@ button { cursor: pointer; }
   #hud { padding: .5em .6em; gap: .5em; }
   .meter { grid-template-columns: 3.8em 6.5em 1.8em; font-size: .85em; }
   #clueToasts { width: 15em; }
+  #caption { max-width: 52%; left: calc(50% + 4.5em); } /* clear of the clue notes on the left */
   .act { padding: .3em .55em; font-size: .85em; }
   #actionbar { gap: .3em; }
   /* everything that matters stays on one screen */
@@ -541,6 +547,7 @@ button { cursor: pointer; }
 .ach.locked { opacity: .55; border-style: dashed; }
 .ach.locked b::before { content: '🔒 '; }
 #achPop { position: absolute; left: 1em; bottom: 1em; max-width: 19em; z-index: 20; background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--ink); padding: .5em 1em; text-align: center; animation: slidein .35s ease-out; pointer-events: none; }
+#stage:has(#results:not([hidden])) #achPop { left: auto; right: 2.2em; bottom: auto; top: 1.6em; } /* clear of the results text */
 #achPop small { display: block; font-size: .7em; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
 #achPop b { font-family: var(--f-display); font-weight: 400; font-size: 1.15em; }
 .daily { border: 2px solid var(--ink); background: #fff7d6; padding: .4em .6em; display: grid; line-height: 1.2; grid-template-columns: 1fr auto; gap: .1em .6em; align-items: center; }
@@ -579,7 +586,7 @@ button { cursor: pointer; }
 
   <div id="hud" hidden>
     <div class="hud-left">
-      <div class="hud-card paper" id="caseFile"><div id="caseTag" class="cf-tag"></div><ul id="objList"></ul></div>
+      <div class="hud-card paper" id="caseFile"><div id="caseTag" class="cf-tag"></div><div id="cfNext" class="cf-next"></div><ul id="objList"></ul></div>
       <div class="hud-card paper" id="meters">
         <div class="meter" id="auraMeter" title="Your reputation. It drops when people see you do something odd, and recovers while you act normal."><span class="lbl">Aura</span><div class="bar"><i id="auraFill"></i></div><span id="auraVal">100</span></div>
         <div id="watch" title="How many people can see you right now"><svg viewBox="0 0 24 14" aria-hidden="true"><path d="M1 7 Q12 -4 23 7 Q12 18 1 7Z" fill="#fff" stroke="#1c1a1f" stroke-width="1.6"/><circle cx="12" cy="7" r="3.2"/></svg><span id="watchTxt">nobody watching</span></div>
