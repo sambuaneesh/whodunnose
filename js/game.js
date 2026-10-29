@@ -69,7 +69,13 @@ const Game = (() => {
   function followCam() {
     if (!G.cs || !G.player) return;
     const cam = G.cam, talk = G.talkWith && G.state === 'dialogue';
-    if (talk) { const z = baseZoom() * (L.follow ? L.follow * 1.15 : 1.15); frameCam(G.talkWith, z, 150 / z - 50); }
+    if (talk) {
+      // their feet just above the dialogue box, zoomed so all of them fits in the space that is left
+      const room = (G.dlgTop || H * 0.62) - 14, z = Math.max(baseZoom() * 0.9, Math.min(baseZoom() * (L.follow ? L.follow * 1.15 : 1.15), (room - 10) / 118));
+      // (below the scene is hidden behind the dialogue box anyway, so the camera may look past the floor)
+      const v = L.view, hw = W / 2 / z, p = G.talkWith;
+      cam.tz = z; cam.tx = U.clamp(p.x, v.x + hw, v.x + v.w - hw); cam.ty = Math.max(v.y + H / 2 / z, p.y + (H / 2 - room) / z);
+    }
     else if (G.talkWith && G.state !== 'dialogue') { G.talkWith = null; if (!L.follow) unfocus(); }
     if (talk || !L.follow || !['play', 'tip', 'dialogue', 'notebook', 'paused'].includes(G.state)) return;
     if ((G.overviewT || 0) > G.t) unfocus();

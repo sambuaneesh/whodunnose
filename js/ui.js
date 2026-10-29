@@ -146,6 +146,9 @@ const UI = (() => {
       }
     });
     hudBoxes = out;
+    // where the dialogue box starts, so the camera can keep whoever you talk to in view above it
+    const dl = $('#dialogue'), dr = dl.hidden ? null : dl.getBoundingClientRect();
+    G.dlgTop = dr && dr.height ? (dr.top - st.top) * k : null;
     // the caption sits just above the prompts, or at the top when you are standing where it would cover you
     const cap = $('#caption'), pr = $('#prompt').getBoundingClientRect(), ab = $('#actionbar').getBoundingClientRect();
     const floor = Math.min(pr.height ? pr.top : Infinity, ab.height ? ab.top : Infinity, st.bottom);
@@ -636,8 +639,12 @@ const UI = (() => {
     const el = $('#accuseBody');
     const finalLine = c.dog ? sg.outcome[res.outcome] : { confess: v.guilty, reluctant: v.reluctant, unproven: "That's ridiculous. You can't prove a thing.", wrong: v.innocent }[res.outcome];
     const who = c.dog ? (castById(sg.speaker) ? castById(sg.speaker).name : c.name) : c.name;
-    el.innerHTML = `<div class="trial-head"><img class="vport" alt="" src="${Art.portrait(c, res.outcome === 'wrong' ? 'angry' : 'shock')}"><div class="th-main"><div class="res-k">The verdict</div><h2>${esc(c.name)}</h2></div></div><ol id="vlines"></ol><div id="vend"></div>`;
+    const caught = res.outcome === 'confess' || res.outcome === 'reluctant';
+    el.innerHTML = `<div class="verdict ${caught ? 'v-caught' : 'v-' + res.outcome}"><div class="trial-head"><img class="vport" alt="" src="${Art.portrait(c, res.outcome === 'wrong' ? 'angry' : 'shock')}"><div class="th-main"><div class="res-k">The verdict</div><h2>${esc(c.name)}</h2></div></div><ol id="vlines"></ol><div id="vstamp" hidden>${caught ? 'Case closed' : res.outcome === 'wrong' ? 'Wrong person' : 'No proof'}</div><div id="vend"></div></div>`;
     const lines = [{ who, text: finalLine, final: true }];
+    // the room reacts, in character: two people who were there
+    if (caught && !c.dog) Game.humans().filter((n) => n.id !== c.id).sort((a, b) => U.dist(a, Game.npcById(c.id)) - U.dist(b, Game.npcById(c.id))).slice(0, 2)
+      .forEach((n) => { const rv = VOICES[n.id]; if (rv && rv.rumor) lines.push({ who: n.def.name, text: U.fill(rv.rumor, { name: c.name, NAME: c.name.toUpperCase() }), aside: true }); });
     if (res.mode === 'proof' && res.clue && res.correct && res.outcome === 'confess') lines.unshift({ who: 'You', text: res.clue.text });
     if (res.outcome === 'wrong') lines.push({ who: 'Narrator', text: sg.finale(castById(G.cs.culprit).name) });
     if (res.outcome === 'unproven') lines.push({ who: 'Narrator', text: 'You were right. Nobody believes you. That is somehow worse.' });
@@ -647,13 +654,14 @@ const UI = (() => {
     const next = () => {
       if (!acc) return;
       if (i >= lines.length) {
+        $('#vstamp').hidden = false; Sfx.stamp();
         $('#vend').innerHTML = '<button id="vDone">See how you did</button>';
         $('#vDone').addEventListener('click', () => { hide('#accuse'); acc = null; Game.finish('accuse', res); });
         $('#vDone').focus({ preventScroll: true });
         return;
       }
       const Ln = lines[i++], li = document.createElement('li');
-      li.className = Ln.final ? 'final' : '';
+      li.className = Ln.final ? 'final' : Ln.aside ? 'aside' : '';
       li.innerHTML = `<b>${esc(Ln.who)}</b> ${esc(Ln.text)}`;
       ol.appendChild(li);
       if (Ln.final) (res.outcome === 'wrong' || res.outcome === 'unproven' ? Sfx.ui('bad') : Sfx.ui('lock'));
