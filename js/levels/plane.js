@@ -69,7 +69,7 @@
     // does it come into view (so the cabin is not littered with floating bags)
     itemAt(spot, c) {
       if (c.dog) return { x: spot.x + 6, y: spot.y - 2 }; // the travel bag he sits on
-      if (inGalley(spot)) return { x: GALLEY_X + 26, y: 548 }; // the crew bag, stowed in the galley
+      if (inGalley(spot)) return { x: GALLEY_X + 76, y: 550 }; // the crew bag, stowed in the galley (clear of the cart)
       const s = nearestSeat(spot), x = ROW_X[s.row - 1] + 8 + s.lane * 14;
       return { x, y: AISLE, drawX: x, drawY: s.lane < 2 ? AISLE - 6 : AISLE + 16 };
     },
@@ -371,14 +371,32 @@
     for (let x = FRONT + 14; x < GALLEY_X; x += 24) for (const dy of [-15, 16]) { ctx.fillStyle = 'rgba(255,236,160,0.8)'; ctx.fillRect(x, AISLE + dy - 1, 5, 2); }
     // the rear galley: counter, ovens, the drinks cart, and the lavatory door
     paperRect(ctx, GALLEY_X, 268, REAR - GALLEY_X, NEAR_BOT - 268, '#d9cfbd', 960, { stroke: INK, lw: 1.2, amp: 0.6 });
-    paperRect(ctx, GALLEY_X + 4, 270, 64, 92, '#c4c8d0', 961, { stroke: INK, lw: 1, amp: 0.5 });
-    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) paperRect(ctx, GALLEY_X + 9 + i * 30, 276 + j * 26, 24, 20, (i + j) % 2 ? '#aeb4bf' : '#9aa1ae', 962 + i * 2 + j, { stroke: INK, lw: 0.8, amp: 0.3 });
-    paperRect(ctx, GALLEY_X + 10, 330, 22, 14, '#7b4a2a', 967, { amp: 0.3, shadow: false }); // coffee pot
+    // a lino floor, so the crew have something to stand on
+    paperRect(ctx, GALLEY_X + 1, FAR_TOP, REAR - GALLEY_X - 2, NEAR_BOT - FAR_TOP, '#e4dfd3', 959, { amp: 0.4, shadow: false });
+    ctx.strokeStyle = 'rgba(28,26,31,0.12)'; ctx.lineWidth = 1;
+    for (let y = FAR_TOP + 36; y < NEAR_BOT; y += 36) { ctx.beginPath(); ctx.moveTo(GALLEY_X + 2, y); ctx.lineTo(REAR - 2, y); ctx.stroke(); }
+    for (let x = GALLEY_X + 34; x < REAR; x += 34) { ctx.beginPath(); ctx.moveTo(x, FAR_TOP); ctx.lineTo(x, NEAR_BOT); ctx.stroke(); }
+    // the ovens and stowage, over a steel counter with the coffee and a stack of cups
+    paperRect(ctx, GALLEY_X + 4, 270, 64, 76, '#c4c8d0', 961, { stroke: INK, lw: 1, amp: 0.5 });
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      paperRect(ctx, GALLEY_X + 9 + i * 30, 276 + j * 34, 24, 28, (i + j) % 2 ? '#aeb4bf' : '#9aa1ae', 962 + i * 2 + j, { stroke: INK, lw: 0.8, amp: 0.3 });
+      paperRect(ctx, GALLEY_X + 17 + i * 30, 279 + j * 34, 8, 3, '#6d7480', 980 + i * 2 + j, { amp: 0.1, shadow: false }); // handle
+    }
+    paperRect(ctx, GALLEY_X + 2, 346, 70, 12, '#9aa1ae', 966, { stroke: INK, lw: 1, amp: 0.4 });
+    paper(ctx, [[GALLEY_X + 12, 346], [GALLEY_X + 14, 332], [GALLEY_X + 30, 332], [GALLEY_X + 32, 346]], '#7b4a2a', 967, { stroke: INK, lw: 0.8, amp: 0.3 }); // coffee pot
+    paperRect(ctx, GALLEY_X + 14, 328, 16, 5, '#2b2b30', 984, { amp: 0.2, shadow: false });
+    for (let k = 0; k < 4; k++) paperRect(ctx, GALLEY_X + 46, 336 - k * 4, 12, 5, '#fbf7ee', 985 + k, { stroke: 'rgba(28,26,31,0.5)', lw: 0.6, amp: 0.2, shadow: false });
     paperRect(ctx, LAV.x - 26, 274, 52, 150, '#b9ad97', 968, { stroke: INK, lw: 1.2, amp: 0.6 });
     ctx.fillStyle = INK; ctx.font = '700 7px "Lexend", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('LAVATORY', LAV.x, 300);
     paperEllipse(ctx, LAV.x + 16, 360, 3, 3, '#8a7f6a', 969, { shadow: false });
-    paperRect(ctx, GALLEY_X + 6, 470, 40, 56, '#5f6878', 970, { stroke: INK, lw: 1, amp: 0.5 }); // the drinks cart, parked
-    paper(ctx, [[GALLEY_X, NEAR_BOT - 70], [REAR, NEAR_BOT - 70], [REAR, NEAR_BOT], [GALLEY_X, NEAR_BOT]], 'rgba(0,0,0,0.06)', 971, { amp: 0.4, shadow: false });
+    // the drinks cart, parked: a steel trolley with the airline stripe, drawers, wheels and cans on top
+    const cx = GALLEY_X + 8, cy = 464;
+    for (let i = 0; i < 4; i++) paperRect(ctx, cx + 4 + i * 10, cy - 10, 7, 11, ['#d6403a', '#2fa36b', '#e8b72e', '#3a86d0'][i], 990 + i, { stroke: INK, lw: 0.6, amp: 0.2, shadow: false });
+    paperRect(ctx, cx, cy, 44, 60, '#b9bfc9', 970, { stroke: INK, lw: 1.2, amp: 0.5 });
+    paperRect(ctx, cx + 1, cy + 6, 42, 7, '#c0392b', 972, { amp: 0.3, shadow: false });
+    ctx.strokeStyle = 'rgba(28,26,31,0.45)'; ctx.lineWidth = 1;
+    for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(cx + 3, cy + 24 + k * 12); ctx.lineTo(cx + 41, cy + 24 + k * 12); ctx.stroke(); }
+    for (const wx of [cx + 7, cx + 37]) paperEllipse(ctx, wx, cy + 62, 4, 4, '#3a3a40', 994 + wx, { shadow: false });
     // the front bulkhead (with the curtain to business class) and the forward door
     paperRect(ctx, FRONT - 34, 238, 34, NEAR_BOT - 238, '#d9cfbd', 975, { stroke: INK, lw: 1.5, amp: 0.6 });
     paperRect(ctx, FRONT - 28, 380, 22, 150, '#8a2f3a', 976, { stroke: INK, lw: 1, amp: 0.8 });
