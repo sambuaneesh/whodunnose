@@ -680,7 +680,7 @@ const UI = (() => {
     const cs = G.cs, cul = castById(cs.culprit);
     const st = G.caseDef.story, passed = r.rank !== 'F' && r.rank !== 'D';
     const rev = cs.reverse && r.acc, ending = rev && st && st.endings ? st.endings[rev.named === 'player' ? 'caught' : rev.named ? 'framed' : 'nobody'] : null;
-    const truth = ending ? esc(U.fill(ending, { name: rev.named && rev.named !== 'player' ? castById(rev.named).name : '' })) : st && st.fix.culprit === cs.culprit ? esc(st.truth) : `It was <b>${esc(cul.name)}</b>. They had ${esc(cs.food.name)} (${esc(cs.food.smell)}), it started by the ${esc(cs.origin.name)}${cs.fartType === 'sbd' ? ', silent but deadly' : cs.fartType === 'trumpet' ? ', and it was loud' : ''}${RULES.tells ? `, and they covered it up by ${esc(cs.cover.label)}` : ''}.`;
+    const truth = ending ? esc(U.fill(ending, { name: rev.named && rev.named !== 'player' ? castById(rev.named).name : '' })) : st && st.fix.culprit === cs.culprit ? esc(st.truth) : `It was <b>${esc(cul.name)}</b>. They had ${esc(cs.food.name)} (${esc(cs.food.smell)}), it started ${esc(zoneAtPhrase(cs.origin))}${cs.fartType === 'sbd' ? ', silent but deadly' : cs.fartType === 'trumpet' ? ', and it was loud' : ''}${RULES.tells ? `, and they covered it up by ${esc(cs.cover.label)}` : ''}.`;
     const intro = { bankrupt: 'Your Aura hit zero. Everyone has quietly agreed it was you.', peace: L.peaceText, accuse: '' }[r.kind];
     const vl = G.verdictLine;
     const panels = [

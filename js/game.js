@@ -592,7 +592,7 @@ const Game = (() => {
   function onReaction(n) {
     G.know.reactions.push({ id: n.id, t: G.t, zone: n.reactZone });
     n.reactOrder = G.know.reactions.length;
-    logEvent(`${n.def.name} reacts to the smell (by the ${zoneById(n.reactZone).name}).`);
+    logEvent(`${n.def.name} reacts to the smell (${zoneAtPhrase(zoneById(n.reactZone))}).`);
     if (!n.def.dog) Sfx.gag(n.x);
     if (G.know.reactions.length === 1) feature('noses');
     if (G.know.reactions.length === 3) {
@@ -778,8 +778,8 @@ const Game = (() => {
     if (!guilty && c.food && c.food === ate && ate === cs.food.id && z) {
       // the innocent who really did eat it: yes, and here is where I was
       G.know.zones[n.id] = z;
-      addClue({ key: 'zone-' + n.id, kind: 'zone', who: n.id, text: `${nm} admits the ${foodById(ate).name}, but was by the ${zoneById(z).name} when it happened.`, implicates: z === cs.origin.id ? [n.id] : [], weight: 1, zone: z });
-      return { text: `Yes, I had ${foodById(ate).name}. So did other people. I was by the ${zoneById(z).name} when it started${z === cs.origin.id ? '. ...Which, okay, I hear how that sounds' : ', nowhere near it'}.`, expr: 'angry' };
+      addClue({ key: 'zone-' + n.id, kind: 'zone', who: n.id, text: `${nm} admits the ${foodById(ate).name}, but was ${zoneAtPhrase(zoneById(z))} when it happened.`, implicates: z === cs.origin.id ? [n.id] : [], weight: 1, zone: z });
+      return { text: `Yes, I had ${foodById(ate).name}. So did other people. I was ${zoneAtPhrase(zoneById(z))} when it started${z === cs.origin.id ? '. ...Which, okay, I hear how that sounds' : ', nowhere near it'}.`, expr: 'angry' };
     }
     if (RULES.aura) { n.sus = Math.min(100, n.sus + COSTS.nosy * 2 * G.diff.aura); recomputeAura(); }
     return { text: U.pick(Math.random, ['And? What is that supposed to prove?', 'Okay. And you are showing me this because...?', 'Wow. You have been busy. That proves nothing.']), expr: 'sus', bad: true };
@@ -826,7 +826,7 @@ const Game = (() => {
         }
         const z = zoneById(zid);
         G.know.zones[n.id] = z.id;
-        addClue({ key: 'zone-' + n.id, kind: 'zone', who: n.id, text: `${n.def.name} was by the ${z.name} when it happened.`, implicates: z.id === cs.origin.id ? [n.id] : [], weight: 1, zone: z.id });
+        addClue({ key: 'zone-' + n.id, kind: 'zone', who: n.id, text: `${n.def.name} was ${zoneAtPhrase(z)} when it happened.`, implicates: z.id === cs.origin.id ? [n.id] : [], weight: 1, zone: z.id });
         return { text: U.fill(v.where, { zone: z.name, at: zoneAtPhrase(z) }) };
       }
       case 'gossip': {
@@ -840,7 +840,7 @@ const Game = (() => {
         if (!G.mentioned) { smeltIt(n); return { text: "...Smell WHAT? I didn't say anything. Funny that YOU noticed first.", expr: 'sus', bad: true }; }
         identifySmell('told');
         const sm = cs.food.smell;
-        const rz = n.reactZone ? ` It hit me over by the ${zoneById(n.reactZone).name}.` : ' Honestly I barely caught it.';
+        const rz = n.reactZone ? ` It hit me ${zoneAtPhrase(zoneById(n.reactZone))}.` : ' Honestly I barely caught it.';
         return { text: U.fill(v.smell, { smell: sm, Smell: U.cap(sm), SMELL: sm.toUpperCase() }) + rz, expr: 'disgust' };
       }
       case 'hush': {
@@ -941,7 +941,7 @@ const Game = (() => {
       const tz = zoneAt({ x: p.x + Math.cos(a) * reach, y: p.y + Math.sin(a) * reach });
       const strength = c > 0.5 ? 'Overwhelming' : c > 0.18 ? 'Strong' : 'Faint';
       const showDir = RULES.questions.includes('where');
-      msg = showDir ? `${strength} ${G.cs.food.smell}. Stronger toward the ${tz.name}.` : `${strength} ${G.cs.food.smell}.`;
+      msg = showDir ? `${strength} ${G.cs.food.smell}. Stronger toward the ${tz.name.toLowerCase()}.` : `${strength} ${G.cs.food.smell}.`;
       if (showDir) G.sniffArrow = { a, t: 2.6 };
     }
     p.bubble = { text: msg, t: 3.4, tone: 'thought' };
@@ -1124,10 +1124,10 @@ const Game = (() => {
       contra: (c) => ['bag', 'witness', 'contradiction'].includes(c.kind) && ab(c) && c.food && c.food !== claim.id,
       press: guilty ? `${U.cap(claim.name)}. Yes. Definitely. Why are you looking at me like that?` : 'Ask anyone. I had it right in front of everybody.' }];
     const z = cs.fartZone[accused];
-    if (guilty) st.push({ id: 'zone', topic: 'Where they were', speaker: def.name, text: `I was nowhere near the ${cs.origin.name}. I was over by the ${zoneById(cs.alibiZone).name}.`,
-      contra: (c) => ['zone', 'gossip', 'photo'].includes(c.kind) && ab(c) && c.zone === cs.origin.id, press: `The ${zoneById(cs.alibiZone).name}. The whole time. Mostly.` });
+    if (guilty) st.push({ id: 'zone', topic: 'Where they were', speaker: def.name, text: `I was nowhere near the ${cs.origin.name.toLowerCase()}. I was ${zoneAtPhrase(zoneById(cs.alibiZone))}.`,
+      contra: (c) => ['zone', 'gossip', 'photo'].includes(c.kind) && ab(c) && c.zone === cs.origin.id, press: `${U.cap(zoneAtPhrase(zoneById(cs.alibiZone)))}. The whole time. Mostly.` });
     else if (!z) st.push({ id: 'zone', topic: 'Where they were', speaker: def.name, text: "I wasn't even here when it happened!", contra: () => false, press: L.latePress || 'I got on later. Check the floor numbers.' });
-    else st.push({ id: 'zone', topic: 'Where they were', speaker: def.name, text: `I was by the ${zoneById(z).name} the whole time.`, contra: () => false,
+    else st.push({ id: 'zone', topic: 'Where they were', speaker: def.name, text: `I was ${zoneAtPhrase(zoneById(z))} the whole time.`, contra: () => false,
       press: z === cs.origin.id ? `Yes, I was near it. But so was ${cName}, and they were acting strange.` : 'People saw me there. Ask around.' });
     st.push({ id: 'cover', topic: 'What they did', speaker: def.name, text: guilty ? `And I have not been doing anything weird. I certainly wasn't ${cs.cover.label}.` : "I've just been standing here like a normal person.",
       contra: (c) => guilty && (c.kind === 'tell' || c.kind === 'deflect') && c.who === accused, press: guilty ? 'That was... unrelated. Allergies.' : `Unlike ${cName}, who has been ${cs.cover.label} all day.` });
@@ -1218,7 +1218,7 @@ const Game = (() => {
     if (RULES.search && !G.know.bags[cs.culprit]) out.push(`You never searched ${G.items[cs.culprit].label}.`);
     const w = cs.roles.witness;
     if ((RULES.questions.includes('gossip') || RULES.whispers) && w && cs.facts[w] && !G.know.facts[w]) out.push(`${castById(w).name} saw something. Ask "Seen anything weird?", or stand close when they whisper.`);
-    if (RULES.questions.includes('where') && !G.clues.some((c) => c.zone === cs.origin.id && (c.implicates || []).length)) out.push(`It started by the ${cs.origin.name}. Asking "Where were you standing?" pins that down.`);
+    if (RULES.questions.includes('where') && !G.clues.some((c) => c.zone === cs.origin.id && (c.implicates || []).length)) out.push(`It started ${zoneAtPhrase(cs.origin)}. Asking "Where were you standing?" pins that down.`);
     if (RULES.tells && !G.clues.some((c) => c.kind === 'tell' || c.kind === 'deflect')) out.push(`${cul.name} kept ${cs.cover.label}. Stay near the people around where it started.`);
     if (RULES.photo && !G.clues.some((c) => c.kind === 'photo')) out.push(L.photo.source === 'item' ? `There was a photo of the moment in ${G.items[L.photo.owner].label}.` : 'The security camera had a still of the exact moment.');
     if (RULES.tummy && G.flags.releasedBadly) out.push('Your own fart was heard. Wait for something LOUD at the top of the screen, then press F.');
