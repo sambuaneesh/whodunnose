@@ -62,10 +62,10 @@ const UI = (() => {
     $('#caseMap').innerHTML = CASES.map((c, i) => {
       const open = Store.unlocked(i), pr = Store.progress(c.id), setting = LEVELS[c.setting].title;
       return `<button class="case ${open ? '' : 'locked'} ${c === next ? 'next' : ''}" data-case="${i}" ${open ? '' : 'disabled'}>
-        <span class="case-n">${c.num}</span><span class="case-t"><b>${esc(c.title)}</b><small>${c.bonus ? 'Bonus · ' : ''}${c.story ? esc(c.story.when) + ' · ' : ''}${c.setting === 'elevator' ? 'Elevator' : 'Chapel'} · ${open ? (pr && pr.best ? 'Best: ' + pr.best : 'New') : 'Locked'}</small></span>
+        <span class="case-n">${c.num}</span><span class="case-t"><b>${esc(c.title)}</b><small>${c.bonus ? 'Bonus · ' : c.story ? esc(c.story.when.slice(0, 3)) + ' · ' : ''}${c.setting === 'elevator' ? 'Elevator' : 'Chapel'} · ${open ? (pr && pr.best ? 'Best ' + pr.best : 'New') : 'Locked'}</small></span>
         ${pr && pr.best ? `<span class="case-r r-${pr.best}">${pr.best}</span>` : ''}</button>`;
-    }).join('') + `<div class="free ${Store.unlocked(3) ? '' : 'locked'}"><b>Free Play</b><small>${Store.unlocked(3) ? 'Everything on, random cases.' : 'Unlocks after Case 3.'}</small>
-        <div class="free-row"><button data-free="elevator" ${Store.unlocked(3) ? '' : 'disabled'}>Elevator</button><button data-free="wedding" ${Store.unlocked(3) ? '' : 'disabled'}>Chapel</button></div></div>` + dailyCard();
+    }).join('') + dailyCard() + `<div class="free ${Store.unlocked(3) ? '' : 'locked'}"><div><b>Free Play</b><small>${Store.unlocked(3) ? 'Everything on, random cases.' : 'Unlocks after Case 3.'}</small></div>
+        <div class="free-row"><button data-free="elevator" ${Store.unlocked(3) ? '' : 'disabled'}>Elevator</button><button data-free="wedding" ${Store.unlocked(3) ? '' : 'disabled'}>Chapel</button></div></div>`;
     document.querySelectorAll('[data-case]').forEach((b) => b.addEventListener('click', () => { Sfx.init(); openBriefing(CASES[+b.dataset.case]); }));
     document.querySelectorAll('[data-free]').forEach((b) => b.addEventListener('click', () => { Sfx.init(); openBriefing(FREE_PLAY(b.dataset.free, randomCase())); }));
     const db = $('[data-daily]'); if (db) db.addEventListener('click', () => { Sfx.init(); openBriefing(Meta.dailyCase()); });
@@ -74,7 +74,7 @@ const UI = (() => {
   function dailyCard() {
     const open = Store.unlocked(3), dc = Meta.dailyCase(), rec = Store.bag('daily')[dc.daily], st = Meta.streak();
     return `<div class="daily ${open ? '' : 'locked'}"><b>Daily Case #${dc.dailyNum}</b>
-      <small>${dc.setting === 'elevator' ? 'Elevator' : 'Chapel'} · ${open ? (rec ? `Today: ${rec.first.rank}` : 'Same case for everyone today') : 'Unlocks after Case 3'}${st ? ` · ${st}-day streak` : ''}</small>
+      <small>${open ? (rec ? `Today: ${rec.first.rank}` : 'Same case for everyone') : 'After Case 3'}${st ? ` · ${st}-day streak` : ''}</small>
       <button data-daily ${open ? '' : 'disabled'}>${rec ? 'Again' : 'Play'}</button></div>`;
   }
   function openAchievements() {

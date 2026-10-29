@@ -245,7 +245,7 @@ button { cursor: pointer; }
 .tagline { font-family: var(--f-hand); color: #f3eadb; font-size: 2em; margin: .4em 0 .2em; }
 .title-pitch { color: #d9cfe6; font-size: 1.05em; line-height: 1.5; max-width: 34em; }
 .cloud { display: inline-block; color: var(--fart); }
-.start-card { padding: 1.3em 1.5em 1.5em; display: grid; gap: .8em; align-content: start; }
+.start-card { padding: 1.2em 1.4em 1.3em; display: grid; gap: .6em; align-content: start; }
 .start-card h2 { font-family: var(--f-display); font-size: 1.3em; margin: 0; }
 .case-row { display: flex; gap: .5em; align-items: center; flex-wrap: wrap; }
 .case-row label { font-weight: 700; }
@@ -440,16 +440,17 @@ button { cursor: pointer; }
 .case.locked { opacity: .5; box-shadow: none; cursor: not-allowed; }
 .case-n { font-family: var(--f-display); font-size: 1.4em; text-align: center; background: var(--ink); color: var(--paper); border-radius: 3px; }
 .case-t { display: grid; line-height: 1.15; }
-.case-t small { color: var(--muted); font-size: .78em; }
+.case-t small { color: var(--muted); font-size: .78em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .case-r { font-family: var(--f-display); border: 2px solid var(--ink); padding: 0 .35em; background: var(--gold); }
 .case-r.r-S { background: var(--fart); } .case-r.r-F { background: var(--stamp); color: #fff; }
-.free { grid-column: 1 / -1; display: grid; gap: .3em; border: 2px dashed var(--ink); padding: .55em .7em; }
-.free small { color: var(--muted); }
+.free { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: .6em; border: 2px dashed var(--ink); padding: .45em .7em; }
+.free > div:first-child { display: grid; line-height: 1.2; }
+.free small { color: var(--muted); font-size: .85em; }
 .free.locked { opacity: .55; }
 .free-row { display: flex; gap: .4em; }
 .free-row button { padding: .3em .8em; }
 .free-row button:disabled { opacity: .5; }
-.title-links { display: flex; gap: 1.2em; flex-wrap: wrap; justify-content: center; }
+.title-links { display: flex; gap: .4em 1em; flex-wrap: wrap; justify-content: center; font-size: .92em; }
 #btnPlay { width: 100%; }
 
 /* accusation & results extras */
@@ -519,12 +520,12 @@ button { cursor: pointer; }
 #achPop { position: absolute; left: 50%; top: 4.6em; transform: translateX(-50%); z-index: 20; background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--ink); padding: .5em 1em; text-align: center; animation: slidein .35s ease-out; pointer-events: none; }
 #achPop small { display: block; font-size: .7em; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
 #achPop b { font-family: var(--f-display); font-weight: 400; font-size: 1.15em; }
-.daily { grid-column: 1 / -1; border: 2px solid var(--ink); background: #fff7d6; padding: .55em .7em; margin-top: .45em; display: grid; grid-template-columns: 1fr auto; gap: .1em .6em; align-items: center; }
-.daily small { color: var(--muted); grid-column: 1; }
-.daily button { grid-row: 1 / span 2; grid-column: 2; border: 2px solid var(--ink); background: var(--gold); font-weight: 700; padding: .4em .9em; box-shadow: 0 3px 0 var(--ink); }
+.daily { border: 2px solid var(--ink); background: #fff7d6; padding: .4em .6em; display: grid; line-height: 1.2; grid-template-columns: 1fr auto; gap: .1em .6em; align-items: center; }
+.daily small { color: var(--muted); grid-column: 1; font-size: .78em; }
+.daily button { grid-row: 1 / span 2; grid-column: 2; border: 2px solid var(--ink); background: var(--gold); font-weight: 700; padding: .3em .7em; box-shadow: 0 3px 0 var(--ink); }
 .daily.locked { opacity: .55; }
 /* season story */
-.season-k { font-family: var(--f-display); font-size: .95em; margin: .7em 0 .35em; } .season-k span { font-family: var(--f-body); font-size: .8em; color: var(--muted); margin-left: .4em; }
+.season-k { font-family: var(--f-display); font-size: .95em; margin: .3em 0 0; line-height: 1.2; } .season-k span { display: block; font-family: var(--f-body); font-size: .78em; color: var(--muted); }
 .brief-story { font-family: var(--f-hand); font-size: 1.05em; line-height: 1.35; margin: .2em 0 .6em; color: #3b3542; border-left: 4px solid var(--gold); padding-left: .7em; }
 .next-beat { font-family: var(--f-hand); font-size: 1.08em; line-height: 1.4; }
 .season-end { margin-top: .4em; padding: .4em .7em; background: var(--gold); border: 2px solid var(--ink); display: inline-block; }
