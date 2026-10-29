@@ -544,7 +544,11 @@ const Art = (() => {
     if (look.hairStyle === 'cap') paperEllipse(ctx, 0, hy - 19, 22, 8, look.hair, seed + 111, { stroke: INK, lw: 1.5 });
     if (look.hairStyle === 'long' || look.hairStyle === 'mullet') paper(ctx, [[-22, hy], [22, hy], [20, hy + 26], [-20, hy + 26]], look.hair, seed + 112, { stroke: INK, lw: 1.5 });
     if (look.hairStyle === 'bob') paper(ctx, [[-26, hy - 4], [26, hy - 4], [25, hy + 14], [-25, hy + 14]], look.hair, seed + 114, { stroke: INK, lw: 1.5 });
-    if (look.hairStyle === 'veil') paper(ctx, [[-28, hy - 18], [28, hy - 18], [34, hy + 52], [-34, hy + 52]], 'rgba(255,255,255,0.8)', seed + 113, { stroke: '#bbb', lw: 1 });
+    if (look.hairStyle === 'veil') { // a bun with a tiara, under a veil you can see through
+      paperEllipse(ctx, 0, hy - 14, 10, 7, look.hair, seed + 107, { stroke: INK, lw: 1.5 });
+      for (let i = 0; i < 5; i++) paperEllipse(ctx, -10 + i * 5, hy - 22 - (i % 2) * 3, 2.5, 2.5, '#f2c14e', seed + 99 + i, { shadow: false, amp: 0.3 });
+      paper(ctx, [[-13, hy - 14], [13, hy - 14], [32, hy + 46], [-32, hy + 46]], 'rgba(255,255,255,0.42)', seed + 113, { stroke: 'rgba(150,150,165,0.8)', lw: 1 });
+    }
   }
 
   function drawDog(ctx, look, x, y, o) {

@@ -141,8 +141,9 @@ const UI = (() => {
       const box = { x: (r.left - st.left) * k, y: (r.top - st.top) * k, w: r.width * k, h: r.height * k };
       out.push(box);
       if (el.matches('.hud-card, .chipbtn')) {
-        const hit = boxes.some((b) => b.x < box.x + box.w && b.x + b.w > box.x && b.y < box.y + box.h && b.y + b.h > box.y);
-        el.classList.toggle('ghost', hit && G.state === 'play');
+        const over = (b) => b.x < box.x + box.w && b.x + b.w > box.x && b.y < box.y + box.h && b.y + b.h > box.y;
+        el.classList.toggle('ghost', boxes.some(over) && G.state === 'play');
+        el.classList.toggle('ghost-you', !!boxes[0] && over(boxes[0]) && G.state === 'play'); // you are behind it: nearly gone
       }
     });
     hudBoxes = out;

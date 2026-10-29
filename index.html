@@ -89,6 +89,7 @@ button { cursor: pointer; }
 #prompt { position: absolute; left: 50%; bottom: 4.1em; transform: translateX(-50%); }
 #caption { position: absolute; left: 50%; bottom: var(--capB, 6.6em); transform: translate(-50%, .6em); max-width: 62%; width: max-content; background: rgba(28,26,31,.88); color: #fff; padding: .55em 1em; border-radius: 4px; font-size: 1.02em; line-height: 1.35; text-align: center; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; text-wrap: balance; }
 #caption.on { opacity: 1; transform: translate(-50%, 0); }
+#stage:has(#clueToasts > *) #caption { max-width: min(62%, calc(100% - 48em)); } /* narrower while a clue note shows, so they never overlap */
 #caption.on.dim { opacity: .45; } /* when you stand behind it; it never jumps up over the back row */
 .stamp { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%) rotate(-7deg) scale(2.2); opacity: 0; pointer-events: none;
   font-family: var(--f-display); font-size: 2.6em; line-height: 1.05; text-align: center; color: var(--stamp); border: .14em solid var(--stamp); padding: .15em .45em; background: rgba(255,250,240,.9); max-width: 70%; text-wrap: balance; }
@@ -371,6 +372,7 @@ button { cursor: pointer; }
 .hud-card, #hud .chipbtn { transition: opacity .3s; }
 .hud-card.ghost, #hud .chipbtn.ghost { opacity: .5; }
 .hud-mid.ghost { opacity: .6; } /* the phase and clock stay readable */
+.hud-card.ghost-you, #hud .chipbtn.ghost-you { opacity: .18; }
 .hud-card.ghost:hover, #hud .chipbtn.ghost:hover { opacity: 1; }
 /* on a wide screen the meters sit top right, beside Hint, so the top-left corner of the room stays clear */
 @container (min-width: 1000px) { #meters { position: absolute; right: 8.2em; top: .8em; } }
@@ -516,7 +518,7 @@ button { cursor: pointer; }
   #hud { padding: .5em .6em; gap: .5em; }
   .meter { grid-template-columns: 3.8em 6.5em 1.8em; font-size: .85em; }
   #clueToasts { width: 15em; }
-  #caption { max-width: 52%; left: calc(50% + 4.5em); } /* clear of the clue notes on the left */
+  #stage:has(#clueToasts > *) #caption { max-width: 52%; left: calc(50% + 4.5em); } /* clear of the clue note on the left */
   .act { padding: .3em .55em; font-size: .85em; }
   #actionbar { gap: .3em; }
   /* everything that matters stays on one screen */
