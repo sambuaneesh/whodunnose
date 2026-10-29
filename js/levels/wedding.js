@@ -8,7 +8,7 @@
   LEVELS.wedding = {
     id: 'wedding', episode: 'Season 1 · Episode 2', title: 'Til Death Do Us Fart', length: '~5 min',
     blurb: 'A chapel, a ceremony, nine suspects and a priest who will eventually ask if anyone objects.',
-    mode: 'mingle', walkSpeed: 165, stepLen: 30, follow: 1.45,
+    mode: 'mingle', walkSpeed: 165, stepLen: 30, follow: 1.35,
     short: 'Chapel', place: "St. Swithin's Chapel", callWhen: 'at "speak now"', failTitle: 'Wedding ruiner', airText: 'Lilies, floor polish, and nerves.',
     mustSit(t) { return t >= this.timeline.places && t < this.timeline.speakNow; },
     zones: [

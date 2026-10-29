@@ -26,7 +26,10 @@ const NPC = (() => {
     return n;
   }
 
-  function say(n, text, dur = 3.2, tone = 'speech') { n.bubble = { text, t: dur, tone }; }
+  function say(n, text, dur = 3.2, tone = 'speech') {
+    n.bubble = { text, t: dur, tone };
+    if (tone !== 'thought' && G.state === 'play') Sfx.chatter(n.def.look.voice, n.x, text, tone === 'shout' ? 0.6 : tone === 'whisper' ? 0.12 : 0.32);
+  }
   const busy = (n) => n.anim || n.expr === 'disgust';
   const range = (n) => (busy(n) ? VIEW_RANGE * 0.35 : VIEW_RANGE) * (n.def.perception ?? 1);
 

@@ -37,8 +37,24 @@ Working agreement (from the product owner, 2026-10-29):
 - [x] Layout pass: nothing floating over the scene overlaps (bubbles, name tags, debug chips), the HUD steps aside, the camera frames the scene above the action bar, captions behave like subtitles, crowds stagger so faces stay visible
 - [x] Briefings and the title fit on one screen; results open at the top
 - [x] Season two opener: "Cruising Altitude", a plane with a seatbelt sign
-- [ ] More season two cases: Thornbury Tower under its new owner, with Mr. Lindqvist as a rival nose
+- [ ] More season two cases: Thornbury Tower under its new owner, with Mr. Lindqvist as a rival nose (on hold: the owner asked for the existing cases to be improved first)
 - [ ] A human playtest of case 1, the bonus case and the plane
+
+### Iteration 6 (v4.2): make what is there look good and play well
+Owner feedback, 2026-10-29: "improve the experience on the current one ... so many inconsistencies and it doesnt look very good and the game itself is also seeming boring". No new cases until this is done.
+- [x] The plane redrawn as a side cutaway that fills the screen (people twice the size, seats that read as seats, crew always in the galley)
+- [x] Chapel camera follows you (wide shot at the start, when it happens, and at "speak now")
+- [x] Vision painted on the floor, softer, stopping at the walls
+- [x] One thing at a time on screen: toasts and the HUD step back during dialogue and the call-out; achievements in the corner; smaller stamps; prompts wrap
+- [x] The camera frames whoever you talk to above the dialogue box
+- [x] Personal reactions when the smell hits (a line for every character, and a jolt)
+- [x] Show people what you found: liars crack ("GOTCHA"), an innocent who ate it says where they were
+- [x] A tell: the liar (and the naturally nervous) squirm when they answer
+- [x] Banter: people chat in character, written for every case
+- [x] Speech in the room makes a sound (quiet syllables in each voice, panned)
+- [x] The verdict as a payoff: big confession, the room reacts, case closed
+- [x] Text audit: every line of every case dumped and read (tools/checks/dump.js); fixes for place names ("by the buttons"), a baby that was not there, grammar, duplicated bag details
+- [ ] More visual passes at every screen size until nothing looks off
 
 ## Log
 - 2026-10-29: roadmap created. Starting iteration 1.
@@ -53,3 +69,4 @@ Working agreement (from the product owner, 2026-10-29):
 - 2026-10-29: performance measured (1.3 to 3 ms frame work median at 2x, under 6 ms p95: no changes needed). Polish: pitch sheet lists the new modes as playable, the reverse case says "The room decides" at the lobby and "Bonus case" on results. v4 release notes in docs/RELEASE-v4.md. Iteration 4 complete apart from new settings and cases.
 - 2026-10-29: owner feedback: the glasses still overlapped ("the specs is not fixed"), and screens looked cluttered and overlapping. Fixed glasses (separate lenses, wider-set eyes inside them) and sunglasses (eyes hidden, proper lenses). Layout pass: one screen-space layout (Tags in game.js) places bubbles, Smell Vision names and playtest chips so they never overlap each other or the HUD; HUD cards fade while someone stands behind them; the case file folds to one line and opens when an objective changes; the camera frames each scene above the action bar; captions sit low like subtitles and jump to the top when you stand there; crowds stagger (a depth factor in the spacing rule), nobody spawns on you or on furniture; zone names choose a free corner and fade under people; the rumble prompt moved into the prompt bar; vision cones stop at the walls; briefings and the title fit on one screen; results open at the top; playtest labels are compact chips. Lines that start with a dish name now start with a capital everywhere.
 - 2026-10-29: season two opener "Cruising Altitude" (js/levels/plane.js, case c8, unlocked after case 6). A seated crowd mode: passengers keep their seats facing forward (blind spot behind), the seatbelt sign decides when you may walk the aisle and standing with it on costs Aura, the flight attendant patrols, Uncle Gary was in the lavatory (the latecomer), turbulence, landing call. Levels now describe their crowd (standing, mingling, seated), speeds, labels and late-arrival wording instead of the engine checking for the elevator; levels can rename dishes (the eggs are a cheese omelette). Written case: Brad ate two omelettes on the flight home from the honeymoon and blamed the dog he bought a seat for; Rosa Delgado (buying Thornbury Tower) and Mr. Lindqvist (a rival nose) set up season two. Free Play and the daily case include the plane. Verified headlessly: c8 generates as written and solves, Free Play on the plane solves, all earlier cases unchanged.
+- 2026-10-29: iteration 6. Owner feedback: screens still looked bad on several levels, and the game felt boring. The plane is now a side cutaway (rows run left to right, everyone faces the nose on the left, the far wall has the windows), so the cabin fills the screen. The chapel camera follows you. Dialogue frames the person you talk to. New play: personal reactions, "Show them something you found" (the liar cracks), a tell when lying, banter written per case, chatter sounds, a verdict with the room's reactions. Text audit fixes. Headless test tools now live in tools/ (shoot.mjs driver, sweep.py screenshots, scene.py scripted scenes, check.sh plays every case) so they survive between sessions.

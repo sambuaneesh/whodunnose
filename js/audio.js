@@ -363,15 +363,23 @@ const Sfx = (() => {
 
   // ---------------- voices ----------------
   // Each character's blip has a timbre: a low square for the CEO, a bright triangle for the intern.
-  function blip(pitch = 300, ch = 'a') {
+  function blip(pitch = 300, ch = 'a', at = 0, bus = null) {
     if (!ok()) return;
-    const t = now(), vowel = /[aeiouy]/i.test(ch), q = /[?!]/.test(ch);
+    const t = now() + at, vowel = /[aeiouy]/i.test(ch), q = /[?!]/.test(ch);
     const f = pitch * (vowel ? 1.12 : 0.94) * (0.94 + Math.random() * 0.12) * (q ? 1.2 : 1);
     const wave = pitch < 260 ? 'square' : pitch < 450 ? 'sawtooth' : 'triangle';
-    const g = ac.createGain(); g.connect(buses.voice); env(g, t, 0.006, wave === 'triangle' ? 0.32 : 0.2, 0.055);
+    const g = ac.createGain(); g.connect(bus || buses.voice); env(g, t, 0.006, wave === 'triangle' ? 0.32 : 0.2, 0.055);
     const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = pitch * (vowel ? 2 : 1.5); bp.Q.value = 0.7; bp.connect(g);
     const o = osc(wave, f, t, t + 0.08, bp);
     o.frequency.linearRampToValueAtTime(f * (q ? 1.15 : 0.97), t + 0.06);
+  }
+
+  // Someone in the room says something: a few quiet syllables in their voice, from where they stand.
+  function chatter(pitch, x, text = '', vol = 0.4) {
+    if (!ok()) return;
+    const out = ac.createGain(); out.gain.value = vol; out.connect(panTo(x, buses.voice));
+    const letters = text.replace(/[^a-z?!]/gi, ''), n = Math.min(7, 2 + Math.floor(letters.length / 14));
+    for (let i = 0; i < n; i++) blip(pitch, letters[i * 3] || 'a', i * 0.085 + Math.random() * 0.02, out);
   }
 
   // ---------------- interface and foley ----------------
@@ -519,6 +527,6 @@ const Sfx = (() => {
   return {
     meter, debugState,
     init, setMuted, setVolumes, setPaused, get muted() { return muted; }, setScene, setMusic, setIntensity, duck, floorTick,
-    fart, blip, ui, stamp, whoosh, sniff, step, gag, gurgle, ding, ringtone, loudEvent, sting, jingle, organ, stopOrgan, startMurmur, stopMurmur,
+    fart, blip, chatter, ui, stamp, whoosh, sniff, step, gag, gurgle, ding, ringtone, loudEvent, sting, jingle, organ, stopOrgan, startMurmur, stopMurmur,
   };
 })();
