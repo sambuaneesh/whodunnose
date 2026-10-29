@@ -56,7 +56,8 @@ const Game = (() => {
   function focus(p, mult) {
     // the elevator camera is already close; do not zoom in nearly as far there
     const z = baseZoom() * (L.closeCamera ? 1 + (mult - 1) * 0.35 : mult);
-    G.cam.tx = p.x + 300 / z; G.cam.ty = p.y - 50 / mult; G.cam.tz = z;
+    const v = L.view, hw = W / 2 / z, hh = H / 2 / z;
+    G.cam.tx = U.clamp(p.x + 300 / z, v.x + hw, Math.max(v.x + hw, v.x + v.w - hw)); G.cam.ty = U.clamp(p.y - 50 / mult, v.y + hh, Math.max(v.y + hh, v.y + v.h - hh)); G.cam.tz = z;
   }
   function unfocus() { if (!G.cam || !L) return; const c = viewCenter(); G.cam.tx = c.x; G.cam.ty = c.y; G.cam.tz = baseZoom(); }
   // In a big room (the chapel) the camera follows you, close enough to read faces, and cuts to the wide shot for
@@ -79,7 +80,7 @@ const Game = (() => {
     else if (G.talkWith && G.state !== 'dialogue') { G.talkWith = null; if (!L.follow) unfocus(); }
     if (talk || !L.follow || !['play', 'tip', 'dialogue', 'notebook', 'paused'].includes(G.state)) return;
     if ((G.overviewT || 0) > G.t) unfocus();
-    else frameCam(G.player, baseZoom() * L.follow, -40);
+    else { const v = L.view, c = { x: v.x + v.w / 2, y: v.y + v.h * 0.45 }; frameCam({ x: G.player.x * 0.75 + c.x * 0.25, y: G.player.y * 0.6 + c.y * 0.4 }, baseZoom() * L.follow, -40); } // leans toward the middle of the room
     if (G.camSnap) { cam.x = cam.tx; cam.y = cam.ty; cam.z = cam.tz; G.camSnap = false; }
   }
   const wide = (secs, snap = false) => { G.overviewT = G.t + secs; if (snap) G.camSnap = true; };
@@ -323,7 +324,7 @@ const Game = (() => {
         once('loud' + e.t, () => {
           if (!e.organ) Sfx.loudEvent(e.label);
           logEvent(`LOUD: ${e.label}`);
-          if (RULES.tummy && G.pressure > 35 && !e.organ) UI.caption(`LOUD: ${e.label} Press F now and nobody will hear you.`, 3);
+          if (RULES.tummy && G.pressure > 35 && !e.organ) UI.caption(`LOUD: ${e.label}${/[.!?]$/.test(e.label) ? '' : '.'} Press F now and nobody will hear you.`, 3);
         });
       }
     }
@@ -1294,7 +1295,9 @@ const Game = (() => {
       for (const n of G.npcs) {
         if (n.def.dog || !n.present) continue;
         const seeing = NPC.sees(n, G.player), rng = NPC.range(n);
-        ctx.save(); ctx.translate(n.x, n.y); ctx.scale(1, SQ);
+        const near = seeing ? 1 : U.clamp(1.4 - U.dist(n, G.player) / rng, 0, 1); // far-off sight that is not on you fades out
+        if (near <= 0.02) continue;
+        ctx.save(); ctx.translate(n.x, n.y); ctx.scale(1, SQ); ctx.globalAlpha = near;
         const grd = ctx.createRadialGradient(0, 0, 4, 0, 0, rng);
         const col = seeing ? '255,110,50' : '255,236,150';
         grd.addColorStop(0, `rgba(${col},${seeing ? 0.26 : 0.09})`); grd.addColorStop(0.7, `rgba(${col},${seeing ? 0.1 : 0.03})`); grd.addColorStop(1, `rgba(${col},0)`);
@@ -1312,7 +1315,7 @@ const Game = (() => {
       if (sv) { ctx.fillStyle = 'rgba(18,24,12,0.55)'; ctx.fillRect(v.x, v.y, v.w, v.h); }
       ctx.save(); ctx.imageSmoothingEnabled = true; ctx.drawImage(gasCv, 0, 0, Gas.COLS, Gas.ROWS, gr.x, gr.y, gr.w, gr.h); ctx.restore();
     }
-    if (!photoFrame && !sv && RULES.questions.includes('where') && L.decals !== false) Art.drawZoneDecals(ctx, cam.z, [G.player, ...G.npcs.filter((n) => n.present)], [...(L.obstacles || []), ...(L.furniture || [])]);
+    if (!photoFrame && !sv && inPlay && RULES.questions.includes('where') && L.decals !== false) Art.drawZoneDecals(ctx, cam.z, [G.player, ...G.npcs.filter((n) => n.present)], [...(L.obstacles || []), ...(L.furniture || [])]);
     const focusP = inPlay && !photoFrame ? nearestPerson() : null;
     if (focusP) { // the person E talks to: a ring on the floor, never a label over somebody else
       const k = L.view.w / W, pr = 1 + Math.sin(t * 5) * 0.06;
@@ -1324,8 +1327,11 @@ const Game = (() => {
     for (const c of CAST) {
       const it = G.items[c.id];
       if (!it || !it.present) continue;
-      if (!RULES.search && (L.ranges.itemOffset || L.itemAt)) { items.push({ y: it.y, draw: () => Art.drawItem(ctx, it, it.x, it.y, false, true) }); continue; }
-      items.push({ y: it.y, draw: () => Art.drawItem(ctx, it, it.x, it.y, bagNear === c, G.know.bags[c.id] === 'seen') });
+      // a bag can be drawn somewhere other than where you reach it from (an overhead bin above the aisle)
+      const dx = it.drawX ?? it.x, dy = it.drawY ?? it.y;
+      if (L.hiddenItems && it.drawX !== undefined && bagNear !== c) continue; // stowed out of sight until you are beside it
+      if (!RULES.search && (L.ranges.itemOffset || L.itemAt)) { items.push({ y: dy, draw: () => Art.drawItem(ctx, it, dx, dy, false, true) }); continue; }
+      items.push({ y: dy, draw: () => Art.drawItem(ctx, it, dx, dy, bagNear === c, G.know.bags[c.id] === 'seen') });
     }
     for (const n of G.npcs) if (n.present) items.push({ y: n.y, draw: () => drawNPC(n, t) });
     items.push({ y: G.player.y, draw: () => drawPlayer(t) });
@@ -1358,9 +1364,15 @@ const Game = (() => {
     Tags.reset(UI.hudRects());
     const head = (n) => toScreen(n.x, n.y - (n.def && n.def.dog ? 58 : 96 * ((n.def ? n.def.look.scale : 1) || 1)));
     if (!photoFrame && sv) Art.drawZoneTags(ctx, sv, toScreen, Tags.place);
+    if (!RULES.aura && inPlay && !photoFrame) { // the first case marks who you are, in the same layout as everything else
+      const hp = head({ x: G.player.x, y: G.player.y, def: { look: PLAYER_LOOK } }), r = Tags.place({ x: hp.x - 19, y: hp.y - 24, w: 38, h: 17 });
+      ctx.save(); Art.paperRect(ctx, r.x, r.y, 38, 17, '#f08a24', 7, { amp: 0.8, stroke: Art.INK, lw: 1.5 });
+      ctx.fillStyle = '#fff'; ctx.font = '400 11px "Bowlby One SC", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('YOU', r.x + 19, r.y + 9.5); ctx.restore();
+    }
     if (RULES.badges && inPlay) for (const n of G.npcs) if (n.present && n.reactOrder) {
       const age = G.t - n.reactT; if (age > 30) continue;
-      const hp = head(n); ctx.save(); ctx.globalAlpha = (age > 25 ? (30 - age) / 5 : 1) * 0.92; ctx.translate(hp.x + 18, hp.y - 4); ctx.scale(0.78, 0.78); Art.badge(ctx, 0, 0, n.reactOrder, age); ctx.restore();
+      const hp = head(n), r = Tags.place({ x: hp.x + 4, y: hp.y - 22, w: 26, h: 26 }, { pad: 1 });
+      ctx.save(); ctx.globalAlpha = (age > 25 ? (30 - age) / 5 : 1) * 0.92; ctx.translate(r.x + 13, r.y + 13); ctx.scale(0.78, 0.78); Art.badge(ctx, 0, 0, n.reactOrder, age); ctx.restore();
     }
     if (G.state !== 'accuse' && G.state !== 'dialogue') { // while you talk to someone, the rest of the room holds its tongue
       // speech first (most important), then thoughts; each bubble moves out of the way of the ones already placed
@@ -1371,7 +1383,8 @@ const Game = (() => {
       for (const id in G.actors) { const a = G.actors[id]; if (a.bubble) { const hp = toScreen(a.x, a.y - (a.look ? 95 : 0)); bubbles.push([hp.x, hp.y, a.bubble, toScreen(a.x, a.y).y]); } }
       const rankB = (b) => ({ shout: 0, speech: 1, whisper: 2, thought: 3 }[b.tone] ?? 1);
       bubbles.sort((a, b) => rankB(a[2]) - rankB(b[2]));
-      for (const [x, y, b, belowY] of bubbles) Art.bubble(ctx, x, y, b.text, { tone: b.tone, alpha: b.t === undefined ? 1 : Math.min(1, b.t * 3), belowY, place: Tags.place });
+      const maxB = cv.clientWidth < 900 ? 2 : 3;
+      for (const [x, y, b, belowY] of bubbles.slice(0, maxB)) Art.bubble(ctx, x, y, b.text, { tone: b.tone, alpha: b.t === undefined ? 1 : Math.min(1, b.t * 3), belowY, place: Tags.place });
     }
     ctx.font = '700 12px "Lexend", sans-serif'; ctx.textAlign = 'center';
     if (!inPlay) UI.prompt([]);
@@ -1391,7 +1404,7 @@ const Game = (() => {
       if (bag) lines.push(['Hold E', `${G.cs.reverse ? 'Slip your empty cup into' : 'Search'} ${G.items[bag.id].label}`, RULES.aura ? (G.watchers ? `${G.watchers} watching · about −${Math.round(COSTS.search * G.diff.aura)} Aura` : 'nobody watching') : '']);
       if (prop) lines.push(['E', `Check the ${prop.label.toLowerCase()}`, '']);
       UI.prompt(lines);
-      if (G.searching) { const ip = toScreen(G.items[G.searching.c.id].x, G.items[G.searching.c.id].y - 12); Art.holdRing(ctx, ip.x, ip.y, G.searching.k); }
+      if (G.searching) { const it = G.items[G.searching.c.id], ip = toScreen(it.drawX ?? it.x, (it.drawY ?? it.y) - 12); Art.holdRing(ctx, ip.x, ip.y, G.searching.k); }
       if (G.rumble) { // a small clench meter beside your head; the instruction lives in the prompt
         const k = G.rumble.held / 0.8, pulse = 1 + Math.sin(t * 20) * 0.08, rp = head({ x: G.player.x, y: G.player.y, def: { look: PLAYER_LOOK } });
         ctx.save(); ctx.translate(rp.x - 34, rp.y + 14);
@@ -1435,11 +1448,6 @@ const Game = (() => {
     const faceDir = Math.cos(p.face) < -0.15 ? -1 : 1;
     const expr = G.state === 'accuse' ? 'angry' : G.rumble ? 'worried' : p.expr;
     Art.drawPerson(ctx, PLAYER_LOOK, p.x, p.y, { t, walking: p.walking, faceDir, lookX: faceDir * Math.cos(p.face), lookY: Math.sin(p.face), expr, blinkSeed: 3 });
-    if (!RULES.aura) {
-      ctx.save(); ctx.fillStyle = '#f08a24'; ctx.strokeStyle = Art.INK; ctx.lineWidth = 2;
-      const y = p.y - 104 + Math.sin(t * 4) * 2;
-      ctx.beginPath(); ctx.moveTo(p.x - 8, y - 10); ctx.lineTo(p.x + 8, y - 10); ctx.lineTo(p.x, y); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
-    }
   }
 
   // ---------------- input ----------------
@@ -1481,7 +1489,7 @@ const Game = (() => {
     if (e.shiftKey && Playtest.active) { p.x = U.clamp(w.x, B.x0, B.x1); p.y = U.clamp(w.y, B.y0, B.y1); p.path = []; p.target = null; p.pending = null; return; }
     let hit = null;
     for (const n of present()) { const hp = toScreen(n.x, n.y); if (Math.abs(s.x - hp.x) < 24 * G.cam.z && s.y < hp.y + 6 && s.y > hp.y - 90 * G.cam.z) hit = { type: 'npc', n }; }
-    if (!hit && RULES.search) for (const c of CAST) { const it = G.items[c.id]; if (it.present && Math.hypot(w.x - it.x, w.y - (it.y - 8)) < 14) hit = { type: 'item', c }; }
+    if (!hit && RULES.search) for (const c of CAST) { const it = G.items[c.id]; if (it.present && Math.hypot(w.x - (it.drawX ?? it.x), w.y - ((it.drawY ?? it.y) - 8)) < 16) hit = { type: 'item', c }; }
     if (!hit) for (const pr of G.props) if (Math.hypot(w.x - pr.x, w.y - pr.y) < 20) hit = { type: 'prop', pr };
     const goal = (tx, ty) => { const g = { x: U.clamp(tx, B.x0, B.x1), y: U.clamp(ty, B.y0, B.y1) }; p.path = L.route ? L.route(p, g) : [g]; p.target = p.path.shift(); };
     if (hit) {

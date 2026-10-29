@@ -156,7 +156,7 @@ const UI = (() => {
     const ch = cap.getBoundingClientRect().height || 40, me = boxes[0];
     const capTop = ((floor - 8 - ch) - st.top) * k;
     const cr = cap.getBoundingClientRect(), cx0 = (cr.left - st.left) * k, cx1 = (cr.right - st.left) * k;
-    cap.classList.toggle('up', !!me && me.y + me.h > capTop && me.x < cx1 && me.x + me.w > cx0 && G.state === 'play');
+    cap.classList.toggle('dim', !!me && me.y + me.h > capTop && me.x < cx1 && me.x + me.w > cx0 && G.state === 'play');
   }
 
   function resetRun() {
@@ -605,7 +605,7 @@ const UI = (() => {
     el.innerHTML = `<div class="trial-head"><img class="vport" alt="" src="${Art.portrait(c, expr)}">
         <div class="th-main"><div class="res-k">Cross-examination</div><h2>${esc(c.name)} testifies</h2>
         <div class="crowd"><span>The room believes you</span><div class="cbar"><i style="width:${Math.round(tr.belief)}%"></i></div><b>${Math.round(tr.belief)}%</b></div></div></div>
-      <ol class="testimony">${tr.statements.map((s, i) => `<li class="${tr.broken.has(i) ? 'broken' : ''}"><div class="st-text"><span class="topic">${esc(s.topic)}</span><b>${esc(s.speaker)}:</b> "${esc(s.text)}"${tr.pressed.has(i) ? `<em>${esc(s.press)}</em>` : ''}${!tr.broken.has(i) && tr.misses[i] >= 2 && G.diff.hints ? `<em class="nudge">Try a clue about ${esc(s.topic.toLowerCase())}.</em>` : ''}</div>
+      <ol class="testimony">${tr.statements.map((s, i) => `<li class="${tr.broken.has(i) ? 'broken' : ''}"><div class="st-text"><span class="topic">${esc(s.topic)}</span>${s.speaker !== c.name ? `<b>${esc(s.speaker)}:</b> ` : ''}"${esc(s.text)}"${tr.pressed.has(i) ? `<em>${esc(s.press)}</em>` : ''}${!tr.broken.has(i) && tr.misses[i] >= 2 && G.diff.hints ? `<em class="nudge">Try a clue about ${esc(s.topic.toLowerCase())}.</em>` : ''}</div>
         ${tr.broken.has(i) ? '<span class="st-broken">BROKEN</span>' : `<div class="st-btns"><button class="ghost" data-press="${i}">Press</button><button data-present="${i}">Present</button></div>`}</li>`).join('')}</ol>
       ${acc.picking !== null && acc.picking !== undefined ? `<div class="picker"><div class="pk-h">Break "${esc(tr.statements[acc.picking].text)}" with:</div>
         <ul class="evlist">${sortedEvidence(tr.accused).map((k) => `<li><button class="evbtn ${Game.about(k, tr.accused) ? 'rel' : ''}" data-clue="${k.key}"><span class="chip">${KIND_LABEL[k.kind] || k.kind}</span><span>${esc(k.text)}</span></button></li>`).join('') || '<li class="nb-empty">You have no evidence at all.</li>'}</ul>
@@ -683,7 +683,7 @@ const UI = (() => {
       G.snaps.fart ? { img: G.snaps.fart, cap: 'It happens.' } : null,
       G.snaps.object ? { img: G.snaps.object, cap: 'You call it.' } : null,
       rev && G.snaps.decide ? { img: G.snaps.decide, cap: 'The room decides.' } : null,
-      vl ? { portrait: Art.portrait(vl.def || castById(vl.accused), vl.outcome === 'wrong' ? 'angry' : 'shock'), cap: `${vl.who}: "${vl.text}"` } : null,
+      vl ? { portrait: Art.portrait(vl.def || castById(vl.accused), vl.outcome === 'wrong' ? 'angry' : 'shock'), cap: `${vl.who}: "${vl.text.length > 64 ? vl.text.slice(0, vl.text.lastIndexOf(' ', 62)) + '…' : vl.text}"` } : null,
     ].filter(Boolean);
     const idx = CASES.findIndex((c) => c.id === G.caseDef.id);
     const nextCase = idx >= 0 && idx < CASES.length - 1 && Store.unlocked(idx + 1) ? CASES[idx + 1] : null;

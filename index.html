@@ -89,7 +89,7 @@ button { cursor: pointer; }
 #prompt { position: absolute; left: 50%; bottom: 4.1em; transform: translateX(-50%); }
 #caption { position: absolute; left: 50%; bottom: var(--capB, 6.6em); transform: translate(-50%, .6em); max-width: 62%; width: max-content; background: rgba(28,26,31,.88); color: #fff; padding: .55em 1em; border-radius: 4px; font-size: 1.02em; line-height: 1.35; text-align: center; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; text-wrap: balance; }
 #caption.on { opacity: 1; transform: translate(-50%, 0); }
-#caption.up { bottom: auto; top: 5.8em; }
+#caption.on.dim { opacity: .45; } /* when you stand behind it; it never jumps up over the back row */
 .stamp { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%) rotate(-7deg) scale(2.2); opacity: 0; pointer-events: none;
   font-family: var(--f-display); font-size: 2.6em; line-height: 1.05; text-align: center; color: var(--stamp); border: .14em solid var(--stamp); padding: .15em .45em; background: rgba(255,250,240,.9); max-width: 70%; text-wrap: balance; }
 .stamp.gold { color: #9a6b00; border-color: #c8920a; }
@@ -104,7 +104,7 @@ button { cursor: pointer; }
 @keyframes slidein { from { opacity: 0; transform: translateX(2em) } }
 #clueToasts { position: absolute; left: 1em; bottom: 4.6em; width: 22em; display: flex; flex-direction: column-reverse; gap: .4em; pointer-events: none; transition: opacity .2s; }
 /* one thing at a time: while a dialogue, the notebook or the call-out is open, the play HUD steps back */
-#stage:has(#dialogue:not([hidden])) #clueToasts, #stage:has(#notebook:not([hidden])) #clueToasts, #stage:has(#accuse:not([hidden])) #clueToasts { opacity: 0; }
+#stage:has(#results:not([hidden])) #clueToasts, #stage:has(#dialogue:not([hidden])) #clueToasts, #stage:has(#notebook:not([hidden])) #clueToasts, #stage:has(#accuse:not([hidden])) #clueToasts { opacity: 0; }
 #stage:has(#accuse:not([hidden])) #hud, #stage:has(#accuse:not([hidden])) #caption, #stage:has(#accuse:not([hidden])) #prompt, #stage:has(#accuse:not([hidden])) #actionbar { opacity: 0; pointer-events: none; transition: opacity .3s; }
 .cluetoast { background: #fffdf6; border: 2px solid var(--ink); padding: .45em .7em; font-size: .85em; line-height: 1.3; box-shadow: 0 3px 0 rgba(0,0,0,.25); animation: slidein .3s ease-out; transition: opacity .5s; font-family: var(--f-body); }
 .cluetoast b { color: var(--aura); margin-right: .3em; }
@@ -246,7 +246,7 @@ button { cursor: pointer; }
 .muted { color: #554d5e; }
 
 /* title */
-#title { background: radial-gradient(circle at 30% 40%, rgba(155,197,61,.25), transparent 45%), rgba(28,22,40,.82); place-items: stretch; padding: 3% 4%; overflow-y: auto; }
+#title { background: radial-gradient(circle at 30% 40%, rgba(155,197,61,.22), transparent 45%), rgba(28,22,40,.9); place-items: stretch; padding: 3% 4%; overflow-y: auto; }
 .title-wrap { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 2.5em; align-items: center; min-height: 100%; }
 .logo { display: flex; flex-wrap: wrap; gap: .12em .45em; font-family: var(--f-display); font-size: 4.7em; line-height: 1; }
 .logo .w { display: flex; gap: .1em; white-space: nowrap; }
@@ -293,6 +293,7 @@ button { cursor: pointer; }
 #dlgTrait { font-size: .75em; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; background: #efe5ff; border: 1.5px solid var(--ink); padding: .1em .5em; }
 #dlgPhoto { margin: -.2em 0 .7em; }
 #dlgSus .theory { margin-left: auto; color: var(--ink); }
+.clues .polaroid { display: block; width: max-content; }
 .polaroid { display: inline-block; margin: .5em 0 0; background: #fff; padding: .45em .45em 1.6em; border: 1.5px solid #cfc6b0; box-shadow: 0 4px 0 rgba(0,0,0,.18); transform: rotate(-2deg); position: relative; max-width: 100%; }
 .polaroid img { display: block; width: 18em; max-width: 100%; height: auto; }
 .polaroid figcaption { position: absolute; left: .6em; bottom: .3em; font-family: var(--f-hand); font-size: 1.1em; }
@@ -338,7 +339,7 @@ button { cursor: pointer; }
 .panel:nth-child(2) { transform: rotate(.8deg); }
 .panel:nth-child(3) { transform: rotate(-.8deg); background: #fff3b0; }
 .panel img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.panel .pp { display: grid; place-items: center; height: 100%; }
+.panel .pp { display: grid; place-items: start center; height: calc(100% - 2.6em); padding-top: .3em; }
 .panel .pp img { width: auto; height: 90%; object-fit: contain; }
 .pcap { position: absolute; left: .4em; right: .4em; bottom: .4em; background: #fffdf6; border: 2px solid var(--ink); padding: .25em .5em; font-size: .78em; font-weight: 600; line-height: 1.25; }
 /* episodes */
@@ -366,7 +367,7 @@ button { cursor: pointer; }
 #caseFile:not(.open):not(:hover) .cf-tag::after { content: ' · ' attr(data-count) ' ▾'; font-family: var(--f-body); font-size: .85em; color: var(--muted); }
 /* a HUD card steps back while someone stands behind it */
 .hud-card, #hud .chipbtn { transition: opacity .3s; }
-.hud-card.ghost, #hud .chipbtn.ghost { opacity: .22; }
+.hud-card.ghost, #hud .chipbtn.ghost { opacity: .5; }
 .hud-mid.ghost { opacity: .6; } /* the phase and clock stay readable */
 .hud-card.ghost:hover, #hud .chipbtn.ghost:hover { opacity: 1; }
 .pr.urgent { background: #fff3b0; animation: pulse .35s infinite alternate; }
@@ -462,7 +463,7 @@ button { cursor: pointer; }
 .free.locked { opacity: .55; }
 .free-row { display: flex; gap: .4em; }
 .free-row button { padding: .3em .8em; }
-.free-row button:disabled { opacity: .5; }
+.free-row button:disabled, .daily button:disabled { opacity: 1; background: #d9d3c6; color: #8a8478; box-shadow: none; cursor: not-allowed; }
 .title-links { display: flex; gap: .4em 1em; flex-wrap: wrap; justify-content: center; font-size: .92em; }
 #btnPlay { width: 100%; }
 
@@ -497,7 +498,7 @@ button { cursor: pointer; }
 @container (max-width: 700px) {
   .sgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .agrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .title-wrap, .res-cols, .ps-grid, .guide, .brief-cols, .cf, .ht-grid { grid-template-columns: 1fr; }
+  .title-wrap, .res-cols, .ps-grid, .guide, .cf, .ht-grid { grid-template-columns: 1fr; }
   #caseMap { grid-template-columns: 1fr; }
   #accuse .sheet { width: 100%; }
   #toasts { display: none; }
@@ -512,6 +513,15 @@ button { cursor: pointer; }
   #clueToasts { width: 15em; }
   .act { padding: .3em .55em; font-size: .85em; }
   #actionbar { gap: .3em; }
+  /* everything that matters stays on one screen */
+  .brief { padding: .9em 1.2em; } .brief h2 { font-size: 1.8em; } .brief-story { font-size: .95em; }
+  .brief .acc-row, #accuse .acc-row { position: sticky; bottom: 0; background: var(--paper); padding-top: .4em; z-index: 1; }
+  .agrid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .4em; }
+  .acard { padding: .3em; } .acard img { width: 3.6em; height: 3.6em; } .acard b { font-size: .85em; }
+  #dialogue { grid-template-columns: 5.5em 1fr; padding: .7em .9em; gap: .8em; }
+  #dlgPortrait { width: 5.5em; height: 5.5em; }
+  #dlgText { min-height: 0; margin: .2em 0 .5em; }
+  #dlgOpts { grid-template-columns: 1fr 1fr; }
 }
 /* touch screens: there is no keyboard, so drop the key hints */
 @media (hover: none) and (pointer: coarse) { .act kbd, #prompt kbd, #btnHint kbd, #briefStart kbd { display: none; } }
@@ -530,7 +540,7 @@ button { cursor: pointer; }
 .ach span { font-size: .85em; line-height: 1.35; color: var(--muted); }
 .ach.locked { opacity: .55; border-style: dashed; }
 .ach.locked b::before { content: '🔒 '; }
-#achPop { position: absolute; right: 1em; top: 3.4em; max-width: 19em; z-index: 20; background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--ink); padding: .5em 1em; text-align: center; animation: slidein .35s ease-out; pointer-events: none; }
+#achPop { position: absolute; left: 1em; bottom: 1em; max-width: 19em; z-index: 20; background: var(--gold); border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--ink); padding: .5em 1em; text-align: center; animation: slidein .35s ease-out; pointer-events: none; }
 #achPop small { display: block; font-size: .7em; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
 #achPop b { font-family: var(--f-display); font-weight: 400; font-size: 1.15em; }
 .daily { border: 2px solid var(--ink); background: #fff7d6; padding: .4em .6em; display: grid; line-height: 1.2; grid-template-columns: 1fr auto; gap: .1em .6em; align-items: center; }

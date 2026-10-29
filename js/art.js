@@ -287,9 +287,9 @@ const Art = (() => {
     if (!o.back) {
       // hands
       const hand = (h) => paperEllipse(ctx, h[0], h[1], 5.5, 5.5, look.skin, seed + 20 + Math.round(h[0]), { stroke: INK, lw: 1.5, amp: 0.6 });
-      drawHold(ctx, look, hold, a, at, seed, 'under');
+      drawHold(ctx, look, hold, a, at, seed, 'under', o.faceDir);
       hand(Lh); hand(R);
-      drawHold(ctx, look, hold, a, at, seed, 'over');
+      drawHold(ctx, look, hold, a, at, seed, 'over', o.faceDir);
     } else {
       // from behind: arms hang at the sides
       limb(ctx, -14, -38, -20, -19, look.body, 7); limb(ctx, 14, -38, 20, -19, look.body, 7);
@@ -364,7 +364,7 @@ const Art = (() => {
   }
 
   // Held props, split so hands can sit on top of trays and around bottles.
-  function drawHold(ctx, look, hold, a, at, seed, layer) {
+  function drawHold(ctx, look, hold, a, at, seed, layer, faceDir = 1) {
     if (a === 'spray' && layer === 'over') {
       paperRect(ctx, 18, -68, 8, 14, '#c86dd7', seed + 60, { amp: 0.6 });
       for (let i = 0; i < 6; i++) { ctx.fillStyle = 'rgba(230,180,255,0.6)'; ctx.beginPath(); ctx.arc(30 + i * 5 + Math.sin(at * 9 + i) * 3, -64 + Math.cos(at * 7 + i) * 6, 3 + i * 0.6, 0, Math.PI * 2); ctx.fill(); }
@@ -378,7 +378,7 @@ const Art = (() => {
       return;
     }
     if (hold === 'coffee') { paperRect(ctx, -20, -26, 40, 5, '#8a6a42', seed + 66, { amp: 0.4, stroke: INK, lw: 1 }); for (let i = 0; i < 4; i++) paperRect(ctx, -17 + i * 9, -37, 7, 11, i % 2 ? '#fff' : '#f3e2c4', seed + 67 + i, { amp: 0.3, shadow: false, stroke: INK, lw: 0.8 }); }
-    if (hold === 'pizza') { paperRect(ctx, -22, -30, 44, 8, '#d8b07a', seed + 71, { amp: 0.4, stroke: INK, lw: 1 }); ctx.fillStyle = '#b03a2e'; ctx.font = '700 5px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('PIZZA', 0, -24.5); }
+    if (hold === 'pizza') { paperRect(ctx, -22, -30, 44, 8, '#d8b07a', seed + 71, { amp: 0.4, stroke: INK, lw: 1 }); ctx.save(); if (faceDir < 0) ctx.scale(-1, 1); ctx.fillStyle = '#b03a2e'; ctx.font = '700 5px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('PIZZA', 0, -24.5); ctx.restore(); } // text never mirrors
     if (hold === 'bouquet') for (let i = 0; i < 5; i++) paperEllipse(ctx, -8 + i * 4, -30 - (i % 2) * 5, 5, 5, i % 2 ? '#f6b6cf' : '#fff', seed + 72 + i, { amp: 1 });
   }
 

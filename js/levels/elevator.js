@@ -113,7 +113,7 @@
     phaseLabel(t) {
       const f = floorAt(t);
       if (t >= this.timeline.speakNow) return this.caseDef && this.caseDef.reverse ? 'Lobby. The room decides.' : 'Lobby. Call it now.';
-      return t < this.timeline.fart ? 'Going down' : `Going down · Floor ${f}`;
+      return t < 1 ? 'Going down' : `Going down · Floor ${f}`;
     },
     clockLabel(t) { const f = floorAt(t); return f === 0 ? 'L' : `▼ ${f}`; },
     stampTime(t) { return `Floor ${floorAt(t)}`; },
@@ -151,8 +151,12 @@
       return [{ y: CAR.y1 + 40, draw: (ctx) => drawDoors(ctx, open) }];
     },
     overlay(ctx, t, api) {
-      // the floor indicator on the shaft wall, and the lit button
-      const gt = api.time(), label = this.clockLabel(gt);
+      // the shaft slides past: a floor every 120 units, moving up as the car goes down, still while the doors are open
+      const gt = api.time(), last = api.get('shaftT') ?? gt, open = api.doorOpen('main') > 0.05;
+      const pos = Math.min(30, (api.get('shaftPos') || 0) + (open ? 0 : Math.max(0, gt - last) * 30 / (this.timeline.speakNow || 126)));
+      api.set('shaftT', gt); api.set('shaftPos', pos);
+      drawShaft(ctx, 30 - pos);
+      const label = this.clockLabel(gt);
       Art.paperRect(ctx, 781, 280, 84, 30, '#1b1b1f', 901, { amp: 0.4, stroke: '#555', lw: 1 });
       ctx.save(); ctx.font = '400 17px "Bowlby One SC", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = '#ff4b3a'; ctx.shadowColor = '#ff4b3a'; ctx.shadowBlur = 6; ctx.fillText(label, 823, 296); ctx.restore();
@@ -267,7 +271,6 @@
     ctx.fillStyle = '#25232d'; ctx.fillRect(330, 160, 620, 360);
     ctx.strokeStyle = 'rgba(160,160,190,0.18)'; ctx.lineWidth = 1.5;
     for (const x of [400, 418, 862, 880]) { ctx.beginPath(); ctx.moveTo(x, 160); ctx.lineTo(x, 520); ctx.stroke(); }
-    for (let y = 185; y < 510; y += 60) { paperRect(ctx, 350, y, 150, 6, '#3a3846', 700 + y, { amp: 0.5, shadow: false }); paperRect(ctx, 776, y + 30, 150, 6, '#3a3846', 800 + y, { amp: 0.5, shadow: false }); }
     // the car's ceiling frame
     paperRect(ctx, CAR.x0 - 15, 196, CAR.x1 - CAR.x0 + 30, 20, '#4a4a55', 599, { amp: 0.6, stroke: INK, lw: 1 });
     // back wall: wood panelling and a mirror rail
@@ -303,6 +306,24 @@
     // muzak speaker
     paperEllipse(ctx, 640, 223, 12, 4.5, '#2f3240', 610, { amp: 0.3 });
     // capacity sign on the shaft wall
+  }
+
+  function drawShaft(ctx, cur) {
+    const { paperRect, INK } = Art;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(330, 160, CAR.x0 - 15 - 330, 360); ctx.rect(CAR.x1 + 15, 160, 950 - CAR.x1 - 15, 360); ctx.clip();
+    for (let F = Math.floor(cur) - 2; F <= Math.floor(cur) + 3; F++) {
+      if (F < 0 || F > 31) continue;
+      const y = 352 - (F - cur) * 120;
+      for (const [x0, x1] of [[330, CAR.x0 - 15], [CAR.x1 + 15, 950]]) {
+        paperRect(ctx, x0, y, x1 - x0, 14, '#3a3846', 700 + F * 3 + x0, { amp: 0.5, shadow: false });
+        ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(x0, y + 14, x1 - x0, 3);
+      }
+      ctx.fillStyle = 'rgba(220,220,235,0.28)'; ctx.font = '400 26px "Bowlby One SC", sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(F === 0 ? 'L' : String(F), 440, y - 14); ctx.fillText(F === 0 ? 'L' : String(F), 905, y - 14);
+    }
+    ctx.restore();
+    // the capacity sign rides with the car
     paperRect(ctx, 780, 330, 86, 36, '#f6efdf', 611, { stroke: INK, lw: 1, amp: 0.6 });
     ctx.fillStyle = INK; ctx.font = '700 7px "Lexend", sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('CAPACITY 8', 823, 343); ctx.fillText('PLEASE FACE', 823, 352); ctx.fillText('THE DOORS', 823, 361);

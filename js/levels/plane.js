@@ -41,7 +41,7 @@
       { id: 'galley', name: 'Rear Galley', at: 'in the rear galley', x: GALLEY_X, y: FAR_TOP, w: REAR - GALLEY_X, h: NEAR_BOT - FAR_TOP, noSpawn: true },
     ],
     view: { x: 330, y: 214, w: 752, h: 423 },
-    ranges: { notice: 40, overhear: 96, gossip: 100, talk: 104, search: 44, personal: 20, spacing: 40, depth: 0.45, itemOffset: null },
+    ranges: { notice: 40, overhear: 96, gossip: 100, talk: 104, search: 40, personal: 20, spacing: 40, depth: 0.45, itemOffset: null },
     bounds: { x0: FRONT + 12, x1: REAR - 14, y0: 372, y1: 566 },
     floor: { x: FRONT, y: FAR_TOP, w: REAR - FRONT, h: NEAR_BOT - FAR_TOP },
     // only the aisle, the galley and your own seat are open floor: the rows are solid
@@ -65,12 +65,15 @@
     },
     pins: { marguerite: 'galley' },
     companionSpot: (o) => ({ x: o.x - 30, y: o.y < AISLE ? AISLE - 10 : AISLE + 14 }), // the dog carrier sits in the footwell, poking into the aisle
+    // carry-ons are under the seats, out of sight; you reach one from the aisle beside its row, and only then
+    // does it come into view (so the cabin is not littered with floating bags)
     itemAt(spot, c) {
-      if (c.dog) return { x: spot.x, y: spot.y + 12 };
-      if (inGalley(spot)) return { x: spot.x - 26, y: spot.y + 6 };
-      const s = nearestSeat(spot);
-      return { x: s.x - 28, y: s.y + 8 }; // carry-ons stuffed under the seat in front
+      if (c.dog) return { x: spot.x + 6, y: spot.y - 2 }; // the travel bag he sits on
+      if (inGalley(spot)) return { x: GALLEY_X + 26, y: 548 }; // the crew bag, stowed in the galley
+      const s = nearestSeat(spot), x = ROW_X[s.row - 1] + 8 + s.lane * 14;
+      return { x, y: AISLE, drawX: x, drawY: s.lane < 2 ? AISLE - 6 : AISLE + 16 };
     },
+    hiddenItems: true,
     arrivalSpot(n, G) {
       const used = (s) => G.npcs.some((o) => o !== n && o.present && o.seat && Math.hypot(o.seat.x - s.x, o.seat.y - s.y) < 10) || (s.x === PLAYER_SEAT.x && s.y === PLAYER_SEAT.y);
       const free = SEATS.filter((s) => !used(s));
