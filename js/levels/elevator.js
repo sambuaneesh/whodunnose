@@ -146,7 +146,7 @@
       if (t >= T.speakNow) api.once('lobbyMusic', () => api.music('tension'));
     },
 
-    buildBackground: (ctx) => buildCar(ctx),
+    buildBackground(ctx) { buildCar(ctx); drawDecor(ctx, this.caseDef && this.caseDef.id); },
     props(api) {
       const open = api.doorOpen('main');
       return [{ y: CAR.y1 + 40, draw: (ctx) => drawDoors(ctx, open) }];
@@ -305,6 +305,52 @@
     // muzak speaker
     paperEllipse(ctx, 640, 223, 12, 4.5, '#2f3240', 610, { amp: 0.3 });
     // capacity sign on the shaft wall
+  }
+
+  // Each case leaves its mark on the car: notes taped up beside the mirror, a banner, a lit sign.
+  function drawDecor(ctx, id) {
+    const { paper, paperRect, paperEllipse, INK } = Art;
+    const note = (x, y, w, h, lines, seed, bg = '#fbf7ee', ink = INK) => {
+      paperRect(ctx, x, y, w, h, bg, seed, { stroke: INK, lw: 0.8, amp: 0.5 });
+      paperRect(ctx, x + w / 2 - 7, y - 3, 14, 5, 'rgba(240,228,160,0.9)', seed + 1, { amp: 0.2, shadow: false });
+      ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      lines.forEach(([t, size, weight = 700], i) => { ctx.font = `${weight} ${size}px "Lexend", sans-serif`; ctx.fillText(t, x + w / 2, y + 8 + i * (size + 2.5)); });
+    };
+    const L1 = 518, R1 = 711; // the panelling either side of the mirror
+    if (id === 'c1') {
+      note(L1, 240, 50, 40, [['MONDAY', 6.5], ['POTLUCK', 6.5], ['fl 30 · all', 4.6, 500], ['welcome! ♥ D', 4.6, 500]], 640);
+      note(R1, 242, 48, 34, [['ALL-HANDS', 6], ['1 PM', 7.5], ['LOBBY', 6]], 645, '#e9f1fb');
+    } else if (id === 'c2') {
+      note(L1, 238, 50, 44, [['NOTICE', 6.5], ['Potluck', 5, 500], ['cancelled.', 5, 500], ['Catered only.', 5, 500], ['— MGMT', 4.6]], 650, '#fdf2d8');
+      note(R1, 242, 48, 34, [['3 DAYS', 7], ['to the', 4.6, 500], ['WEDDING ♥', 5.6]], 655, '#fbe3ec');
+    } else if (id === 'c3') {
+      // Dana's send-off: a bunting banner over the mirror and balloons in the corner
+      ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(574, 238); ctx.quadraticCurveTo(640, 252, 706, 238); ctx.stroke();
+      const word = 'GOOD LUCK DANA';
+      for (let i = 0; i < word.length; i++) {
+        if (word[i] === ' ') continue;
+        const tt = i / (word.length - 1), x = 578 + tt * 124, y = 239 + Math.sin(tt * Math.PI) * 6.5;
+        paper(ctx, [[x - 4.4, y], [x + 4.4, y], [x, y + 11]], ['#f4a9c4', '#fbe7a1', '#a9d8f4'][i % 3], 660 + i, { amp: 0.3, stroke: INK, lw: 0.6 });
+        ctx.fillStyle = INK; ctx.font = '700 4.4px "Lexend", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(word[i], x, y + 4.6);
+      }
+      for (const [bx, by, c] of [[524, 250, '#e2483d'], [540, 244, '#f2c14e'], [534, 262, '#5bbf6a']]) {
+        ctx.strokeStyle = 'rgba(28,26,31,0.6)'; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.moveTo(bx, by + 9); ctx.lineTo(545, 296); ctx.stroke();
+        paperEllipse(ctx, bx, by, 7, 9, c, 680 + bx, { stroke: INK, lw: 0.8, amp: 0.4 });
+      }
+      note(R1, 244, 48, 30, [['LAST DAY!', 6], ['cake in', 4.6, 500], ['kitchen ♥', 4.6, 500]], 690, '#fbe3ec');
+    } else if (id === 'c6') {
+      // the express: a lit sign on the ceiling frame, and the video everyone has seen
+      paperRect(ctx, 612, 198, 56, 14, '#2b0f12', 700, { stroke: INK, lw: 0.8, amp: 0.3 });
+      ctx.save(); ctx.fillStyle = '#ff5a4a'; ctx.shadowColor = '#ff5a4a'; ctx.shadowBlur = 5; ctx.font = '400 8px "Bowlby One SC", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('EXPRESS', 640, 205.5); ctx.restore();
+      paperRect(ctx, L1, 238, 50, 46, '#fbf7ee', 702, { stroke: INK, lw: 0.8, amp: 0.5 });
+      paperRect(ctx, L1 + 5, 243, 40, 24, '#2b2d36', 703, { amp: 0.3, shadow: false });
+      paper(ctx, [[L1 + 21, 249], [L1 + 21, 261], [L1 + 31, 255]], '#ffffff', 704, { amp: 0.2, shadow: false });
+      ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.font = '700 5px "Lexend", sans-serif'; ctx.fillText('THE NOSE', L1 + 25, 273); ctx.font = '500 4.4px "Lexend", sans-serif'; ctx.fillText('2,000,000 views', L1 + 25, 279);
+      note(R1, 240, 48, 38, [['POTLUCK', 6.2], ['IS BACK!', 6.2], ["Gary's chili", 4.6, 500], ['— D ♥', 4.6, 500]], 706, '#fdf2d8');
+    } else if (id === 'c7') {
+      note(L1, 240, 50, 36, [['PLEASE', 7], ['FINISH THIS.', 5.4], ['PLEASE.', 6.2]], 710, '#fdf2d8');
+      note(R1, 240, 48, 38, [['★', 8], ['HEAD OF', 5.6], ['AIR QUALITY', 5]], 714, '#e7f6cf');
+    }
   }
 
   function drawShaft(ctx, cur) {
